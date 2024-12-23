@@ -5,8 +5,9 @@ import space_robotics_bench.core.envs as env_utils
 import space_robotics_bench.core.sim as sim_utils
 from space_robotics_bench.core.assets import AssetBaseCfg
 
-from .lunar_surface_procgen import LunarSurfaceProcgenCfg
-from .martian_surface_procgen import MartianSurfaceProcgenCfg
+from .lunar_surface_procgen import LunarSurfaceCfg
+
+# from .martian_surface_procgen import MartianSurfaceProcgenCfg
 
 
 def terrain_from_env_cfg(
@@ -18,8 +19,8 @@ def terrain_from_env_cfg(
     spawn_kwargs: Dict[str, Any] = {},
     procgen_kwargs: Dict[str, Any] = {},
     **kwargs,
-) -> Optional[AssetBaseCfg]:
-    spawn: Optional[sim_utils.SpawnerCfg] = None
+) -> AssetBaseCfg | None:
+    spawn = None
 
     match env_cfg.assets.terrain.variant:
         case env_utils.AssetVariant.PRIMITIVE:
@@ -42,35 +43,33 @@ def terrain_from_env_cfg(
 
             match env_cfg.scenario:
                 case env_utils.Scenario.MOON:
-                    spawn = LunarSurfaceProcgenCfg(
-                        num_assets=num_assets,
-                        usd_file_cfg=usd_file_cfg,
-                        seed=env_cfg.seed,
-                        detail=env_cfg.detail,
+                    spawn = LunarSurfaceCfg(
+                        num_assets=num_assets, seed=env_cfg.seed, **spawn_kwargs
                     )
 
-                case env_utils.Scenario.MARS:
-                    spawn = MartianSurfaceProcgenCfg(
-                        num_assets=num_assets,
-                        usd_file_cfg=usd_file_cfg,
-                        seed=env_cfg.seed,
-                        detail=env_cfg.detail,
-                    )
+                # case env_utils.Scenario.MARS:
+                #     spawn = MartianSurfaceProcgenCfg(
+                #         num_assets=num_assets,
+                #         usd_file_cfg=usd_file_cfg,
+                #         seed=env_cfg.seed,
+                #         detail=env_cfg.detail,
+                #     )
                 case _:
                     return None
 
-            # Set height to 10% of the average planar size
-            scale = (*size, (size[0] + size[1]) / 20.0)
-            for node_cfg in spawn.geometry_nodes.values():
-                if node_cfg.get("scale") is not None:
-                    node_cfg["scale"] = scale
+            # Fix this setting
+            # # Set height to 10% of the average planar size
+            # scale = (*size, (size[0] + size[1]) / 20.0)
+            # for node_cfg in spawn.geometry_nodes.values():
+            #     if node_cfg.get("scale") is not None:
+            #         node_cfg["scale"] = scale
 
-            for key, value in procgen_kwargs.items():
-                for node_cfg in spawn.geometry_nodes.values():
-                    if node_cfg.get(key) is not None:
-                        node_cfg[key] = value
-                    elif hasattr(spawn, key):
-                        setattr(spawn, key, value)
+            # for key, value in procgen_kwargs.items():
+            #     for node_cfg in spawn.geometry_nodes.values():
+            #         if node_cfg.get(key) is not None:
+            #             node_cfg[key] = value
+            #         elif hasattr(spawn, key):
+            #             setattr(spawn, key, value)
 
     if spawn is None:
         return None

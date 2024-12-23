@@ -16,7 +16,7 @@ class AssetVariant(str, Enum):
         return self.name.lower()
 
 
-class Domain(str, Enum):
+class Scenario(str, Enum):
     ASTEROID = auto()
     EARTH = auto()
     MARS = auto()
@@ -35,15 +35,15 @@ class Domain(str, Enum):
         - Orbit: No gravitational acceleration.
         """
         match self:
-            case Domain.ASTEROID:
+            case Scenario.ASTEROID:
                 return 0.14219
-            case Domain.EARTH:
+            case Scenario.EARTH:
                 return 9.80665
-            case Domain.MARS:
+            case Scenario.MARS:
                 return 3.72076
-            case Domain.MOON:
+            case Scenario.MOON:
                 return 1.62496
-            case Domain.ORBIT:
+            case Scenario.ORBIT:
                 return 0.0
 
     @property
@@ -55,15 +55,15 @@ class Domain(str, Enum):
         - Orbit: No gravitational acceleration.
         """
         match self:
-            case Domain.ASTEROID:
+            case Scenario.ASTEROID:
                 return 0.28438
-            case Domain.EARTH:
+            case Scenario.EARTH:
                 return 0.0698
-            case Domain.MARS:
+            case Scenario.MARS:
                 return 0.0279
-            case Domain.MOON:
+            case Scenario.MOON:
                 return 0.0253
-            case Domain.ORBIT:
+            case Scenario.ORBIT:
                 return 0.0
 
     @property
@@ -85,13 +85,13 @@ class Domain(str, Enum):
         - Moon | Orbit: Taken at 1 AU.
         """
         match self:
-            case Domain.ASTEROID:
+            case Scenario.ASTEROID:
                 return 190.0
-            case Domain.EARTH:
+            case Scenario.EARTH:
                 return 775
-            case Domain.MARS:
+            case Scenario.MARS:
                 return 729
-            case Domain.MOON | Domain.ORBIT:
+            case Scenario.MOON | Scenario.ORBIT:
                 return 1361.0
 
     @property
@@ -104,13 +104,13 @@ class Domain(str, Enum):
         - Moon | Orbit: Minor variation due to elliptical orbit.
         """
         match self:
-            case Domain.ASTEROID:
+            case Scenario.ASTEROID:
                 return 50.0
-            case Domain.EARTH:
+            case Scenario.EARTH:
                 return 450.0
-            case Domain.MARS:
+            case Scenario.MARS:
                 return 226.0
-            case Domain.MOON | Domain.ORBIT:
+            case Scenario.MOON | Scenario.ORBIT:
                 return 0.5
 
     @property
@@ -131,11 +131,11 @@ class Domain(str, Enum):
         - Asteroid | Moon | Orbit: Approximated as a point source due to lack of atmosphere.
         """
         match self:
-            case Domain.EARTH:
+            case Scenario.EARTH:
                 return 0.53
-            case Domain.MARS:
+            case Scenario.MARS:
                 return 0.35
-            case Domain.ASTEROID | Domain.MOON | Domain.ORBIT:
+            case Scenario.ASTEROID | Scenario.MOON | Scenario.ORBIT:
                 return 0.0
 
     @property
@@ -144,11 +144,11 @@ class Domain(str, Enum):
         Variation of the angular diameter of the Solar light source in degrees.
         """
         match self:
-            case Domain.EARTH:
+            case Scenario.EARTH:
                 return 0.021
-            case Domain.MARS:
+            case Scenario.MARS:
                 return 0.08
-            case Domain.ASTEROID | Domain.MOON | Domain.ORBIT:
+            case Scenario.ASTEROID | Scenario.MOON | Scenario.ORBIT:
                 return 0.0
 
     @property
@@ -169,11 +169,11 @@ class Domain(str, Enum):
         - Asteroid | Moon | Orbit: Intrinsic color temperature of the Sun.
         """
         match self:
-            case Domain.EARTH:
+            case Scenario.EARTH:
                 return 5750.0
-            case Domain.MARS:
+            case Scenario.MARS:
                 return 6250.0
-            case Domain.ASTEROID | Domain.MOON | Domain.ORBIT:
+            case Scenario.ASTEROID | Scenario.MOON | Scenario.ORBIT:
                 return 5778.0
 
     @property
@@ -185,11 +185,11 @@ class Domain(str, Enum):
         - Asteroid | Moon | Orbit: No significant variation.
         """
         match self:
-            case Domain.EARTH:
+            case Scenario.EARTH:
                 return 1500.0
-            case Domain.MARS:
+            case Scenario.MARS:
                 return 500.0
-            case Domain.ASTEROID | Domain.MOON | Domain.ORBIT:
+            case Scenario.ASTEROID | Scenario.MOON | Scenario.ORBIT:
                 return 0.0
 
     @property
@@ -207,15 +207,16 @@ class Asset(BaseModel):
     variant: Annotated[AssetVariant, EnumNameSerializer]
 
 
+# TODO: Change defaults
 class Assets(BaseModel):
-    robot: Asset
-    object: Asset
-    terrain: Asset
-    vehicle: Asset
+    robot: Asset = Asset(variant=AssetVariant.DATASET)
+    object: Asset = Asset(variant=AssetVariant.PROCEDURAL)
+    terrain: Asset = Asset(variant=AssetVariant.PROCEDURAL)
+    vehicle: Asset = Asset(variant=AssetVariant.DATASET)
 
 
-class EnvironmentCfg(BaseModel):
-    domain: Annotated[Domain, EnumNameSerializer]
-    assets: Assets
-    seed: int
-    detail: float
+class EnvironmentConfig(BaseModel):
+    scenario: Annotated[Scenario, EnumNameSerializer] = Scenario.MOON
+    assets: Assets = Assets()
+    seed: int = 0
+    detail: float = 1.0

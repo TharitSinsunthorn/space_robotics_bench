@@ -10,6 +10,8 @@ Examples:
 from _cli_utils import add_default_cli_args, argparse, launch_app, shutdown_app
 from omni.isaac.lab.app import AppLauncher
 
+# TODO: Add reset keybind
+
 
 def main(launcher: AppLauncher, args: argparse.Namespace):
     ## Note: Importing modules here due to delayed Omniverse Kit extension loading

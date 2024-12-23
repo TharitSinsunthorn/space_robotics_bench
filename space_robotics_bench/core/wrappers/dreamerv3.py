@@ -7,7 +7,7 @@ import gymnasium
 import numpy as np
 import torch
 
-from space_robotics_bench.core.envs import BaseEnv, BaseEnvManaged
+from space_robotics_bench.core.envs import BaseEnv
 
 
 def process_dreamerv3_cfg(
@@ -44,12 +44,12 @@ def process_dreamerv3_cfg(
 class EmbodiedEnvWrapper(embodied.Env):
     def __init__(
         self,
-        env: BaseEnv | BaseEnvManaged,
+        env: BaseEnv,
         obs_key="image",
         act_key="action",
     ):
         # check that input is valid
-        if not isinstance(env.unwrapped, (BaseEnv, BaseEnvManaged)):
+        if not isinstance(env.unwrapped, BaseEnv):
             raise ValueError(
                 f"The environment must be inherited from ManagerBasedRLEnv. Environment type: {type(env)}"
             )
@@ -95,7 +95,7 @@ class EmbodiedEnvWrapper(embodied.Env):
         return cls.__name__
 
     @property
-    def unwrapped(self) -> BaseEnv | BaseEnvManaged:
+    def unwrapped(self) -> BaseEnv:
         return self.env.unwrapped
 
     def get_episode_rewards(self) -> list[float]:

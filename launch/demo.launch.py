@@ -121,8 +121,7 @@ def generate_declared_arguments() -> List[DeclareLaunchArgument]:
         DeclareLaunchArgument(
             "rviz_config",
             default_value=path.join(
-                path.dirname(path.dirname(path.realpath(__file__))),
-                "config",
+                path.dirname(path.realpath(__file__)),
                 "rviz",
                 "default.rviz",
             ),

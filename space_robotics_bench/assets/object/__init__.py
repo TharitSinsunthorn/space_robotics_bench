@@ -4,14 +4,12 @@ from typing import Any, Dict, Tuple
 import space_robotics_bench.core.envs as env_utils
 import space_robotics_bench.core.sim as sim_utils
 from space_robotics_bench.core.assets import AssetBaseCfg, RigidObjectCfg
-from space_robotics_bench.core.sim.spawners.multi import MultiAssetCfg
 from space_robotics_bench.paths import SRB_ASSETS_DIR
 from space_robotics_bench.utils import color as color_utils
 
-from .lunar_rock_procgen import LunarRockProcgenCfg
-from .martian_rock_procgen import MartianRockProcgenCfg
-from .peg_in_hole_procgen import HoleProcgenCfg, PegProcgenCfg
+# from .peg_in_hole_procgen import HoleProcgenCfg, PegProcgenCfg
 from .peg_in_hole_profile import HoleProfileCfg, PegProfileCfg, PegProfileShortCfg
+from .rock_procgen import LunarRockCfg
 from .sample_tube import SampleTubeCfg
 from .solar_panel import SolarPanelCfg
 
@@ -27,8 +25,8 @@ def object_of_interest_from_env_cfg(
     procgen_seed_offset: int = 0,
     procgen_kwargs: Dict[str, Any] = {},
     **kwargs,
-) -> Optional[RigidObjectCfg]:
-    spawn: Optional[sim_utils.SpawnerCfg] = None
+) -> RigidObjectCfg | None:
+    spawn = None
 
     if spawn_kwargs.get("collision_props", None) is None:
         spawn_kwargs["collision_props"] = sim_utils.CollisionPropertiesCfg()
@@ -85,64 +83,65 @@ def object_of_interest_from_env_cfg(
                         mesh_approximation="sdf",
                     )
                 )
-            usd_file_cfg = sim_utils.UsdFileCfg(
-                usd_path="IGNORED",
-                **spawn_kwargs,
-            )
+            # usd_file_cfg = sim_utils.UsdFileCfg(
+            #     usd_path="IGNORED",
+            #     **spawn_kwargs,
+            # )
 
             match env_cfg.scenario:
-                case env_utils.Scenario.ORBIT:
-                    spawn = MultiAssetCfg(
-                        assets_cfg=[
-                            sim_utils.UsdFileCfg(
-                                usd_path=path.join(
-                                    SRB_ASSETS_DIR,
-                                    "cubesat",
-                                    f"cubesat{id}.usdz",
-                                ),
-                                rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                                    disable_gravity=True,
-                                    max_depenetration_velocity=5.0,
-                                ),
-                                collision_props=sim_utils.CollisionPropertiesCfg(),
-                                mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
-                                    mesh_approximation="sdf",
-                                ),
-                                activate_contact_sensors=True,
-                            )
-                            for id in range(32)
-                        ]
-                    )
+                # case env_utils.Scenario.ORBIT:
+                #     spawn = MultiAssetCfg(
+                #         assets_cfg=[
+                #             sim_utils.UsdFileCfg(
+                #                 usd_path=path.join(
+                #                     SRB_ASSETS_DIR,
+                #                     "cubesat",
+                #                     f"cubesat{id}.usdz",
+                #                 ),
+                #                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                #                     disable_gravity=True,
+                #                     max_depenetration_velocity=5.0,
+                #                 ),
+                #                 collision_props=sim_utils.CollisionPropertiesCfg(),
+                #                 mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
+                #                     mesh_approximation="sdf",
+                #                 ),
+                #                 activate_contact_sensors=True,
+                #             )
+                #             for id in range(32)
+                #         ]
+                #     )
 
                 case env_utils.Scenario.MOON:
-                    spawn = LunarRockProcgenCfg(
+                    spawn = LunarRockCfg(
                         num_assets=num_assets,
-                        usd_file_cfg=usd_file_cfg,
                         seed=env_cfg.seed + procgen_seed_offset,
-                        detail=env_cfg.detail,
+                        **spawn_kwargs,
                     )
 
-                case env_utils.Scenario.MARS:
-                    spawn = MartianRockProcgenCfg(
-                        num_assets=num_assets,
-                        usd_file_cfg=usd_file_cfg,
-                        seed=env_cfg.seed + procgen_seed_offset,
-                        detail=env_cfg.detail,
-                    )
+                # case env_utils.Scenario.MARS:
+                #     spawn = MartianRockProcgenCfg(
+                #         num_assets=num_assets,
+                #         usd_file_cfg=usd_file_cfg,
+                #         seed=env_cfg.seed + procgen_seed_offset,
+                #         detail=env_cfg.detail,
+                #     )
                 case _:
                     return None
 
-            if env_cfg.scenario != env_utils.Scenario.ORBIT:
-                for node_cfg in spawn.geometry_nodes.values():
-                    if "scale" in node_cfg:
-                        node_cfg["scale"] = size
+            # TODO: Fix scale
 
-                for key, value in procgen_kwargs.items():
-                    for node_cfg in spawn.geometry_nodes.values():
-                        if key in node_cfg:
-                            node_cfg[key] = value
-                        elif hasattr(spawn, key):
-                            setattr(spawn, key, value)
+            # if env_cfg.scenario != env_utils.Scenario.ORBIT:
+            #     for node_cfg in spawn.geometry_nodes.values():
+            #         if "scale" in node_cfg:
+            #             node_cfg["scale"] = size
+
+            #     for key, value in procgen_kwargs.items():
+            #         for node_cfg in spawn.geometry_nodes.values():
+            #             if key in node_cfg:
+            #                 node_cfg[key] = value
+            #             elif hasattr(spawn, key):
+            #                 setattr(spawn, key, value)
 
     if spawn is None:
         raise NotImplementedError
@@ -168,9 +167,9 @@ def peg_in_hole_from_env_cfg(
     procgen_kwargs_hole: Dict[str, Any] = {},
     short_peg: bool = False,
     **kwargs,
-) -> Optional[Tuple[RigidObjectCfg, AssetBaseCfg]]:
-    spawn_peg: Optional[sim_utils.SpawnerCfg] = None
-    spawn_hole: Optional[sim_utils.SpawnerCfg] = None
+) -> Tuple[RigidObjectCfg, AssetBaseCfg] | None:
+    spawn_peg = None
+    spawn_hole = None
 
     if spawn_kwargs_peg.get("collision_props", None) is None:
         spawn_kwargs_peg["collision_props"] = sim_utils.CollisionPropertiesCfg()
@@ -210,24 +209,25 @@ def peg_in_hole_from_env_cfg(
                         mesh_approximation="sdf",
                     )
                 )
-            spawn_peg = PegProcgenCfg(
-                num_assets=num_assets,
-                usd_file_cfg=sim_utils.UsdFileCfg(
-                    usd_path="IGNORED",
-                    **spawn_kwargs_peg,
-                ),
-                seed=env_cfg.seed + procgen_seed_offset,
-                detail=env_cfg.detail,
-            )
-            spawn_hole = HoleProcgenCfg(
-                num_assets=num_assets,
-                usd_file_cfg=sim_utils.UsdFileCfg(
-                    usd_path="IGNORED",
-                    **spawn_kwargs_hole,
-                ),
-                seed=env_cfg.seed + procgen_seed_offset,
-                detail=env_cfg.detail,
-            )
+            # TODO: Fix
+            # spawn_peg = PegProcgenCfg(
+            #     num_assets=num_assets,
+            #     usd_file_cfg=sim_utils.UsdFileCfg(
+            #         usd_path="IGNORED",
+            #         **spawn_kwargs_peg,
+            #     ),
+            #     seed=env_cfg.seed + procgen_seed_offset,
+            #     detail=env_cfg.detail,
+            # )
+            # spawn_hole = HoleProcgenCfg(
+            #     num_assets=num_assets,
+            #     usd_file_cfg=sim_utils.UsdFileCfg(
+            #         usd_path="IGNORED",
+            #         **spawn_kwargs_hole,
+            #     ),
+            #     seed=env_cfg.seed + procgen_seed_offset,
+            #     detail=env_cfg.detail,
+            # )
 
             for spawn, procgen_kwargs in (
                 (spawn_peg, procgen_kwargs_peg),
@@ -262,8 +262,8 @@ def solar_panel_from_env_cfg(
     prim_path: str = "{ENV_REGEX_NS}/panel",
     spawn_kwargs: Dict[str, Any] = {},
     **kwargs,
-) -> Optional[RigidObjectCfg]:
-    spawn: Optional[sim_utils.SpawnerCfg] = None
+) -> RigidObjectCfg | None:
+    spawn = None
 
     if spawn_kwargs.get("collision_props", None) is None:
         spawn_kwargs["collision_props"] = sim_utils.CollisionPropertiesCfg()

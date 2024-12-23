@@ -11,6 +11,7 @@ ament_python_install_package(space_robotics_bench)
 ## Install Python scripts
 set(SCRIPTS_DIR scripts)
 install(PROGRAMS
+# TODO: Remove procgen cache and maybe other scripts
     ${SCRIPTS_DIR}/utils/clean_procgen_cache.py
     ${SCRIPTS_DIR}/utils/tensorboard.bash
     ${SCRIPTS_DIR}/utils/update_assets.bash

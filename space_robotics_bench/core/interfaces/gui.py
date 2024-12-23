@@ -22,7 +22,7 @@ class GuiInterface:
         | BaseAerialRoboticsEnv
         | BaseManipulationEnv
         | BaseMobileRoboticsEnv,
-        node: None | None = None,
+        node: Node | None = None,
     ):
         self._env = env
 

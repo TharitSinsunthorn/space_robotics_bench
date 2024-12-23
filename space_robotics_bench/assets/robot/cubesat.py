@@ -33,6 +33,7 @@ def cubesat_cfg(
                 #     mesh_approximation="sdf",
                 # ),
                 activate_contact_sensors=False,
+                random_choice=True,
             ),
             init_state=RigidObjectCfg.InitialStateCfg(),
         ).replace(prim_path=prim_path, **kwargs),

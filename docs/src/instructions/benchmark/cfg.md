@@ -1,5 +1,7 @@
 # Benchmark Configuration
 
+<!-- TODO: Rewrite -->
+
 ## Environment Configuration
 
 The environments can be configured in two ways:

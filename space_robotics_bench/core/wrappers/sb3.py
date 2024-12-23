@@ -10,7 +10,7 @@ from stable_baselines3.common.vec_env.base_vec_env import (
     VecEnvStepReturn,
 )
 
-from space_robotics_bench.core.envs import BaseEnv, BaseEnvManaged
+from space_robotics_bench.core.envs import BaseEnv
 
 
 def process_sb3_cfg(cfg: dict) -> dict:
@@ -109,7 +109,7 @@ class Sb3VecEnvWrapper(VecEnv):
 
     """
 
-    def __init__(self, env: BaseEnv | BaseEnvManaged):
+    def __init__(self, env: BaseEnv):
         """Initialize the wrapper.
 
         Args:
@@ -119,7 +119,7 @@ class Sb3VecEnvWrapper(VecEnv):
             ValueError: When the environment is not an instance of :class:`ManagerBasedRLEnv`.
         """
         # check that input is valid-
-        if not isinstance(env.unwrapped, (BaseEnv, BaseEnvManaged)):
+        if not isinstance(env.unwrapped, BaseEnv):
             raise ValueError(
                 "The environment must be inherited from ManagerBasedRLEnv or DirectRLEnv. Environment type:"
                 f" {type(env)}"
@@ -165,7 +165,7 @@ class Sb3VecEnvWrapper(VecEnv):
         return cls.__name__
 
     @property
-    def unwrapped(self) -> BaseEnv | BaseEnvManaged:
+    def unwrapped(self) -> BaseEnv:
         """Returns the base environment of the wrapper.
 
         This will be the bare :class:`gymnasium.Env` environment, underneath all layers of wrappers.

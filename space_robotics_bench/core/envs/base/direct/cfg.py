@@ -1,11 +1,8 @@
-from os import path
-
 import gymnasium
 from omni.isaac.lab.envs import DirectRLEnvCfg
 from omni.isaac.lab.utils import configclass
 
-import space_robotics_bench.core.envs as env_utils
-from space_robotics_bench.paths import SRB_CONFIG_DIR
+from space_robotics_bench.core.envs.cfg import EnvironmentConfig
 
 
 @configclass
@@ -23,9 +20,8 @@ class BaseEnvCfg(DirectRLEnvCfg):
     num_observations: int = 0
 
     ## Environment
-    env_cfg: env_utils.EnvironmentConfig = env_utils.EnvironmentConfig.extract(
-        cfg_path=path.join(SRB_CONFIG_DIR, "env.yaml")
-    )
+    # TODO: Rename to something more sensible
+    env_cfg: EnvironmentConfig = EnvironmentConfig()
 
     ## Misc
     # Flag that disables the timeout for the environment
@@ -35,3 +31,6 @@ class BaseEnvCfg(DirectRLEnvCfg):
     # TODO: Fix in a better way
     action_space = gymnasium.spaces.Box(low=-1.0, high=1.0, shape=(1,))
     observation_space = gymnasium.spaces.Box(low=-1.0, high=1.0, shape=(1,))
+
+    # TODO: Tackle this and other variables of the superclass
+    rerender_on_reset: bool = True

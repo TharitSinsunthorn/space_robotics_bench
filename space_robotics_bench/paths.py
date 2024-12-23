@@ -15,9 +15,6 @@ SRB_ASSETS_DIR_SRB_ROBOT = path.join(SRB_ASSETS_DIR_SRB_MODEL, "robot")
 SRB_ASSETS_DIR_SRB_TERRAIN = path.join(SRB_ASSETS_DIR_SRB_MODEL, "terrain")
 SRB_ASSETS_DIR_SRB_VEHICLE = path.join(SRB_ASSETS_DIR_SRB_MODEL, "vehicle")
 
-# Path to confdig directory
-SRB_CONFIG_DIR = path.join(SRB_DIR, "config")
-
 # Path to hyperparameters directory
 SRB_HYPERPARAMS_DIR = path.join(SRB_DIR, "hyperparams")
 

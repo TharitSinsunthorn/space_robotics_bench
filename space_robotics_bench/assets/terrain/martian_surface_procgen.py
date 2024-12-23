@@ -24,9 +24,9 @@ class MartianSurfaceProcgenCfg(sim_utils.BlenderNodesAssetCfg):
             "rock_mesh_boolean": False,  # Flag to enable mesh boolean between the terrain and rocks
         }
     }
-    decimate_face_count: Optional[int] = None
-    decimate_angle_limit: Optional[float] = None
+    decimate_face_count: int | None = None
+    decimate_angle_limit: float | None = None
 
     # Material
-    material: Optional[str] = "MartianSurface"
+    material: str | None = "MartianSurface"
     texture_resolution: int = 4096

@@ -13,8 +13,8 @@ def vehicle_from_env_cfg(
     prim_path: str = "{ENV_REGEX_NS}/vehicle",
     spawn_kwargs: Dict[str, Any] = {},
     **kwargs,
-) -> Optional[asset_utils.VehicleCfg]:
-    vehicle_cfg: Optional[asset_utils.VehicleCfg] = None
+) -> asset_utils.VehicleCfg | None:
+    vehicle_cfg = None
     match env_cfg.assets.vehicle.variant:
         case env_utils.AssetVariant.NONE:
             return None
