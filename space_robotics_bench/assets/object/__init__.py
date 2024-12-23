@@ -1,8 +1,11 @@
+from os import path
 from typing import Any, Dict, Optional, Tuple
 
 import space_robotics_bench.core.envs as env_utils
 import space_robotics_bench.core.sim as sim_utils
 from space_robotics_bench.core.assets import AssetBaseCfg, RigidObjectCfg
+from space_robotics_bench.core.sim.spawners.multi import MultiAssetCfg
+from space_robotics_bench.paths import SRB_ASSETS_DIR
 from space_robotics_bench.utils import color as color_utils
 
 from .lunar_rock_procgen import LunarRockProcgenCfg
@@ -88,7 +91,30 @@ def object_of_interest_from_env_cfg(
             )
 
             match env_cfg.scenario:
-                case env_utils.Scenario.MOON | env_utils.Scenario.ORBIT:
+                case env_utils.Scenario.ORBIT:
+                    spawn = MultiAssetCfg(
+                        assets_cfg=[
+                            sim_utils.UsdFileCfg(
+                                usd_path=path.join(
+                                    SRB_ASSETS_DIR,
+                                    "cubesat",
+                                    f"cubesat{id}.usdz",
+                                ),
+                                rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                                    disable_gravity=True,
+                                    max_depenetration_velocity=5.0,
+                                ),
+                                collision_props=sim_utils.CollisionPropertiesCfg(),
+                                mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
+                                    mesh_approximation="sdf",
+                                ),
+                                activate_contact_sensors=True,
+                            )
+                            for id in range(32)
+                        ]
+                    )
+
+                case env_utils.Scenario.MOON:
                     spawn = LunarRockProcgenCfg(
                         num_assets=num_assets,
                         usd_file_cfg=usd_file_cfg,
@@ -106,16 +132,17 @@ def object_of_interest_from_env_cfg(
                 case _:
                     return None
 
-            for node_cfg in spawn.geometry_nodes.values():
-                if "scale" in node_cfg:
-                    node_cfg["scale"] = size
-
-            for key, value in procgen_kwargs.items():
+            if env_cfg.scenario != env_utils.Scenario.ORBIT:
                 for node_cfg in spawn.geometry_nodes.values():
-                    if key in node_cfg:
-                        node_cfg[key] = value
-                    elif hasattr(spawn, key):
-                        setattr(spawn, key, value)
+                    if "scale" in node_cfg:
+                        node_cfg["scale"] = size
+
+                for key, value in procgen_kwargs.items():
+                    for node_cfg in spawn.geometry_nodes.values():
+                        if key in node_cfg:
+                            node_cfg[key] = value
+                        elif hasattr(spawn, key):
+                            setattr(spawn, key, value)
 
     if spawn is None:
         raise NotImplementedError

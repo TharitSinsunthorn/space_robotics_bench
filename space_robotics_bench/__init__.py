@@ -11,7 +11,7 @@ try_enable_rich_traceback()
 try:
     from . import _rs  # noqa: F401
 except Exception:
-    raise ModuleNotFoundError(
+    raise ModuleNotFoundError(from space_robotics_bench._rs.utils.sampling import *  # noqa: F403
         "Failed to import Python submodule 'space_robotics_bench._rs' that contains the Rust "
         "extension module. Please ensure that the package has been installed correctly."
     )

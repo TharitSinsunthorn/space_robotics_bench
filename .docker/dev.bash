@@ -11,7 +11,9 @@ export WITH_DEV_VOLUME="${WITH_DEV_VOLUME:-true}"
 ## Config
 # Development volumes to mount inside the container
 DOCKER_DEV_VOLUMES=(
-    "${WS_DIR}/isaaclab:/root/isaaclab:rw"
+    "${WS_DIR}/simforge:/root/simforge:rw"
+    "${WS_DIR}/simforge_foundry:/root/simforge_foundry:rw"
+    # "${WS_DIR}/isaaclab:/root/isaaclab:rw"
     # "${WS_DIR}/dreamerv3:/root/dreamerv3:rw"
 )
 # Development environment variables to set inside the container

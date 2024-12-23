@@ -192,7 +192,7 @@ RUN echo -e "\n# Blender ${BLENDER_VERSION}" >> /entrypoint.bash && \
 ARG ISAACLAB_PATH="/root/isaaclab"
 ARG ISAACLAB_REMOTE="https://github.com/isaac-sim/IsaacLab.git"
 ARG ISAACLAB_BRANCH="main"
-ARG ISAACLAB_COMMIT_SHA="efc1a0b26eea0483a69f9519699ae3e58527cc1b" # 2024-12-04
+ARG ISAACLAB_COMMIT_SHA="dd044a4977722d85e966c5b63949093c9b14667f" # 2024-12-20
 # hadolint ignore=SC2044
 RUN echo -e "\n# Isaac Lab ${ISAACLAB_COMMIT_SHA}" >> /entrypoint.bash && \
     echo "export ISAACLAB_PATH=\"${ISAACLAB_PATH}\"" >> /entrypoint.bash && \

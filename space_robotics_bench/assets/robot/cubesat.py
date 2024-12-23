@@ -9,8 +9,9 @@ from space_robotics_bench.core.actions import (
     SpacecraftActionCfg,
     SpacecraftActionGroupCfg,
 )
-from space_robotics_bench.core.sim.spawners.multi import MultiAssetCfg
 from space_robotics_bench.paths import SRB_ASSETS_DIR
+from simforge.isaaclab import SimforgeAssetCfg
+from simforge_foundry.models import Cubesat
 
 
 def cubesat_cfg(
@@ -24,8 +25,20 @@ def cubesat_cfg(
     return asset_utils.SpacecraftCfg(
         ## Model
         asset_cfg=RigidObjectCfg(
-            spawn=MultiAssetCfg(assets_cfg=[]),
-            init_state=ArticulationCfg.InitialStateCfg(),
+            spawn=SimforgeAssetCfg(
+                assets=[Cubesat()],
+                num_assets=16,
+                rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                    disable_gravity=True,
+                    max_depenetration_velocity=5.0,
+                ),
+                collision_props=sim_utils.CollisionPropertiesCfg(),
+                # mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
+                #     mesh_approximation="sdf",
+                # ),
+                activate_contact_sensors=False,
+            ),
+            init_state=RigidObjectCfg.InitialStateCfg(),
         ).replace(prim_path=prim_path, **kwargs),
         ## Actions
         action_cfg=SpacecraftActionGroupCfg(
