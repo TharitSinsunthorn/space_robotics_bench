@@ -1,4 +1,4 @@
-from typing import Iterable, Tuple, Union
+from typing import Iterable, Tuple
 
 import carb.settings
 
@@ -53,7 +53,7 @@ def auto_exposure(
 def chromatic_aberration(
     enable: bool = True,
     strength: Tuple[float, float, float] = (-0.055, -0.075, 0.015),
-    mode: Union[Tuple[int, int, int], int] = (0, 0, 0),
+    mode: Tuple[int, int, int] | int = (0, 0, 0),
     lanczos: bool = False,
 ):
     """
@@ -61,7 +61,7 @@ def chromatic_aberration(
     """
 
     if not isinstance(mode, Iterable):
-        mode = (mode,) * 3
+        mode = (mode, mode, mode)
 
     settings = carb.settings.get_settings()
     settings.set("/rtx/post/chromaticAberration/enabled", enable)
@@ -106,7 +106,7 @@ def motion_blur(
 def lens_flare_physical(
     enable: bool = True,
     scale: float = 1.0,
-    cutoff_point: Union[Tuple[float, float, float], float] = (2.0, 2.0, 2.0),
+    cutoff_point: Tuple[float, float, float] | float = (2.0, 2.0, 2.0),
     cutoff_fuzziness: float = 0.5,
     alpha_exposure_scale: float = 1.0,
     energy_constraining_blend: bool = False,
@@ -124,7 +124,7 @@ def lens_flare_physical(
     spectral_blur_wavelength_range: Tuple[float, float, float] = (380.0, 550.0, 770.0),
 ):
     if not isinstance(cutoff_point, Iterable):
-        cutoff_point = (cutoff_point,) * 3
+        cutoff_point = (cutoff_point, cutoff_point, cutoff_point)
 
     settings = carb.settings.get_settings()
     settings.set("/rtx/post/lensFlares/enabled", enable)
@@ -157,31 +157,31 @@ def lens_flare_physical(
 def lens_flare_non_physical(
     enable: bool = True,
     scale: float = 1.0,
-    cutoff_point: Union[Tuple[float, float, float], float] = (2.0, 2.0, 2.0),
+    cutoff_point: Tuple[float, float, float] | float = (2.0, 2.0, 2.0),
     cutoff_fuzziness: float = 0.5,
     alpha_exposure_scale: float = 1.0,
     energy_constraining_blend: bool = False,
-    halo_radius: Union[Tuple[float, float, float], float] = (75.0, 75.0, 75.0),
-    halo_falloff: Union[Tuple[float, float, float], float] = (10.0, 10.0, 10.0),
+    halo_radius: Tuple[float, float, float] | float = (75.0, 75.0, 75.0),
+    halo_falloff: Tuple[float, float, float] | float = (10.0, 10.0, 10.0),
     halo_weight: float = 0.01,
-    aniso_falloff_y: Union[Tuple[float, float, float], float] = (10.0, 10.0, 10.0),
-    aniso_falloff_x: Union[Tuple[float, float, float], float] = (450.0, 475.0, 500.0),
+    aniso_falloff_y: Tuple[float, float, float] | float = (10.0, 10.0, 10.0),
+    aniso_falloff_x: Tuple[float, float, float] | float = (450.0, 475.0, 500.0),
     aniso_weight: float = 0.6,
-    isotropic_falloff: Union[Tuple[float, float, float], float] = (50.0, 50.0, 50.0),
+    isotropic_falloff: Tuple[float, float, float] | float = (50.0, 50.0, 50.0),
     isotropic_weight: float = 0.4,
 ):
     if not isinstance(cutoff_point, Iterable):
-        cutoff_point = (cutoff_point,) * 3
+        cutoff_point = (cutoff_point, cutoff_point, cutoff_point)
     if not isinstance(halo_radius, Iterable):
-        halo_radius = (halo_radius,) * 3
+        halo_radius = (halo_radius, halo_radius, halo_radius)
     if not isinstance(halo_falloff, Iterable):
-        halo_falloff = (halo_falloff,) * 3
+        halo_falloff = (halo_falloff, halo_falloff, halo_falloff)
     if not isinstance(aniso_falloff_y, Iterable):
-        aniso_falloff_y = (aniso_falloff_y,) * 3
+        aniso_falloff_y = (aniso_falloff_y, aniso_falloff_y, aniso_falloff_y)
     if not isinstance(aniso_falloff_x, Iterable):
-        aniso_falloff_x = (aniso_falloff_x,) * 3
+        aniso_falloff_x = (aniso_falloff_x, aniso_falloff_x, aniso_falloff_x)
     if not isinstance(isotropic_falloff, Iterable):
-        isotropic_falloff = (isotropic_falloff,) * 3
+        isotropic_falloff = (isotropic_falloff, isotropic_falloff, isotropic_falloff)
 
     settings = carb.settings.get_settings()
     settings.set("/rtx/post/lensFlares/enabled", enable)

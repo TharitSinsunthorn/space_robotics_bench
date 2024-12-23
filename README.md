@@ -22,6 +22,6 @@ The full documentation is available in its raw form inside the [docs](docs) dire
 
 This project is dual-licensed under either the [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE) licenses.
 
-All assets created by contributors of this repository and those generated from the included procedural pipelines are licensed under the [CC0 1.0 Universal](https://github.com/AndrejOrsula/srb_assets/blob/main/LICENSE-CC0) license. Some assets are based on modified third-party resources, which might require you to give appropriate credit to the original author. Please review [`srb_assets` repository](https://github.com/AndrejOrsula/srb_assets) for more information.
+All assets created by contributors of this repository and those generated from [SimForge](https://github.com/AndrejOrsula/simforge) procedural pipelines are licensed under the [CC0 1.0 Universal](https://github.com/AndrejOrsula/srb_assets/blob/main/LICENSE-CC0) license. Resources from third-party sources are listed under [attributions](https://andrejorsula.github.io/space_robotics_bench/misc/attributions.html).
 
 [![CC0 1.0 Universal](https://licensebuttons.net/l/zero/1.0/88x31.png)](https://creativecommons.org/publicdomain/zero/1.0)

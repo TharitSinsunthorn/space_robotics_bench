@@ -1,19 +1,15 @@
 import math
-from typing import Iterable, Tuple
+from typing import Tuple
 
 import torch
 from omni.isaac.lab.utils.math import *  # noqa: F403
 from omni.isaac.lab.utils.math import matrix_from_quat, quat_apply, quat_inv, quat_mul
 
 
-def quat_from_rpy(
-    *args: Iterable[float], deg: bool = True
-) -> Tuple[float, float, float, float]:
+def quat_from_rpy(*rpy: float, deg: bool = True) -> Tuple[float, float, float, float]:
     """
     Returns wxyz quaternion from roll-pitch-yaw angles.
     """
-
-    rpy = args[0] if len(args) == 1 else args
 
     roll, pitch, yaw = (r * (math.pi / 180.0) for r in rpy) if deg else rpy
     cy = math.cos(yaw / 2.0)

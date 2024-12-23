@@ -1,17 +1,16 @@
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Iterable, List, Tuple
 
 import numpy as np
 import torch
+from oxidasim.sampling import *  # noqa: F403
 from pxr import Gf
-
-from space_robotics_bench._rs.utils.sampling import *  # noqa: F403
 
 
 def compute_grid_spacing(
     num_instances: int,
     spacing: float,
-    global_pos_offset: Optional[Union[np.ndarray, torch.Tensor, Iterable]] = None,
-    global_rot_offset: Optional[Union[np.ndarray, torch.Tensor, Iterable]] = None,
+    global_pos_offset: np.ndarray | torch.Tensor | Iterable | None = None,
+    global_rot_offset: np.ndarray | torch.Tensor | Iterable | None = None,
 ) -> Tuple[Tuple[int, int], Tuple[List[float], List[float]]]:
     if global_pos_offset is not None:
         if isinstance(global_pos_offset, torch.Tensor):
@@ -35,20 +34,19 @@ def compute_grid_spacing(
     orientations = []
 
     for i in range(num_instances):
-        # Compute transform
         row = i // num_cols
         col = i % num_cols
         x = row_offset - row * spacing
         y = col * spacing - col_offset
 
         position = [x, y, 0]
-        orientation = Gf.Quatd.GetIdentity()
-
         if global_pos_offset is not None:
             translation = global_pos_offset + position
         else:
             translation = position
+        positions.append(translation)
 
+        orientation: Gf.Quatd = Gf.Quatd.GetIdentity()  # type: ignore
         if global_rot_offset is not None:
             orientation = (
                 Gf.Quatd(
@@ -57,15 +55,13 @@ def compute_grid_spacing(
                 )
                 * orientation
             )
-
-        orientation = [
-            orientation.GetReal(),
-            orientation.GetImaginary()[0],
-            orientation.GetImaginary()[1],
-            orientation.GetImaginary()[2],
-        ]
-
-        positions.append(translation)
-        orientations.append(orientation)
+        orientations.append(
+            [
+                orientation.GetReal(),
+                orientation.GetImaginary()[0],
+                orientation.GetImaginary()[1],
+                orientation.GetImaginary()[2],
+            ]
+        )
 
     return ((num_rows, num_cols), (positions, orientations))

@@ -1,5 +1,7 @@
 from os import path
 
+# TODO: Convert everything into pathlib.Path objects
+
 # Path to repository root directory
 SRB_DIR = path.dirname(path.dirname(path.realpath(__file__)))
 

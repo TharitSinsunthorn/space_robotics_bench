@@ -5,7 +5,7 @@ from omni.isaac.lab.scene import InteractiveScene
 from omni.isaac.lab.sensors import Camera
 
 from space_robotics_bench.utils import image_proc
-from space_robotics_bench.utils import string as string_utils
+from space_robotics_bench.utils import str as string_utils
 
 from .cfg import VisualAerialRoboticsEnvExtCfg
 
@@ -25,7 +25,7 @@ class VisualAerialRoboticsEnvExt:
                 Tuple[float, float],  # Depth range
             ],
         ] = {
-            f"image_{string_utils.sanitize_camera_name(key)}": (
+            f"image_{string_utils.sanitize_cam_name(key)}": (
                 sensor,
                 getattr(cfg.scene, key).spawn.clipping_range,
             )

@@ -1,34 +1,27 @@
 from os import environ
 
-from .utils.importer import import_modules_recursively
-from .utils.sim_app import is_sim_app_started
-from .utils.traceback import try_enable_rich_traceback
+from .utils import (
+    enable_rich_traceback,
+    get_srb_tasks,
+    import_modules_recursively,
+    is_isaacsim_initialized,
+    logging,
+)
 
-## Try enabling rich traceback
-try_enable_rich_traceback()
-
-## Verify the availability of the Rust extension module
-try:
-    from . import _rs  # noqa: F401
-except Exception:
-    raise ModuleNotFoundError(from space_robotics_bench._rs.utils.sampling import *  # noqa: F403
-        "Failed to import Python submodule 'space_robotics_bench._rs' that contains the Rust "
-        "extension module. Please ensure that the package has been installed correctly."
-    )
+## Enable rich traceback
+enable_rich_traceback()
 
 ## If the simulation app is started, register all tasks by recursively importing
 ## the "{__name__}.tasks" submodule
 if environ.get("SRB_SKIP_REGISTRATION", "false").lower() in ["true", "1"]:
-    print(
-        f"INFO: [SRB_SKIP_REGISTRATION={environ.get('SRB_SKIP_REGISTRATION')}] Skipping "
-        "the registration of the Space Robotics Bench tasks."
+    logging.info(
+        "Skipping the registration of the Space Robotics Bench tasks "
+        f"(SRB_SKIP_REGISTRATION={environ.get('SRB_SKIP_REGISTRATION')})"
     )
-elif is_sim_app_started():
-    import_modules_recursively(
-        module_name=f"{__name__}.tasks",
-        ignorelist=[
-            "common",
-        ],
+elif is_isaacsim_initialized():
+    import_modules_recursively(module_name=f"{__name__}.tasks")
+    logging.info(
+        f"Registered '{len(get_srb_tasks())}' Gymnasium tasks of the Space Robotics Bench"
     )
 else:
     raise RuntimeError(

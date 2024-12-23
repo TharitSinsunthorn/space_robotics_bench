@@ -15,129 +15,36 @@ concurrency:
   group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
   cancel-in-progress: true
 
-env:
-  CARGO_TERM_COLOR: always
-  PYTHON_VERSION: "3.10"
-
 jobs:
-  pytest:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
-        with:
-          save-if: ${{ github.event_name == 'push'}}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: pip install
-        run: pip install .[tests]
-      - name: pytest
-        run: pytest
-
-  wheels_sdist:
-    if: ${{ github.event_name == 'release' }}
-    needs: pytest
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build sdist
-        uses: PyO3/maturin-action@v1
-        with:
-          command: sdist
-          args: --out dist
-      - name: Upload sdist
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-sdist
-          path: dist
-
-  wheels_linux:
-    if: ${{ github.event_name == 'release' }}
-    needs: pytest
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      matrix:
-        platform:
-          - runner: ubuntu-latest
-            target: x86_64
-          - runner: ubuntu-latest
-            target: x86
-          - runner: ubuntu-latest
-            target: aarch64
-          - runner: ubuntu-latest
-            target: armv7
-          - runner: ubuntu-latest
-            target: s390x
-          - runner: ubuntu-latest
-            target: ppc64le
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: Build wheels
-        uses: PyO3/maturin-action@v1
-        with:
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist
-          sccache: "true"
-          manylinux: auto
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-linux-${{ matrix.platform.target }}
-          path: dist
-
-  wheels_musllinux:
-    if: ${{ github.event_name == 'release' }}
-    needs: pytest
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      matrix:
-        platform:
-          - runner: ubuntu-latest
-            target: x86_64
-          - runner: ubuntu-latest
-            target: x86
-          - runner: ubuntu-latest
-            target: aarch64
-          - runner: ubuntu-latest
-            target: armv7
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: Build wheels
-        uses: PyO3/maturin-action@v1
-        with:
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist
-          sccache: "true"
-          manylinux: musllinux_1_2
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-musllinux-${{ matrix.platform.target }}
-          path: dist
-
-  pypi_release:
-    permissions:
-      contents: read
-    if: ${{ github.event_name == 'release' }}
-    needs:
-      - wheels_sdist
-      - wheels_linux
-      - wheels_musllinux
+  python:
     runs-on: ubuntu-latest
     env:
-      MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+      UV_PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
     steps:
-      - uses: actions/download-artifact@v4
-      - name: Publish to PyPI
-        if: ${{ env.MATURIN_PYPI_TOKEN != '' }}
-        uses: PyO3/maturin-action@v1
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          command: upload
-          args: --non-interactive --skip-existing wheels-*/*
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+      - name: Set up coverage
+        run: uv add pytest-cov
+      - name: Install the project
+        run: uv sync --all-extras
+      - name: Run tests
+        run: uv run pytest tests
+      - name: Generate coverage
+        run: uv run pytest --cov=./ --cov-report=xml
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: false
+      - name: Publish
+        if: ${{ github.event_name == 'release' && env.UV_PYPI_TOKEN != '' }}
+        run: uv publish -t ${{ env.UV_PYPI_TOKEN }}

@@ -15,7 +15,6 @@ publish.workspace = true
 
 [dependencies]
 display_json = { workspace = true, optional = true }
-fast_poisson = { workspace = true }
 figment = { workspace = true }
 paste = { workspace = true }
 pyo3 = { workspace = true }

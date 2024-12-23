@@ -2,6 +2,7 @@ from importlib.util import find_spec
 from os import environ
 
 import omni.ext
+import omni.kit.app
 
 
 def enable_ros2_bridge():
@@ -12,7 +13,7 @@ def enable_ros2_bridge():
     ld_library_path = environ.get("LD_LIBRARY_PATH", None)
     ld_library_path = f":{ld_library_path}" if ld_library_path else ""
     environ["LD_LIBRARY_PATH"] = (
-        f"{omni.kit.paths.get_omni_path()}/exts/omni.isaac.ros2_bridge/humble/lib{ld_library_path}"
+        f"{omni.kit.paths.get_omni_path()}/exts/omni.isaac.ros2_bridge/humble/lib{ld_library_path}"  # type: ignore
     )
 
     # Get the extension manager and list of available extensions

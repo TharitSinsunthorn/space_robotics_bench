@@ -1,17 +1,16 @@
 [build-system]
-requires = ["maturin>=1.7,<2"]
-build-backend = "maturin"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.maturin]
-features = ["pyo3/extension-module"]
-module-name = "space_robotics_bench._rs"
-manifest-path = "crates/space_robotics_bench_py/Cargo.toml"
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.pytest.ini_options]
 env = ["SRB_SKIP_REGISTRATION=true"]
 
 [project]
 name = "space_robotics_bench"
+version = "0.0.1"
 description = "Comprehensive benchmark for space robotics"
 authors = [{ name = "Andrej Orsula", email = "orsula.andrej@gmail.com" }]
 maintainers = [{ name = "Andrej Orsula", email = "orsula.andrej@gmail.com" }]
@@ -26,9 +25,16 @@ classifiers = [
 keywords = ["benchmark", "robotics", "simulation", "space"]
 readme = "README.md"
 license = { text = "MIT OR Apache-2.0" }
-requires-python = ">=3.10"
-dynamic = ["version"]
-dependencies = ["platformdirs>=4.2,<5", "pydantic>=2.7,<3"]
+requires-python = "==3.10.*"
+dependencies = [
+  ## Assets
+  "simforge~=0.1",
+  "simforge_foundry~=0.1",
+  ## Simulation
+  "oxidasim~=0.1",
+  ## Typing
+  "pydantic~=2.0",
+]
 
 [project.optional-dependencies]
 all = [
@@ -39,8 +45,9 @@ all = [
   ## Hardware
   "space_robotics_bench[spacemouse]",
   ## Utils
-  "space_robotics_bench[rich]",
+  "space_robotics_bench[tables]",
   "space_robotics_bench[tests]",
+  "space_robotics_bench[traceback]",
 ]
 ## Algorithms
 dreamerv3 = [
@@ -49,9 +56,13 @@ dreamerv3 = [
 robomimic = [
   "robomimic@git+https://github.com/ARISE-Initiative/robomimic.git@29d6ca229dec3327f87b54cf1688a94177f92af6",
 ]
-sb3 = ["stable-baselines3>=2.3,<3", "sb3-contrib>=2.3,<3"]
+sb3 = ["stable-baselines3~=2.3", "sb3-contrib~=2.3"]
 ## Hardware
-spacemouse = ["pyspacemouse>=1.1,<2"]
+spacemouse = ["pyspacemouse~=1.1"]
 ## Utils
-rich = ["rich>=13.9,<14"]
-tests = ["pytest>=8.2,<9", "pytest-env>=1.1,<2"]
+tables = ["prettytable~=3.0"]
+tests = ["pytest~=8.0"]
+traceback = ["rich~=13.0"]
+
+# [project.scripts]
+# srb = "space_robotics_bench:__main__"

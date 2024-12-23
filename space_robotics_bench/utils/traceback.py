@@ -1,20 +1,24 @@
-from importlib.util import find_spec
 from os import environ
 
 
-def try_enable_rich_traceback():
-    if environ.get("SRB_WITH_TRACEBACK", "false").lower() not in ["true", "1"]:
+def enable_rich_traceback():
+    try:
+        from rich import traceback
+    except ImportError:
         return
 
-    if find_spec("rich") is None:
+    if environ.get("SRB_WITH_TRACEBACK", "true").lower() not in ("true", "1"):
         return
 
-    from rich import traceback  # isort:skip
     import numpy
+    import torch
 
     traceback.install(
         width=120,
         show_locals=environ.get("SRB_WITH_TRACEBACK_LOCALS", "false").lower()
-        in ["true", "1"],
-        suppress=(numpy,),
+        in ("true", "1"),
+        suppress=(numpy, torch),
     )
+
+    # Disable traceback of SimForge
+    environ["SF_WITH_TRACEBACK"] = "false"

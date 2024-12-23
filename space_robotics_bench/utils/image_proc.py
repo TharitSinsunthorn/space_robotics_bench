@@ -1,10 +1,10 @@
-from typing import Dict, Tuple
+from typing import Mapping, Tuple
 
 import torch
 from omni.isaac.lab.sensors import Camera
 
 
-def extract_images(camera: Camera) -> Dict[str, torch.Tensor]:
+def extract_images(camera: Camera) -> Mapping[str, torch.Tensor]:
     output = camera.data.output
     return {
         "rgb": output["rgb"],
@@ -40,7 +40,7 @@ def construct_observation(
     depth: torch.Tensor,
     depth_range: Tuple[float, float],
     image_name: str,
-) -> Dict[str, torch.Tensor]:
+) -> Mapping[str, torch.Tensor]:
     return {
         f"{image_name}_rgb": process_rgb(rgb, depth.dtype),
         f"{image_name}_depth": process_depth(depth, depth_range),

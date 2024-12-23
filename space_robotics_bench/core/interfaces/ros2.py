@@ -36,7 +36,7 @@ from space_robotics_bench.envs import (
     BaseManipulationEnv,
     BaseMobileRoboticsEnv,
 )
-from space_robotics_bench.utils.string import canonicalize_str
+from space_robotics_bench.utils.str import convert_to_snake_case
 
 
 class ROS2:
@@ -219,7 +219,7 @@ class ROS2:
                     )
 
                 cb = cb_single if env_id else cb_all
-                cb_name = f"cb_{canonicalize_str(cb_name)}{env_id or ''}"
+                cb_name = f"cb_{convert_to_snake_case(cb_name)}{env_id or ''}"
                 setattr(self, cb_name, cb.__get__(self, self.__class__))
                 return getattr(self, cb_name)
 
@@ -233,7 +233,7 @@ class ROS2:
                     self._actions[:, 6] = -1.0 if msg.data else 1.0
 
                 cb = cb_single if env_id else cb_all
-                cb_name = f"cb_{canonicalize_str(cb_name)}{env_id or ''}"
+                cb_name = f"cb_{convert_to_snake_case(cb_name)}{env_id or ''}"
                 setattr(self, cb_name, cb.__get__(self, self.__class__))
                 return getattr(self, cb_name)
 
@@ -302,7 +302,7 @@ class ROS2:
                     )
 
                 cb = cb_single if env_id else cb_all
-                cb_name = f"cb_{canonicalize_str(cb_name)}{env_id or ''}"
+                cb_name = f"cb_{convert_to_snake_case(cb_name)}{env_id or ''}"
                 setattr(self, cb_name, cb.__get__(self, self.__class__))
                 return getattr(self, cb_name)
 
@@ -344,7 +344,7 @@ class ROS2:
                     self._actions[:] = np.array([msg.linear.x, msg.angular.z])
 
                 cb = cb_single if env_id else cb_all
-                cb_name = f"cb_{canonicalize_str(cb_name)}{env_id or ''}"
+                cb_name = f"cb_{convert_to_snake_case(cb_name)}{env_id or ''}"
                 setattr(self, cb_name, cb.__get__(self, self.__class__))
                 return getattr(self, cb_name)
 

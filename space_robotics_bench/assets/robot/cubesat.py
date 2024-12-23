@@ -1,7 +1,6 @@
-from os import path
-
-from omni.isaac.lab.assets.articulation import ArticulationCfg
 from omni.isaac.lab.assets.rigid_object import RigidObjectCfg
+from simforge.isaaclab import SimforgeAssetCfg
+from simforge_foundry.models import Cubesat
 
 import space_robotics_bench.core.assets as asset_utils
 import space_robotics_bench.core.sim as sim_utils
@@ -9,9 +8,6 @@ from space_robotics_bench.core.actions import (
     SpacecraftActionCfg,
     SpacecraftActionGroupCfg,
 )
-from space_robotics_bench.paths import SRB_ASSETS_DIR
-from simforge.isaaclab import SimforgeAssetCfg
-from simforge_foundry.models import Cubesat
 
 
 def cubesat_cfg(

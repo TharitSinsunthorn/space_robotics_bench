@@ -1,5 +1,5 @@
 import os
-from typing import Dict
+from typing import Mapping
 
 SUPPORTED_FRAMEWORKS = {
     "dreamerv3": {"multi_algo": False},
@@ -16,7 +16,7 @@ FRAMEWORK_CFG_ENTRYPOINT_KEY = "{FRAMEWORK}_cfg"
 FRAMEWORK_MULTI_ALGO_CFG_ENTRYPOINT_KEY = "{FRAMEWORK}_{ALGO}_cfg"
 
 
-def parse_algo_configs(cfg_dir: str) -> Dict[str, str]:
+def parse_algo_configs(cfg_dir: str) -> Mapping[str, str]:
     algo_config = {}
 
     for root, _, files in os.walk(cfg_dir):
@@ -32,7 +32,7 @@ def parse_algo_configs(cfg_dir: str) -> Dict[str, str]:
     return algo_config
 
 
-def _identify_config(root: str, file) -> str:
+def _identify_config(root: str, file) -> str | None:
     basename = os.path.basename(file).split(".")[0]
 
     for framework, properties in SUPPORTED_FRAMEWORKS.items():

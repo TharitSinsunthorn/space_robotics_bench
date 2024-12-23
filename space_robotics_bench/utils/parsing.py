@@ -10,6 +10,9 @@ from omni.isaac.lab.utils import update_class_from_dict, update_dict
 
 from space_robotics_bench.core.envs import BaseEnvCfg
 
+# TODO: Try to replace with upstream implementation
+# TODO: Merge with utils.cfg
+
 
 def load_cfg_from_registry(
     task_name: str, entry_point_key: str, unpack_callable: bool = True
