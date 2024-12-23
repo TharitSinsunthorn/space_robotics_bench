@@ -1,5 +1,5 @@
 import functools
-from typing import Literal, Union
+from typing import Literal
 
 import dreamerv3
 import embodied
@@ -44,7 +44,7 @@ def process_dreamerv3_cfg(
 class EmbodiedEnvWrapper(embodied.Env):
     def __init__(
         self,
-        env: Union[BaseEnv, BaseEnvManaged],
+        env: BaseEnv | BaseEnvManaged,
         obs_key="image",
         act_key="action",
     ):
@@ -95,7 +95,7 @@ class EmbodiedEnvWrapper(embodied.Env):
         return cls.__name__
 
     @property
-    def unwrapped(self) -> Union[BaseEnv, BaseEnvManaged]:
+    def unwrapped(self) -> BaseEnv | BaseEnvManaged:
         return self.env.unwrapped
 
     def get_episode_rewards(self) -> list[float]:

@@ -1,5 +1,5 @@
 from os import path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
 
@@ -16,8 +16,8 @@ def sky_from_env_cfg(
     prim_path: str = "/World/sky",
     spawn_kwargs: Dict[str, Any] = {},
     **kwargs,
-) -> Optional[AssetBaseCfg]:
-    texture_file: Optional[str] = None
+) -> AssetBaseCfg | None:
+    texture_file = None
 
     # Enable rendering effects
     rtx_settings.auto_exposure()
@@ -46,9 +46,7 @@ def sky_from_env_cfg(
 
     match env_cfg.scenario:
         case env_utils.Scenario.EARTH:
-            texture_file = (
-                f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr",
-            )
+            texture_file = f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr"
         case env_utils.Scenario.MARS:
             rtx_settings.simple_fog(
                 color=(0.8, 0.4, 0.2),

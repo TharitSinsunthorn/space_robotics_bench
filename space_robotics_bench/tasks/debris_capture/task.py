@@ -1,5 +1,5 @@
 import sys
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 import torch
 from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
@@ -45,7 +45,7 @@ class TaskCfg(BaseManipulationEnvCfg):
     @configclass
     class EventCfg(BaseManipulationEnvEventCfg):
         ## Object
-        reset_rand_object_state: Optional[EventTermCfg] = None
+        reset_rand_object_state: EventTermCfg | None = None
 
     events = EventCfg()
 

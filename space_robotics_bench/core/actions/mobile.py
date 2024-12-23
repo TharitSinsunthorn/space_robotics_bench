@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import MISSING
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import torch
 from omni.isaac.lab.managers import ActionTerm, ActionTermCfg
@@ -231,7 +231,7 @@ class WheeledRoverActionCfg(ActionTermCfg):
     drive_joint_names: List[str] = MISSING
 
     wheelbase: Tuple[float, float] = MISSING
-    wheelbase_mid: Optional[float] = None
+    wheelbase_mid: float | None = None
 
     wheel_radius: float = MISSING
 

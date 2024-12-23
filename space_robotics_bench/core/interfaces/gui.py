@@ -1,6 +1,5 @@
 import threading
 from queue import Queue
-from typing import Optional, Union
 
 import numpy as np
 import rclpy
@@ -19,13 +18,11 @@ from space_robotics_bench.envs import (
 class GuiInterface:
     def __init__(
         self,
-        env: Union[
-            BaseEnv,
-            BaseAerialRoboticsEnv,
-            BaseManipulationEnv,
-            BaseMobileRoboticsEnv,
-        ],
-        node: Optional[object] = None,
+        env: BaseEnv
+        | BaseAerialRoboticsEnv
+        | BaseManipulationEnv
+        | BaseMobileRoboticsEnv,
+        node: None | None = None,
     ):
         self._env = env
 

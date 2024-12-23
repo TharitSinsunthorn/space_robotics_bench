@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import MISSING
-from typing import Dict, Union
+from typing import Dict
 
 import torch
 from omni.isaac.lab.managers import ActionTerm, ActionTermCfg
@@ -109,7 +109,7 @@ class MultiCopterActionCfg(ActionTermCfg):
     frame_base: str = MISSING
     regex_joints_rotors: str = MISSING
 
-    nominal_rpm: Union[float, Dict["str", float]] = 1000.0
+    nominal_rpm: float | Dict["str", float] = 1000.0
     tilt_magnitude: float = 1.0
     controller_damping: float = 0.98
 

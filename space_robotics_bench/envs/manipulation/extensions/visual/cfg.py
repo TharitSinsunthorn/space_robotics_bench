@@ -1,5 +1,5 @@
 from dataclasses import MISSING
-from typing import Optional, Tuple
+from typing import Tuple
 
 from omni.isaac.lab.envs import ViewerCfg
 from omni.isaac.lab.scene import InteractiveSceneCfg
@@ -18,7 +18,7 @@ class VisualManipulationEnvExtCfg:
     scene: InteractiveSceneCfg = MISSING
     viewer: ViewerCfg = MISSING
     robot_cfg: asset_utils.ManipulatorCfg = MISSING
-    vehicle_cfg: Optional[asset_utils.VehicleCfg] = None
+    vehicle_cfg: asset_utils.VehicleCfg | None = None
 
     ## Enabling flags
     enable_camera_scene: bool = False

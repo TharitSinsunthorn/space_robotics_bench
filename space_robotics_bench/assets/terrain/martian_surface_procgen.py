@@ -1,5 +1,5 @@
 from os import path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from omni.isaac.lab.utils import configclass
 

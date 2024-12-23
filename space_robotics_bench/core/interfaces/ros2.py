@@ -2,28 +2,11 @@ import json
 import threading
 from collections.abc import Callable
 from queue import Queue
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Tuple
 
 import numpy as np
 import rclpy
 import torch
-from builtin_interfaces.msg import Time
-from geometry_msgs.msg import (
-    Quaternion,
-    Transform,
-    TransformStamped,
-    Twist,
-    Vector3,
-    Wrench,
-)
-from rclpy.node import Node
-from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
-from sensor_msgs.msg import Image, JointState
-from std_msgs.msg import Bool
-from std_msgs.msg import Empty as EmptyMsg
-from std_msgs.msg import Float32, Header, String
-from std_srvs.srv import Empty as EmptySrv
-from tf2_ros import TransformBroadcaster
 
 from space_robotics_bench.core.actions import (
     ManipulatorTaskSpaceActionCfg,
@@ -36,7 +19,32 @@ from space_robotics_bench.envs import (
     BaseManipulationEnv,
     BaseMobileRoboticsEnv,
 )
+from space_robotics_bench.utils.ros import enable_ros2_bridge
 from space_robotics_bench.utils.str import convert_to_snake_case
+
+enable_ros2_bridge()
+from builtin_interfaces.msg import Time  # noqa: E402
+from geometry_msgs.msg import (  # noqa: E402
+    Quaternion,
+    Transform,
+    TransformStamped,
+    Twist,
+    Vector3,
+    Wrench,
+)
+from rclpy.node import Node  # noqa: E402
+from rclpy.qos import (  # noqa: E402
+    DurabilityPolicy,
+    HistoryPolicy,
+    QoSProfile,
+    ReliabilityPolicy,
+)
+from sensor_msgs.msg import Image, JointState  # noqa: E402
+from std_msgs.msg import Bool  # noqa: E402
+from std_msgs.msg import Empty as EmptyMsg  # noqa: E402
+from std_msgs.msg import Float32, Header, String  # noqa: E402
+from std_srvs.srv import Empty as EmptySrv  # noqa: E402
+from tf2_ros import TransformBroadcaster  # noqa: E402
 
 
 class ROS2:
@@ -55,13 +63,11 @@ class ROS2:
 
     def __init__(
         self,
-        env: Union[
-            BaseEnv,
-            BaseAerialRoboticsEnv,
-            BaseManipulationEnv,
-            BaseMobileRoboticsEnv,
-        ],
-        node: Optional[object] = None,
+        env: BaseEnv
+        | BaseAerialRoboticsEnv
+        | BaseManipulationEnv
+        | BaseMobileRoboticsEnv,
+        node: Node | None = None,
         force_multienv: bool = True,
     ):
         self._env = env
@@ -70,7 +76,7 @@ class ROS2:
         ## Initialize node
         if node is None:
             rclpy.init(args=None)
-            self._node = Node("srb")
+            self._node = Node("srb")  # type: ignore
         else:
             self._node = node
 
@@ -192,7 +198,7 @@ class ROS2:
         if isinstance(self._env.unwrapped.cfg.actions, ManipulatorTaskSpaceActionCfg):
 
             def _create_actions_cb_cmd_vel(
-                cb_name: str, env_id: Optional[int] = None
+                cb_name: str, env_id: int | None = None
             ) -> Callable:
                 def cb_single(self, msg: Twist):
                     self._actions[env_id, :6] = np.array(
@@ -224,7 +230,7 @@ class ROS2:
                 return getattr(self, cb_name)
 
             def _create_actions_cb_gripper(
-                cb_name: str, env_id: Optional[int] = None
+                cb_name: str, env_id: int | None = None
             ) -> Callable:
                 def cb_single(self, msg: Bool):
                     self._actions[env_id, 6] = -1.0 if msg.data else 1.0
@@ -289,7 +295,7 @@ class ROS2:
         elif isinstance(self._env.unwrapped.cfg.actions, MultiCopterActionGroupCfg):
 
             def _create_actions_cb_cmd_vel(
-                cb_name: str, env_id: Optional[int] = None
+                cb_name: str, env_id: int | None = None
             ) -> Callable:
                 def cb_single(self, msg: Twist):
                     self._actions[env_id] = np.array(
@@ -335,7 +341,7 @@ class ROS2:
         elif isinstance(self._env.unwrapped.cfg.actions, WheeledRoverActionGroupCfg):
 
             def _create_actions_cb_cmd_vel(
-                cb_name: str, env_id: Optional[int] = None
+                cb_name: str, env_id: int | None = None
             ) -> Callable:
                 def cb_single(self, msg: Twist):
                     self._actions[env_id] = np.array([msg.linear.x, msg.angular.z])
@@ -374,7 +380,7 @@ class ROS2:
                     qos_profile,
                 )
 
-    def _setup_observation(self, observation: Optional[Dict[str, torch.Tensor]] = None):
+    def _setup_observation(self, observation: Dict[str, torch.Tensor] | None = None):
         if observation is None:
             self._pub_observation = {}
             return

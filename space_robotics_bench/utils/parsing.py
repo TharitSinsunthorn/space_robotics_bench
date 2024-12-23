@@ -2,7 +2,7 @@ import datetime
 import importlib
 import inspect
 import os
-from typing import Any, Dict, Union
+from typing import Any, Dict
 
 import gymnasium as gym
 import yaml
@@ -16,10 +16,7 @@ from space_robotics_bench.core.envs import BaseEnvCfg
 
 def load_cfg_from_registry(
     task_name: str, entry_point_key: str, unpack_callable: bool = True
-) -> Union[
-    BaseEnvCfg,
-    Dict[str, Any],
-]:
+) -> BaseEnvCfg | Dict[str, Any]:
     """Load default configuration given its entry point from the gym registry.
 
     This function loads the configuration object from the gym registry for the given task name.
@@ -100,10 +97,7 @@ def parse_task_cfg(
     device: str = "cuda:0",
     num_envs: int | None = None,
     use_fabric: bool | None = None,
-) -> Union[
-    BaseEnvCfg,
-    Dict[str, Any],
-]:
+) -> BaseEnvCfg | Dict[str, Any]:
     """Parse configuration for an environment and override based on inputs.
 
     Args:

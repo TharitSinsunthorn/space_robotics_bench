@@ -15,7 +15,7 @@ class Se3Keyboard(__Se3Keyboard):
     def _on_keyboard_event(self, event, *args, **kwargs) -> bool:
         ret = super()._on_keyboard_event(event, *args, **kwargs)
 
-        if event.type == carb.input.KeyboardEventType.KEY_PRESS:
+        if event.type == carb.input.KeyboardEventType.KEY_PRESS:  # type: ignore
             if event.input.name == "R":
                 self._close_gripper = not self._close_gripper
 

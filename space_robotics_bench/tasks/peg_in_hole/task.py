@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 import torch
 from omni.isaac.core.prims.xform_prim_view import XFormPrimView
@@ -43,7 +43,7 @@ class PegCfg(AssetCfg):
     rot_symmetry_n: NonNegativeInt = 1
 
     ## Randomization
-    state_randomizer: Optional[EventTermCfg] = None
+    state_randomizer: EventTermCfg | None = None
 
 
 class HoleCfg(AssetCfg):
@@ -125,7 +125,7 @@ class TaskCfg(BaseManipulationEnvCfg):
     @configclass
     class EventCfg(BaseManipulationEnvEventCfg):
         ## Object
-        reset_rand_object_state: Optional[EventTermCfg] = None
+        reset_rand_object_state: EventTermCfg | None = None
 
     events = EventCfg()
 

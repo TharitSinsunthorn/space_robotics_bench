@@ -2,6 +2,7 @@ use std::io::{Read, Write};
 
 use eframe::epaint::Color32;
 use egui_commonmark::{commonmark_str, CommonMarkCache};
+use itertools::*;
 use r2r::{
     std_msgs::msg::{Bool as BoolMsg, Empty as EmptyMsg, Float64 as Float64Msg},
     QosProfile,

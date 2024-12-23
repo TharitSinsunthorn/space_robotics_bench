@@ -18,37 +18,36 @@ name = "gui"
 path = "src/main.rs"
 
 [dependencies]
-space_robotics_bench = { workspace = true, features = ["json"] }
-
+# TODO: Update egui to 0.30
+chrono = { version = "0.4" }
+const_format = { version = "0.2", features = ["more_str_macros"] }
+display_json = { version = "0.2" }
 eframe = { version = "0.29", default-features = false, features = [
     "accesskit",
     "glow",
     "persistence",
 ] }
 egui = { version = "0.29", default-features = false }
-egui_extras = { version = "0.29", default-features = false, features = [
-    "all_loaders",
-    "syntect",
-] }
 egui_commonmark = { version = "0.18", default-features = false, features = [
     "better_syntax_highlighting",
     "macros",
     "pulldown_cmark",
 ] }
+egui_extras = { version = "0.29", default-features = false, features = [
+    "all_loaders",
+    "syntect",
+] }
+home = { version = "0.5" }
+image = { version = "0.25", default-features = false, features = [
+    "jpeg",
+    "png",
+] }
+itertools = { version = "0.13" }
+nix = { version = "0.29", features = ["signal"] }
 r2r = { version = "0.9" }
-
-display_json = { workspace = true }
-chrono = { workspace = true }
-const_format = { workspace = true }
-home = { workspace = true }
-image = { workspace = true }
-itertools = { workspace = true }
-nix = { workspace = true }
-paste = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-subprocess = { workspace = true }
-sysinfo = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-typed-builder = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+subprocess = { version = "0.2" }
+sysinfo = { version = "0.33" }
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3" }
+typed-builder = { version = "0.20" }

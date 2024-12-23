@@ -1,30 +1,29 @@
 import os
 import threading
 from collections.abc import Callable
-from typing import Optional
 
 import numpy as np
 
 from space_robotics_bench.core.teleop_devices import DeviceBase
 from space_robotics_bench.utils.ros import enable_ros2_bridge
 
+enable_ros2_bridge()
+import rclpy  # noqa: E402
+from geometry_msgs.msg import Twist, Vector3  # noqa: E402
+from rclpy.node import Node  # noqa: E402
+from std_msgs.msg import Bool, Float64  # noqa: E402
+
 
 class Se3Touch(DeviceBase):
     def __init__(
         self,
-        node: Optional[object] = None,
+        node: Node | None = None,
         pos_sensitivity: float = 1.0,
         rot_sensitivity: float = 1.0,
     ):
-        enable_ros2_bridge()
-        import rclpy
-        from geometry_msgs.msg import Twist, Vector3
-        from rclpy.node import Node
-        from std_msgs.msg import Bool, Float64
-
         if node is None:
             rclpy.init(args=None)
-            self._node = Node("se3_teleop_touch")
+            self._node = Node("se3_teleop_touch")  # type: ignore
         else:
             self._node = node
 

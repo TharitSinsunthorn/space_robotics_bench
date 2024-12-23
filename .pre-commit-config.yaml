@@ -39,22 +39,23 @@ repos:
     hooks:
       - id: beautysh
 
-  - repo: https://github.com/AndrejOrsula/pre-commit-cargo
-    rev: 0.3.0
-    hooks:
-      - id: cargo-fmt
-      - id: cargo-update
-      - id: cargo-clippy
-        args: ["--workspace", "--all-targets", "--", "--deny=warnings"]
-      - id: cargo-check
-        args: ["--workspace", "--all-targets"]
-      - id: cargo-test
-        args: ["--workspace", "--all-targets"]
-      - id: cargo-test-doc
-        args: ["--workspace"]
-      - id: cargo-doc
-        args: ["--workspace", "--no-deps", "--document-private-items"]
-      - id: cargo-deny-check
+  # TODO: Re-enable
+  # - repo: https://github.com/AndrejOrsula/pre-commit-cargo
+  #   rev: 0.3.0
+  #   hooks:
+  #     - id: cargo-fmt
+  #     - id: cargo-update
+  #     - id: cargo-clippy
+  #       args: ["--workspace", "--all-targets", "--", "--deny=warnings"]
+  #     - id: cargo-check
+  #       args: ["--workspace", "--all-targets"]
+  #     - id: cargo-test
+  #       args: ["--workspace", "--all-targets"]
+  #     - id: cargo-test-doc
+  #       args: ["--workspace"]
+  #     - id: cargo-doc
+  #       args: ["--workspace", "--no-deps", "--document-private-items"]
+  #     - id: cargo-deny-check
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.5.11

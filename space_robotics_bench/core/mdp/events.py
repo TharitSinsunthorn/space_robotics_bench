@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Dict, List, Tuple
 import torch
 from omni.isaac.core.prims.xform_prim_view import XFormPrimView
 from omni.isaac.lab.managers import SceneEntityCfg
-from pxr import Usd
 
 import space_robotics_bench.utils.math as math_utils
 import space_robotics_bench.utils.sampling as sampling_utils
@@ -18,7 +17,7 @@ def reset_xform_orientation_uniform(
     env_ids: torch.Tensor,
     orientation_distribution_params: Dict[str, Tuple[float, float]],
     asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
-) -> Usd.Prim:
+):
     asset: XFormPrimView = env.scene[asset_cfg.name]
 
     range_list = [
@@ -42,7 +41,7 @@ def follow_xform_orientation_linear_trajectory(
     env_ids: torch.Tensor,
     orientation_step_params: Dict[str, float],
     asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
-) -> Usd.Prim:
+):
     asset: XFormPrimView = env.scene[asset_cfg.name]
 
     _, current_quat = asset.get_world_poses()

@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any
 
 from space_robotics_bench.core.assets import (
     ArticulationCfg,
@@ -9,7 +9,7 @@ from space_robotics_bench.core.assets import (
 
 
 class RobotCfg(AssetCfg):
-    asset_cfg: Union[ArticulationCfg, RigidObjectCfg]
+    asset_cfg: ArticulationCfg | RigidObjectCfg
 
     ## Actions
     action_cfg: Any

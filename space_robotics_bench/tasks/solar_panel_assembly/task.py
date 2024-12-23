@@ -1,5 +1,5 @@
 import sys
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 import torch
 from omni.isaac.core.prims.xform_prim_view import XFormPrimView
@@ -38,7 +38,7 @@ class PanelCfg(AssetCfg):
     offset_pos: Tuple[float, float, float] = (0.0, 0.0, 0.15)
 
     ## Randomization
-    state_randomizer: Optional[EventTermCfg] = None
+    state_randomizer: EventTermCfg | None = None
 
 
 @configclass

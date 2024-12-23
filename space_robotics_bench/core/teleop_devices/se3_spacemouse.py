@@ -32,8 +32,8 @@ class Se3SpaceMouse(DeviceBase):
         # Open the device
         try:
             success = pyspacemouse.open(
-                dof_callback=self._cb_dof,
-                button_callback=self._cb_button,
+                dof_callback=self._cb_dof,  # type: ignore
+                button_callback=self._cb_button,  # type: ignore
             )
             if success:
                 # Run a background thread for the device

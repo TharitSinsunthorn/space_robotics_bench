@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 from space_robotics_bench.core.assets import (
     ArticulationCfg,
     AssetBaseCfg,
@@ -11,9 +9,9 @@ from space_robotics_bench.core.assets import (
 
 class VehicleCfg(AssetCfg):
     ## Model
-    asset_cfg: Union[AssetBaseCfg, ArticulationCfg, RigidObjectCfg]
+    asset_cfg: AssetBaseCfg | ArticulationCfg | RigidObjectCfg
 
     ## Frames
     frame_manipulator_base: FrameCfg
-    frame_camera_base: Optional[FrameCfg]
+    frame_camera_base: FrameCfg | None
     frame_cargo_bay: FrameCfg

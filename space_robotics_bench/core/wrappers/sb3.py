@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any
 
 import gymnasium as gym
 import numpy as np
@@ -109,7 +109,7 @@ class Sb3VecEnvWrapper(VecEnv):
 
     """
 
-    def __init__(self, env: Union[BaseEnv, BaseEnvManaged]):
+    def __init__(self, env: BaseEnv | BaseEnvManaged):
         """Initialize the wrapper.
 
         Args:
@@ -165,7 +165,7 @@ class Sb3VecEnvWrapper(VecEnv):
         return cls.__name__
 
     @property
-    def unwrapped(self) -> Union[BaseEnv, BaseEnvManaged]:
+    def unwrapped(self) -> BaseEnv | BaseEnvManaged:
         """Returns the base environment of the wrapper.
 
         This will be the bare :class:`gymnasium.Env` environment, underneath all layers of wrappers.

@@ -1,5 +1,5 @@
 from os import path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 import space_robotics_bench.core.envs as env_utils
 import space_robotics_bench.core.sim as sim_utils

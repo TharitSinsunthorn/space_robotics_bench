@@ -64,19 +64,16 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     )
 
     # ROS 2 node
-    try:
-        rclpy.init(args=None)
-    except Exception as _:
-        pass
-    ros_node = Node("srb")
+    rclpy.init(args=None)
+    ros_node = Node("srb")  # type: ignore
 
     ## Teleop interface
     teleop_interface = CombinedInterface(
         devices=args.teleop_device,
+        node=ros_node,
         pos_sensitivity=args.pos_sensitivity,
         rot_sensitivity=args.rot_sensitivity,
         action_cfg=env.unwrapped.cfg.actions,
-        node=ros_node,
     )
 
     def cb_reset():

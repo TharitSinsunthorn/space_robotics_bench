@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import List, Optional, Union
+from typing import List
 
 import numpy as np
 from omni.isaac.lab.devices import DeviceBase
@@ -19,29 +19,26 @@ from space_robotics_bench.core.teleop_devices import (
 )
 from space_robotics_bench.utils.ros import enable_ros2_bridge
 
+enable_ros2_bridge()
+import rclpy  # noqa: E402
+from rclpy.node import Node  # noqa: E402
+
 
 class CombinedInterface(DeviceBase):
     def __init__(
         self,
         devices: List[str],
+        node: Node | None = None,
         pos_sensitivity: float = 1.0,
         rot_sensitivity: float = 1.0,
-        action_cfg: Optional[
-            Union[
-                ManipulatorTaskSpaceActionCfg,
-                MultiCopterActionGroupCfg,
-                WheeledRoverActionGroupCfg,
-            ]
-        ] = None,
-        node: Optional[object] = None,
+        action_cfg: ManipulatorTaskSpaceActionCfg
+        | MultiCopterActionGroupCfg
+        | WheeledRoverActionGroupCfg
+        | None = None,
     ):
-        enable_ros2_bridge()
-        import rclpy
-        from rclpy.node import Node
-
         if node is None:
             rclpy.init(args=None)
-            self._node = Node("srb_teleop_combined")
+            self._node = Node("srb_teleop_combined")  # type: ignore
         else:
             self._node = node
 
@@ -159,11 +156,9 @@ class CombinedInterface(DeviceBase):
 
     @staticmethod
     def _keyboard_control_scheme(
-        action_cfg: Union[
-            ManipulatorTaskSpaceActionCfg,
-            MultiCopterActionGroupCfg,
-            WheeledRoverActionGroupCfg,
-        ],
+        action_cfg: ManipulatorTaskSpaceActionCfg
+        | MultiCopterActionGroupCfg
+        | WheeledRoverActionGroupCfg,
     ) -> str:
         if isinstance(action_cfg, ManipulatorTaskSpaceActionCfg):
             return """
