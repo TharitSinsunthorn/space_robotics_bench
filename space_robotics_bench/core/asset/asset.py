@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import cached_property
 from typing import ClassVar, Dict, Iterable, List, Mapping, Sequence, Tuple, Type
 
-from pydantic import BaseModel, InstanceOf
+from pydantic import BaseModel
 
 from space_robotics_bench.core.asset import AssetBaseCfg
 from space_robotics_bench.core.asset.asset_type import AssetType
@@ -11,8 +11,7 @@ from space_robotics_bench.utils import convert_to_snake_case
 
 
 class Asset(BaseModel):
-    ## Model
-    asset_cfg: InstanceOf[AssetBaseCfg]
+    asset_cfg: AssetBaseCfg
 
     @cached_property
     def name(self) -> str:

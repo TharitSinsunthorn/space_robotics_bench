@@ -7,7 +7,7 @@ from space_robotics_bench.core.asset.robot.manipulator.manipulator import Manipu
 from space_robotics_bench.core.asset.robot.manipulator.manipulator_type import (
     ManipulatorType,
 )
-from space_robotics_bench.core.asset.tf import FrameCfg
+from space_robotics_bench.core.asset.utils import Frame
 
 
 class SingleArmManipulator(
@@ -17,9 +17,9 @@ class SingleArmManipulator(
     action_cfg: ManipulatorTaskSpaceActionCfg
 
     ## Frames
-    frame_ee: FrameCfg
-    frame_camera_base: FrameCfg
-    frame_camera_wrist: FrameCfg
+    frame_ee: Frame
+    frame_camera_base: Frame
+    frame_camera_wrist: Frame
 
     ## Links
     regex_links_arm: str

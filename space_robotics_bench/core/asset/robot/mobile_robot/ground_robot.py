@@ -6,7 +6,7 @@ from space_robotics_bench.core.actions import (
     LocomotionJointSpaceActionCfg,
     WheeledRoverActionGroupCfg,
 )
-from space_robotics_bench.core.asset import FrameCfg
+from space_robotics_bench.core.asset import Frame
 from space_robotics_bench.core.asset.robot.mobile_robot.mobile_robot import MobileRobot
 from space_robotics_bench.core.asset.robot.mobile_robot.mobile_robot_type import (
     MobileRobotType,
@@ -24,7 +24,7 @@ class WheeledRobot(GroundRobot, mobile_robot_metaclass=True):
     action_cfg: WheeledRoverActionGroupCfg
 
     ## Frames
-    frame_camera_front: FrameCfg
+    frame_camera_front: Frame
 
     ## Joints
     regex_drive_joints: str

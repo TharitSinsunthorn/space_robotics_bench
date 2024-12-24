@@ -7,13 +7,13 @@ from space_robotics_bench.core.asset import ArticulationCfg, RigidObjectCfg
 from space_robotics_bench.core.asset.asset import Asset
 from space_robotics_bench.core.asset.asset_type import AssetType
 from space_robotics_bench.core.asset.robot.robot_type import RobotType
-from space_robotics_bench.core.asset.tf import FrameCfg
+from space_robotics_bench.core.asset.utils import Frame
 
 
 class Robot(Asset, asset_entrypoint=RobotType.ROBOT):
     asset_cfg: ArticulationCfg | RigidObjectCfg
     action_cfg: Any
-    frame_base: FrameCfg
+    frame_base: Frame
 
     def __init_subclass__(
         cls,
