@@ -7,7 +7,7 @@ from omni.isaac.lab.sensors import CameraCfg
 from omni.isaac.lab.sensors.camera.camera_cfg import PinholeCameraCfg
 from omni.isaac.lab.utils import configclass
 
-import space_robotics_bench.core.assets as asset_utils
+import space_robotics_bench.core.asset as asset_utils
 import space_robotics_bench.utils.math as math_utils
 
 

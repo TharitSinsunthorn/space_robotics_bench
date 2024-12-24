@@ -6,7 +6,7 @@ from omni.isaac.lab.managers import SceneEntityCfg
 
 import space_robotics_bench.utils.math as math_utils
 import space_robotics_bench.utils.sampling as sampling_utils
-from space_robotics_bench.core.assets import Articulation, RigidObject
+from space_robotics_bench.core.asset import Articulation, RigidObject
 
 if TYPE_CHECKING:
     from space_robotics_bench.core.envs import BaseEnv

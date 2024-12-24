@@ -6,7 +6,7 @@ import torch
 from omni.isaac.lab.managers import ActionTerm, ActionTermCfg
 from omni.isaac.lab.utils import configclass
 
-from space_robotics_bench.core.assets import Articulation
+from space_robotics_bench.core.asset import Articulation
 from space_robotics_bench.core.envs import BaseEnv
 
 

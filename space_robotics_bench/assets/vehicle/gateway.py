@@ -1,7 +1,7 @@
 from os import path
 from typing import Any, Dict
 
-import space_robotics_bench.core.assets as asset_utils
+import space_robotics_bench.core.asset as asset_utils
 import space_robotics_bench.core.sim as sim_utils
 import space_robotics_bench.utils.math as math_utils
 from space_robotics_bench.paths import SRB_ASSETS_DIR_SRB_VEHICLE

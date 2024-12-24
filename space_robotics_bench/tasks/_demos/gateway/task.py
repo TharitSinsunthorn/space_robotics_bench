@@ -7,7 +7,7 @@ from omni.isaac.lab.utils import configclass
 
 import space_robotics_bench.core.envs as env_utils
 from space_robotics_bench import assets
-from space_robotics_bench.core.assets import Articulation
+from space_robotics_bench.core.asset import Articulation
 from space_robotics_bench.core.envs import BaseEnv
 from space_robotics_bench.envs import BaseManipulationEnv, BaseManipulationEnvCfg
 

@@ -1,4 +1,4 @@
-import space_robotics_bench.core.assets as asset_utils
+import space_robotics_bench.core.asset as asset_utils
 import space_robotics_bench.core.envs as env_utils
 
 from .anymal import anymal_b_cfg, anymal_c_cfg, anymal_d_cfg  # noqa: F401

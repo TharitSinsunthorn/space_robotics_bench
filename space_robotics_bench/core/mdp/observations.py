@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import torch
 from omni.isaac.lab.managers import SceneEntityCfg
 
-from space_robotics_bench.core.assets import Articulation
+from space_robotics_bench.core.asset import Articulation
 
 if TYPE_CHECKING:
     from space_robotics_bench.core.envs import BaseEnv

@@ -5,7 +5,7 @@ from omni.isaac.lab.actuators import ImplicitActuatorCfg
 from omni.isaac.lab.assets.articulation import ArticulationCfg
 from torch import pi
 
-import space_robotics_bench.core.assets as asset_utils
+import space_robotics_bench.core.asset as asset_utils
 import space_robotics_bench.utils.math as math_utils
 from space_robotics_bench.core.actions import (
     MultiCopterActionCfg,

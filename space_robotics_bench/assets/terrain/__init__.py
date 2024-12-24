@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple
 
 import space_robotics_bench.core.envs as env_utils
 import space_robotics_bench.core.sim as sim_utils
-from space_robotics_bench.core.assets import AssetBaseCfg
+from space_robotics_bench.core.asset import AssetBaseCfg
 
 from .lunar_surface_procgen import LunarSurfaceCfg
 

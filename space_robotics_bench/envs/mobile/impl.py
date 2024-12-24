@@ -1,4 +1,4 @@
-from space_robotics_bench.core.assets import Articulation
+from space_robotics_bench.core.asset import Articulation
 from space_robotics_bench.core.envs import BaseEnv
 
 from .cfg import BaseMobileRoboticsEnvCfg

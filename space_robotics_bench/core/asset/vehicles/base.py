@@ -1,4 +1,4 @@
-from space_robotics_bench.core.assets import (
+from space_robotics_bench.core.asset import (
     ArticulationCfg,
     AssetBaseCfg,
     AssetCfg,

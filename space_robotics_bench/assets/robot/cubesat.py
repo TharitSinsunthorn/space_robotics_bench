@@ -2,7 +2,7 @@ from omni.isaac.lab.assets.rigid_object import RigidObjectCfg
 from simforge.isaaclab import SimforgeAssetCfg
 from simforge_foundry.models import Cubesat
 
-import space_robotics_bench.core.assets as asset_utils
+import space_robotics_bench.core.asset as asset_utils
 import space_robotics_bench.core.sim as sim_utils
 from space_robotics_bench.core.actions import (
     SpacecraftActionCfg,

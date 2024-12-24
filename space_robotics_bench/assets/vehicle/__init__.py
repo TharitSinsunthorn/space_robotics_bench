@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-import space_robotics_bench.core.assets as asset_utils
+import space_robotics_bench.core.asset as asset_utils
 import space_robotics_bench.core.envs as env_utils
 
 from .construction_rover import construction_rover_cfg

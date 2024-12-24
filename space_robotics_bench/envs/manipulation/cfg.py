@@ -175,7 +175,7 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
 
         ## Sensors
         self.scene.tf_robot_ee = FrameTransformerCfg(
-            prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.frame_base.prim_relpath}",
+            prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.base_frame.prim_relpath}",
             target_frames=[
                 FrameTransformerCfg.FrameCfg(
                     name="robot_ee",

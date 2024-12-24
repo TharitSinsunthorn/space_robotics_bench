@@ -5,7 +5,7 @@ from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
 
 import space_robotics_bench.core.envs as env_utils
 import space_robotics_bench.core.sim as sim_utils
-from space_robotics_bench.core.assets import AssetBaseCfg
+from space_robotics_bench.core.asset import AssetBaseCfg
 from space_robotics_bench.paths import SRB_ASSETS_DIR_SRB_HDRI
 from space_robotics_bench.utils import rtx_settings
 

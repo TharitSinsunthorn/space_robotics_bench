@@ -1,6 +1,6 @@
 from omni.isaac.lab_assets import ANYMAL_B_CFG, ANYMAL_C_CFG, ANYMAL_D_CFG
 
-import space_robotics_bench.core.assets as asset_utils
+import space_robotics_bench.core.asset as asset_utils
 from space_robotics_bench.core.actions import (
     JointPositionActionCfg,
     LocomotionJointSpaceActionCfg,

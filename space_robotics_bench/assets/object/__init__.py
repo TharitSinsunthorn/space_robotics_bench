@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple
 
 import space_robotics_bench.core.envs as env_utils
 import space_robotics_bench.core.sim as sim_utils
-from space_robotics_bench.core.assets import AssetBaseCfg, RigidObjectCfg
+from space_robotics_bench.core.asset import AssetBaseCfg, RigidObjectCfg
 from space_robotics_bench.paths import SRB_ASSETS_DIR
 from space_robotics_bench.utils import color as color_utils
 
