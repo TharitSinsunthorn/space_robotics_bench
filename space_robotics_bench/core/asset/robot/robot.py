@@ -6,8 +6,8 @@ from typing import Any, ClassVar, Dict, Iterable, List, Mapping, Sequence, Tuple
 from space_robotics_bench.core.asset import ArticulationCfg, RigidObjectCfg
 from space_robotics_bench.core.asset.asset import Asset
 from space_robotics_bench.core.asset.asset_type import AssetType
+from space_robotics_bench.core.asset.common import Frame
 from space_robotics_bench.core.asset.robot.robot_type import RobotType
-from space_robotics_bench.core.asset.utils import Frame
 
 
 class Robot(Asset, asset_entrypoint=RobotType.ROBOT):

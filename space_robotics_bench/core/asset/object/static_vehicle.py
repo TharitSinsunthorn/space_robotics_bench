@@ -1,6 +1,6 @@
 from space_robotics_bench.core.asset import AssetBaseCfg
+from space_robotics_bench.core.asset.common import Frame
 from space_robotics_bench.core.asset.object.object import Object
-from space_robotics_bench.core.asset.utils import Frame
 
 
 class StaticVehicle(Object, asset_metaclass=True):

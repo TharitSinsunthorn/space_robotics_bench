@@ -6,8 +6,14 @@ import torch
 from omni.isaac.lab.managers import ActionTerm, ActionTermCfg
 from omni.isaac.lab.utils import configclass
 
+from space_robotics_bench.core.actions import JointPositionActionCfg
 from space_robotics_bench.core.asset import Articulation
 from space_robotics_bench.core.envs import BaseEnv
+
+
+@configclass
+class LocomotionJointSpaceActionCfg:
+    joint_pos: JointPositionActionCfg = MISSING
 
 
 class WheeledRoverAction(ActionTerm):

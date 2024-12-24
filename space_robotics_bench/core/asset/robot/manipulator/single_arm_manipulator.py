@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import Sequence, Type
 
 from space_robotics_bench.core.actions import ManipulatorTaskSpaceActionCfg
+from space_robotics_bench.core.asset.common import Frame
 from space_robotics_bench.core.asset.robot.manipulator.manipulator import Manipulator
 from space_robotics_bench.core.asset.robot.manipulator.manipulator_type import (
     ManipulatorType,
 )
-from space_robotics_bench.core.asset.utils import Frame
 
 
 class SingleArmManipulator(

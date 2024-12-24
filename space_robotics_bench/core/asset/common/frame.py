@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from space_robotics_bench.core.asset.utils.transform import Transform
+from space_robotics_bench.core.asset.common.transform import Transform
 
 
 class Frame(BaseModel):
