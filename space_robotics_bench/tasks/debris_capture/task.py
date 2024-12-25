@@ -24,7 +24,7 @@ from space_robotics_bench.envs import (
 
 class DebrisCfg(AssetCfg):
     class Config:
-        arbitrary_types_allowed = True  # Due to EventTermCfg
+        arbitrary_types_allowed = True
 
     ## Model
     asset_cfg: RigidObjectCfg

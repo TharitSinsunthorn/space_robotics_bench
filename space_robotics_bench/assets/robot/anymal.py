@@ -27,7 +27,7 @@ def anymal_b_cfg(
                 use_default_offset=use_default_offset,
             )
         ),
-        frame_base=asset_utils.FrameCfg(
+        frame_base=asset_utils.Frame(
             prim_relpath="base",
         ),
     )
@@ -53,7 +53,7 @@ def anymal_c_cfg(
                 use_default_offset=use_default_offset,
             )
         ),
-        frame_base=asset_utils.FrameCfg(
+        frame_base=asset_utils.Frame(
             prim_relpath="base",
         ),
     )
@@ -79,7 +79,7 @@ def anymal_d_cfg(
                 use_default_offset=use_default_offset,
             )
         ),
-        frame_base=asset_utils.FrameCfg(
+        frame_base=asset_utils.Frame(
             prim_relpath="base",
         ),
     )

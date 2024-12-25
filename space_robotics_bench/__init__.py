@@ -19,7 +19,9 @@ if environ.get("SRB_SKIP_REGISTRATION", "false").lower() in ["true", "1"]:
         f"(SRB_SKIP_REGISTRATION={environ.get('SRB_SKIP_REGISTRATION')})"
     )
 elif is_isaacsim_initialized():
-    import_modules_recursively(module_name=f"{__name__}.tasks")
+    # TODO: Revert
+    import_modules_recursively(module_name=f"{__name__}.tasks._demos.cubesat")
+    # import_modules_recursively(module_name=f"{__name__}.tasks")
     logging.info(
         f"Registered '{len(get_srb_tasks())}' Gymnasium tasks of the Space Robotics Bench"
     )

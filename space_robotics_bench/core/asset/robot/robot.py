@@ -10,7 +10,7 @@ from space_robotics_bench.core.asset.common import Frame
 from space_robotics_bench.core.asset.robot.robot_type import RobotType
 
 
-class Robot(Asset, asset_entrypoint=RobotType.ROBOT):
+class Robot(Asset, asset_entrypoint=AssetType.ROBOT):
     asset_cfg: ArticulationCfg | RigidObjectCfg
     action_cfg: Any
     frame_base: Frame

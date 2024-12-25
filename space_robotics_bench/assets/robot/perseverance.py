@@ -106,10 +106,10 @@ def perseverance_cfg(
             )
         ),
         ## Frames
-        frame_base=asset_utils.FrameCfg(
+        frame_base=asset_utils.Frame(
             prim_relpath=frame_base,
         ),
-        frame_camera_front=asset_utils.FrameCfg(
+        frame_camera_front=asset_utils.Frame(
             prim_relpath=f"{frame_base}/camera_front",
             offset=asset_utils.TransformCfg(
                 # translation=(-0.3437, -0.8537, 1.9793),  # Left Navcam

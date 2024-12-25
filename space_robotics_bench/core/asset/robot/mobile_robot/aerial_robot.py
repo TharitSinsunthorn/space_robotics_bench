@@ -18,7 +18,7 @@ class AerialRobot(MobileRobot, mobile_robot_entrypoint=MobileRobotType.AERIAL):
 
 class MultiCopter(AerialRobot):
     class Config:
-        arbitrary_types_allowed = True  # Due to MultiCopterActionGroupCfg
+        arbitrary_types_allowed = True
 
     ## Actions
     action_cfg: MultiCopterActionGroupCfg

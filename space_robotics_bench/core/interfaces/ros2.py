@@ -19,8 +19,8 @@ from space_robotics_bench.envs import (
     BaseManipulationEnv,
     BaseMobileRoboticsEnv,
 )
+from space_robotics_bench.utils import convert_to_snake_case
 from space_robotics_bench.utils.ros import enable_ros2_bridge
-from space_robotics_bench.utils.str import convert_to_snake_case
 
 enable_ros2_bridge()
 from builtin_interfaces.msg import Time  # noqa: E402

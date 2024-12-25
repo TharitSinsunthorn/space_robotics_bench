@@ -177,7 +177,7 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
         self.scene.tf_robot_ee = FrameTransformerCfg(
             prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.base_frame.prim_relpath}",
             target_frames=[
-                FrameTransformerCfg.FrameCfg(
+                FrameTransformerCfg.Frame(
                     name="robot_ee",
                     prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.frame_ee.prim_relpath}",
                     offset=OffsetCfg(

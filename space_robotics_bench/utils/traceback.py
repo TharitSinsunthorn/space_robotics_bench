@@ -11,13 +11,14 @@ def enable_rich_traceback():
         return
 
     import numpy
+    import pydantic
     import torch
 
     traceback.install(
         width=120,
         show_locals=environ.get("SRB_WITH_TRACEBACK_LOCALS", "false").lower()
         in ("true", "1"),
-        suppress=(numpy, torch),
+        suppress=(numpy, pydantic, torch),
     )
 
     # Disable traceback of SimForge

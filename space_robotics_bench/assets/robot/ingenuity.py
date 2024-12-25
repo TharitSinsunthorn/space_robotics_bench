@@ -70,10 +70,10 @@ def ingenuity_cfg(
             )
         ),
         ## Frames
-        frame_base=asset_utils.FrameCfg(
+        frame_base=asset_utils.Frame(
             prim_relpath=frame_base,
         ),
-        frame_camera_bottom=asset_utils.FrameCfg(
+        frame_camera_bottom=asset_utils.Frame(
             prim_relpath=f"{frame_base}/camera_bottom",
             offset=asset_utils.TransformCfg(
                 translation=(0.045, 0.0, 0.1275),

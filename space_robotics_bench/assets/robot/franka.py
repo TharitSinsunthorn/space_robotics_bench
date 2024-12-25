@@ -109,23 +109,23 @@ def franka_cfg(
             ),
         ),
         ## Frames
-        base_frame=asset_utils.FrameCfg(
+        base_frame=asset_utils.Frame(
             prim_relpath=frame_base,
         ),
-        frame_ee=asset_utils.FrameCfg(
+        frame_ee=asset_utils.Frame(
             prim_relpath=frame_ee,
             offset=asset_utils.TransformCfg(
                 translation=(0.0, 0.0, 0.1034),
             ),
         ),
-        frame_camera_base=asset_utils.FrameCfg(
+        frame_camera_base=asset_utils.Frame(
             prim_relpath=f"{frame_base}/camera_base",
             offset=asset_utils.TransformCfg(
                 translation=(0.06, 0.0, 0.15),
                 rotation=math_utils.quat_from_rpy(0.0, -10.0, 0.0),
             ),
         ),
-        frame_camera_wrist=asset_utils.FrameCfg(
+        frame_camera_wrist=asset_utils.Frame(
             prim_relpath=f"{frame_ee}/camera_wrist",
             offset=asset_utils.TransformCfg(
                 translation=(0.07, 0.0, 0.05),
