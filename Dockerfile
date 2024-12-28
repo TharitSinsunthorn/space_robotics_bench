@@ -222,10 +222,9 @@ RUN echo -e "\n# Execute command" >> /entrypoint.bash && \
     sed -i '$a source /entrypoint.bash --' ~/.bashrc
 ENTRYPOINT ["/entrypoint.bash"]
 
-## [Optional] Install Python dependencies in advance to cache the layers (speeds up rebuilds)
-COPY ./pyproject.toml "${SRB_PATH}/"
 # hadolint ignore=SC2046
-RUN "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir toml==0.10.2 && \
+RUN --mount=type=bind,source=pyproject.toml,target="${SRB_PATH}/pyproject.toml" \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir toml~=0.10 && \
     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir $("${ISAAC_SIM_PYTHON}" -c "import toml, itertools; data = toml.load(open('${SRB_PATH}/pyproject.toml')); project_name = data['project']['name']; deps = [dep for dep in data['project'].get('dependencies', []) if project_name not in dep]; opt_deps = list(itertools.chain(*[opt for opt in data['project'].get('optional-dependencies', {}).values() if not any(project_name in dep for dep in opt)])); print(' '.join(deps + opt_deps))")
 
 ## Install ROS dependencies in advance to cache the layers (speeds up rebuilds)

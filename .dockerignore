@@ -27,6 +27,9 @@ logs/
 ## Apptainer
 **/*.sif
 
+## Dev Container
+.devcontainer/
+
 ## Docker
 Dockerfile*
 .docker/
@@ -35,3 +38,10 @@ Dockerfile*
 ## Git
 .git/
 .gitignore
+
+## GitHub
+.github/
+
+## Pre-commit
+.git_hooks/
+.pre-commit-config.yaml

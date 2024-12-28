@@ -1,12 +1,15 @@
 import logging
-import os
 import sys
-from typing import Any
+from os import environ
+
+from simforge.utils.tracing import with_logfire, with_rich
 
 __all__ = [
     "critical",
     "debug",
     "error",
+    "exception",
+    "fatal",
     "info",
     "log_level",
     "logger",
@@ -16,48 +19,51 @@ __all__ = [
 ]
 
 # Create a logger
-logger = logging.getLogger("space_robotics_bench")
+logger = logging.getLogger("simforge")
 
 # Set the logger level
-logger.setLevel(os.environ.get("SRB_LOG_LEVEL", "DEBUG").upper())
-
-# Create a handler for logs below WARNING (DEBUG and INFO) to STDOUT
-stdout_handler = logging.StreamHandler(sys.stdout)
-stdout_handler.setLevel(logging.DEBUG)  # Allow DEBUG and INFO
-stdout_handler.addFilter(lambda record: record.levelno < logging.WARNING)
-
-# Create a handler for logs WARNING and above (WARNING, ERROR, CRITICAL) to STDERR
-stderr_handler = logging.StreamHandler(sys.stderr)
-stderr_handler.setLevel(logging.WARNING)  # Allow WARNING and above
-
-# Define a formatter and set it for both handlers
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-stdout_handler.setFormatter(formatter)
-stderr_handler.setFormatter(formatter)
-
-# Add handlers to the logger
-logger.addHandler(stdout_handler)
-logger.addHandler(stderr_handler)
+logger.setLevel(environ.get("SRB_LOG_LEVEL", "DEBUG").upper())
 
 
-def debug(msg: Any, *args, **kwargs):
-    logger.debug(msg, *args, **kwargs)
+# Set up console logging handlers (either rich or plain)
+if with_rich():
+    from rich.logging import RichHandler
 
+    logger.addHandler(
+        RichHandler(
+            omit_repeated_times=False,
+            rich_tracebacks=True,
+            log_time_format="[%X]",
+        )
+    )
+else:
+    # Create a handler for logs below WARNING (DEBUG and INFO) to STDOUT
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setLevel(logging.DEBUG)  # Allow DEBUG and INFO
+    stdout_handler.addFilter(lambda record: record.levelno < logging.WARNING)
 
-def info(msg: Any, *args, **kwargs):
-    logger.info(msg, *args, **kwargs)
+    # Create a handler for logs WARNING and above (WARNING, ERROR, CRITICAL) to STDERR
+    stderr_handler = logging.StreamHandler(sys.stderr)
+    stderr_handler.setLevel(logging.WARNING)  # Allow WARNING and above
 
+    # Define a formatter and set it for both handlers
+    formatter = logging.Formatter(
+        fmt="[{asctime}] {levelname:8s} {message}",
+        datefmt="%H:%M:%S",
+        style="{",
+    )
+    stdout_handler.setFormatter(formatter)
+    stderr_handler.setFormatter(formatter)
 
-def warning(msg: Any, *args, **kwargs):
-    logger.warning(msg, *args, **kwargs)
+    # Add handlers to the logger
+    logger.addHandler(stdout_handler)
+    logger.addHandler(stderr_handler)
 
+# Set up Logfire logging handler
+if with_logfire():
+    from logfire import LogfireLoggingHandler
 
-def error(msg: Any, *args, **kwargs):
-    logger.error(msg, *args, **kwargs)
-
-
-def critical(msg: Any, *args, **kwargs):
-    logger.critical(msg, *args, **kwargs)
+    logger.addHandler(LogfireLoggingHandler())
 
 
 def log_level() -> int:
@@ -84,3 +90,12 @@ def set_log_level(level: str | int):
         logger.setLevel(_log_level_from_str(level))
     else:
         logger.setLevel(level)
+
+
+debug = logger.debug
+info = logger.info
+warning = logger.warning
+error = logger.error
+critical = logger.critical
+fatal = logger.fatal
+exception = logger.exception

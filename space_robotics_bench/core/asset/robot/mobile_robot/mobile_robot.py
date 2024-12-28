@@ -9,6 +9,7 @@ from space_robotics_bench.core.asset.robot.mobile_robot.mobile_robot_type import
 )
 from space_robotics_bench.core.asset.robot.robot import Robot
 from space_robotics_bench.core.asset.robot.robot_type import RobotType
+from space_robotics_bench.utils import convert_to_snake_case
 
 
 class MobileRobot(Robot, robot_entrypoint=RobotType.MOBILE_ROBOT):
@@ -44,6 +45,16 @@ class MobileRobot(Robot, robot_entrypoint=RobotType.MOBILE_ROBOT):
                 if issubclass(cls, base):
                     if mobile_robot_type not in MobileRobotRegistry.registry.keys():
                         MobileRobotRegistry.registry[mobile_robot_type] = []
+                    else:
+                        assert (
+                            convert_to_snake_case(cls.__name__)
+                            not in (
+                                convert_to_snake_case(mobile_robot.__name__)
+                                for mobile_robot in MobileRobotRegistry.registry[
+                                    mobile_robot_type
+                                ]
+                            )
+                        ), f"Cannot register multiple mobile robots with an identical name: '{cls.__module__}:{cls.__name__}' already exists as '{next(mobile_robot for mobile_robot in MobileRobotRegistry.registry[mobile_robot_type] if convert_to_snake_case(cls.__name__) == convert_to_snake_case(mobile_robot.__name__)).__module__}:{cls.__name__}'"
                     MobileRobotRegistry.registry[mobile_robot_type].append(cls)
 
     @cached_property

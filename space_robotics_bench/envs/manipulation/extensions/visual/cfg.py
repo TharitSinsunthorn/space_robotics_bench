@@ -17,8 +17,8 @@ class VisualManipulationEnvExtCfg:
     agent_rate: int = MISSING
     scene: InteractiveSceneCfg = MISSING
     viewer: ViewerCfg = MISSING
-    robot_cfg: asset_utils.ManipulatorCfg = MISSING
-    vehicle_cfg: asset_utils.VehicleCfg | None = None
+    robot_cfg: asset_utils.Manipulator = MISSING
+    vehicle_cfg: asset_utils.StaticVehicle | None = None
 
     ## Enabling flags
     enable_camera_scene: bool = False

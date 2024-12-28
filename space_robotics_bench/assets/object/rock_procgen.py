@@ -8,4 +8,4 @@ from simforge_foundry import models as sf_models
 
 @configclass
 class LunarRockCfg(SimforgeAssetCfg):
-    assets: Sequence[Asset] = [sf_models.LunarRock()]
+    assets: Sequence[Asset] = [sf_models.MoonRock()]

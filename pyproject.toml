@@ -27,11 +27,12 @@ readme = "README.md"
 license = { text = "MIT OR Apache-2.0" }
 requires-python = "==3.10.*"
 dependencies = [
-  ## Assets
-  "simforge~=0.1",
-  "simforge_foundry~=0.1",
-  ## Simulation
-  "oxidasim~=0.1",
+  # TODO: Enable dependencies
+  # ## Assets
+  # "simforge~=0.1",
+  # "simforge_foundry~=0.1",
+  # ## Simulation
+  # "oxidasim~=0.1",
   ## Typing
   "pydantic~=2.0",
 ]

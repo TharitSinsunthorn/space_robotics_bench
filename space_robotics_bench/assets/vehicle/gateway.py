@@ -31,20 +31,20 @@ def gateway_cfg(
         ## Frames
         frame_manipulator_base=asset_utils.Frame(
             prim_relpath="base",
-            offset=asset_utils.TransformCfg(
+            offset=asset_utils.Transform(
                 translation=(0.0, 0.0, 0.0),
             ),
         ),
         frame_camera_base=asset_utils.Frame(
             prim_relpath="camera_base",
-            offset=asset_utils.TransformCfg(
+            offset=asset_utils.Transform(
                 translation=(0.21, 0.0, 0.0),
                 rotation=math_utils.quat_from_rpy(0.0, 15.0, 0.0),
             ),
         ),
         frame_cargo_bay=asset_utils.Frame(
             prim_relpath="cargo_bay",
-            offset=asset_utils.TransformCfg(
+            offset=asset_utils.Transform(
                 translation=(-0.6, 0.0, 0.3),
             ),
         ),

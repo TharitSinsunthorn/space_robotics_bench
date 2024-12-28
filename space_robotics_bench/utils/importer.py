@@ -4,15 +4,15 @@ import sys
 from typing import Iterable, List
 
 
-def import_modules_recursively(module_name: str, ignorelist: List[str] = []):
+def import_recursively(module_name: str, ignorelist: List[str] = []):
     package = importlib.import_module(module_name)
-    for _ in _walk_modules(
+    for _ in _import_recursively_impl(
         path=package.__path__, prefix=f"{package.__name__}.", ignorelist=ignorelist
     ):
         pass
 
 
-def _walk_modules(
+def _import_recursively_impl(
     path: Iterable[str],
     prefix: str = "",
     ignorelist: List[str] = [],
@@ -36,4 +36,4 @@ def _walk_modules(
             else:
                 paths = getattr(sys.modules[info.name], "__path__", None) or []
                 paths = [path for path in paths if not seen(path)]
-                yield from _walk_modules(paths, f"{info.name}.", ignorelist)
+                yield from _import_recursively_impl(paths, f"{info.name}.", ignorelist)

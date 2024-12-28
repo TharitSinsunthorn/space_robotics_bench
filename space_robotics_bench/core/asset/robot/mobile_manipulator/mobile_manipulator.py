@@ -9,6 +9,7 @@ from space_robotics_bench.core.asset.robot.mobile_manipulator.mobile_manipulator
 )
 from space_robotics_bench.core.asset.robot.robot import Robot
 from space_robotics_bench.core.asset.robot.robot_type import RobotType
+from space_robotics_bench.utils import convert_to_snake_case
 
 
 class MobileManipulator(Robot, robot_entrypoint=RobotType.MOBILE_MANIPULATOR):
@@ -32,11 +33,11 @@ class MobileManipulator(Robot, robot_entrypoint=RobotType.MOBILE_MANIPULATOR):
         if mobile_manipulator_entrypoint is not None:
             assert isinstance(
                 mobile_manipulator_entrypoint, MobileManipulatorType
-            ), f"Class '{cls.__name__}' is marked as a mobile robot entrypoint, but '{mobile_manipulator_entrypoint}' is not a valid {MobileManipulatorType}"
+            ), f"Class '{cls.__name__}' is marked as a mobile manipulator entrypoint, but '{mobile_manipulator_entrypoint}' is not a valid {MobileManipulatorType}"
             assert (
                 mobile_manipulator_entrypoint
                 not in MobileManipulatorRegistry.base_types.keys()
-            ), f"Class '{cls.__name__}' is marked as '{mobile_manipulator_entrypoint}' mobile robot entrypoint, but it was already marked by '{MobileManipulatorRegistry.base_types[mobile_manipulator_entrypoint].__name__}'"
+            ), f"Class '{cls.__name__}' is marked as '{mobile_manipulator_entrypoint}' mobile manipulator entrypoint, but it was already marked by '{MobileManipulatorRegistry.base_types[mobile_manipulator_entrypoint].__name__}'"
             MobileManipulatorRegistry.base_types[mobile_manipulator_entrypoint] = cls
         elif mobile_manipulator_metaclass:
             MobileManipulatorRegistry.meta_types.append(cls)
@@ -51,6 +52,16 @@ class MobileManipulator(Robot, robot_entrypoint=RobotType.MOBILE_MANIPULATOR):
                         not in MobileManipulatorRegistry.registry.keys()
                     ):
                         MobileManipulatorRegistry.registry[mobile_manipulator_type] = []
+                    else:
+                        assert (
+                            convert_to_snake_case(cls.__name__)
+                            not in (
+                                convert_to_snake_case(mobile_manipulator.__name__)
+                                for mobile_manipulator in MobileManipulatorRegistry.registry[
+                                    mobile_manipulator_type
+                                ]
+                            )
+                        ), f"Cannot register multiple mobile manipulators with an identical name: '{cls.__module__}:{cls.__name__}' already exists as '{next(mobile_manipulator for mobile_manipulator in MobileManipulatorRegistry.registry[mobile_manipulator_type] if convert_to_snake_case(cls.__name__) == convert_to_snake_case(mobile_manipulator.__name__)).__module__}:{cls.__name__}'"
                     MobileManipulatorRegistry.registry[mobile_manipulator_type].append(
                         cls
                     )
@@ -64,7 +75,7 @@ class MobileManipulator(Robot, robot_entrypoint=RobotType.MOBILE_MANIPULATOR):
             if isinstance(self, base):
                 return mobile_manipulator_type
         raise ValueError(
-            f"Class '{self.__class__.__name__}' has unknown mobile robot type"
+            f"Class '{self.__class__.__name__}' has unknown mobile manipulator type"
         )
 
     @classmethod

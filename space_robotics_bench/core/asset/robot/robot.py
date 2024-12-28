@@ -8,6 +8,7 @@ from space_robotics_bench.core.asset.asset import Asset
 from space_robotics_bench.core.asset.asset_type import AssetType
 from space_robotics_bench.core.asset.common import Frame
 from space_robotics_bench.core.asset.robot.robot_type import RobotType
+from space_robotics_bench.utils import convert_to_snake_case
 
 
 class Robot(Asset, asset_entrypoint=AssetType.ROBOT):
@@ -43,6 +44,14 @@ class Robot(Asset, asset_entrypoint=AssetType.ROBOT):
                 if issubclass(cls, base):
                     if robot_type not in RobotRegistry.registry.keys():
                         RobotRegistry.registry[robot_type] = []
+                    else:
+                        assert (
+                            convert_to_snake_case(cls.__name__)
+                            not in (
+                                convert_to_snake_case(robot.__name__)
+                                for robot in RobotRegistry.registry[robot_type]
+                            )
+                        ), f"Cannot register multiple robots with an identical name: '{cls.__module__}:{cls.__name__}' already exists as '{next(robot for robot in RobotRegistry.registry[robot_type] if convert_to_snake_case(cls.__name__) == convert_to_snake_case(robot.__name__)).__module__}:{cls.__name__}'"
                     RobotRegistry.registry[robot_type].append(cls)
 
     @cached_property

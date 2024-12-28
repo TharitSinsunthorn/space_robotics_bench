@@ -17,7 +17,7 @@ class VisualAerialRoboticsEnvExtCfg:
     agent_rate: int = MISSING
     scene: InteractiveSceneCfg = MISSING
     viewer: ViewerCfg = MISSING
-    robot_cfg: asset_utils.AerialRobotCfg = MISSING
+    robot_cfg: asset_utils.AerialRobot = MISSING
 
     ## Enabling flags
     enable_camera_scene: bool = True

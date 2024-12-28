@@ -16,10 +16,7 @@ class AerialRobot(MobileRobot, mobile_robot_entrypoint=MobileRobotType.AERIAL):
         return super().mobile_robot_registry().get(MobileRobotType.AERIAL, [])  # type: ignore
 
 
-class MultiCopter(AerialRobot):
-    class Config:
-        arbitrary_types_allowed = True
-
+class MultiCopter(AerialRobot, arbitrary_types_allowed=True):
     ## Actions
     action_cfg: MultiCopterActionGroupCfg
 

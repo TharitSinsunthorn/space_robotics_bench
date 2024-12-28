@@ -17,7 +17,7 @@ class VisualMobileRoboticsEnvExtCfg:
     agent_rate: int = MISSING
     scene: InteractiveSceneCfg = MISSING
     viewer: ViewerCfg = MISSING
-    robot_cfg: asset_utils.WheeledRoverCfg = MISSING
+    robot_cfg: asset_utils.MobileRobot = MISSING
 
     ## Enabling flags
     enable_camera_scene: bool = True

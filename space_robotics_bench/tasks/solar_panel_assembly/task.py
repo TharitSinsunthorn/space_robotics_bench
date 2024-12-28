@@ -30,10 +30,7 @@ from ..peg_in_hole.task import peg_and_hole_cfg
 ##############
 
 
-class PanelCfg(AssetCfg):
-    class Config:
-        arbitrary_types_allowed = True
-
+class PanelCfg(AssetCfg, arbitrary_types_allowed=True):
     ## Geometry
     offset_pos: Tuple[float, float, float] = (0.0, 0.0, 0.15)
 

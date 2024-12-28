@@ -9,6 +9,7 @@ from space_robotics_bench.core.asset.robot.manipulator.manipulator_type import (
 )
 from space_robotics_bench.core.asset.robot.robot import Robot
 from space_robotics_bench.core.asset.robot.robot_type import RobotType
+from space_robotics_bench.utils import convert_to_snake_case
 
 
 class Manipulator(Robot, robot_entrypoint=RobotType.MANIPULATOR):
@@ -44,6 +45,16 @@ class Manipulator(Robot, robot_entrypoint=RobotType.MANIPULATOR):
                 if issubclass(cls, base):
                     if manipulator_type not in ManipulatorRegistry.registry.keys():
                         ManipulatorRegistry.registry[manipulator_type] = []
+                    else:
+                        assert (
+                            convert_to_snake_case(cls.__name__)
+                            not in (
+                                convert_to_snake_case(manipulator.__name__)
+                                for manipulator in ManipulatorRegistry.registry[
+                                    manipulator_type
+                                ]
+                            )
+                        ), f"Cannot register multiple manipulators with an identical name: '{cls.__module__}:{cls.__name__}' already exists as '{next(manipulator for manipulator in ManipulatorRegistry.registry[manipulator_type] if convert_to_snake_case(cls.__name__) == convert_to_snake_case(manipulator.__name__)).__module__}:{cls.__name__}'"
                     ManipulatorRegistry.registry[manipulator_type].append(cls)
 
     @cached_property

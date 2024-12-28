@@ -27,10 +27,7 @@ from space_robotics_bench.envs import (
 ##############
 
 
-class SampleCfg(AssetCfg):
-    class Config:
-        arbitrary_types_allowed = True
-
+class SampleCfg(AssetCfg, arbitrary_types_allowed=True):
     ## Model
     asset_cfg: RigidObjectCfg
 

@@ -98,20 +98,20 @@ def canadarm3_large_cfg(
         ),
         frame_ee=asset_utils.Frame(
             prim_relpath=frame_ee,
-            offset=asset_utils.TransformCfg(
+            offset=asset_utils.Transform(
                 translation=(0.0, 0.0, 0.1034),
             ),
         ),
         frame_camera_base=asset_utils.Frame(
             prim_relpath=f"{frame_base}/camera_base",
-            offset=asset_utils.TransformCfg(
+            offset=asset_utils.Transform(
                 translation=(0.06, 0.0, 0.15),
                 rotation=math_utils.quat_from_rpy(0.0, -10.0, 0.0),
             ),
         ),
         frame_camera_wrist=asset_utils.Frame(
             prim_relpath=f"{frame_ee}/camera_wrist",
-            offset=asset_utils.TransformCfg(
+            offset=asset_utils.Transform(
                 translation=(0.0, 0.0, -0.45),
                 rotation=math_utils.quat_from_rpy(0.0, 90.0, 180.0),
             ),

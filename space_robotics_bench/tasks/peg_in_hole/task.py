@@ -23,10 +23,7 @@ from space_robotics_bench.envs import (
 ##############
 
 
-class PegCfg(AssetCfg):
-    class Config:
-        arbitrary_types_allowed = True
-
+class PegCfg(AssetCfg, arbitrary_types_allowed=True):
     ## Model
     asset_cfg: RigidObjectCfg
 

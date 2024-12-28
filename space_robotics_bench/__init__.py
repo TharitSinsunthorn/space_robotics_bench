@@ -1,15 +1,14 @@
 from os import environ
 
-from .utils import (
-    enable_rich_traceback,
-    get_srb_tasks,
-    import_modules_recursively,
-    is_isaacsim_initialized,
-    logging,
-)
+from .utils import get_srb_tasks, import_recursively, is_isaacsim_initialized, logging
+from .utils.tracing import with_logfire, with_rich
 
 ## Enable rich traceback
-enable_rich_traceback()
+with_rich()
+
+## Enable logfire instrumentation
+with_logfire()
+
 
 ## If the simulation app is started, register all tasks by recursively importing
 ## the "{__name__}.tasks" submodule
@@ -19,11 +18,9 @@ if environ.get("SRB_SKIP_REGISTRATION", "false").lower() in ["true", "1"]:
         f"(SRB_SKIP_REGISTRATION={environ.get('SRB_SKIP_REGISTRATION')})"
     )
 elif is_isaacsim_initialized():
-    # TODO: Revert
-    import_modules_recursively(module_name=f"{__name__}.tasks._demos.cubesat")
-    # import_modules_recursively(module_name=f"{__name__}.tasks")
-    logging.info(
-        f"Registered '{len(get_srb_tasks())}' Gymnasium tasks of the Space Robotics Bench"
+    import_recursively(module_name=f"{__name__}.tasks")
+    logging.debug(
+        f"Registered Gymnasium tasks of the Space Robotics Bench ({len(get_srb_tasks())} registered tasks)"
     )
 else:
     raise RuntimeError(

@@ -9,11 +9,11 @@ from space_robotics_bench.core.asset.robot.mobile_robot.mobile_robot_type import
 )
 
 
-class Spacecraft(MobileRobot, mobile_robot_entrypoint=MobileRobotType.SPACECRAFT):
-    class Config:
-        arbitrary_types_allowed = True
-
-    ## Actions
+class Spacecraft(
+    MobileRobot,
+    mobile_robot_entrypoint=MobileRobotType.SPACECRAFT,
+    arbitrary_types_allowed=True,
+):
     action_cfg: SpacecraftActionGroupCfg
 
     @classmethod
