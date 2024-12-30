@@ -59,8 +59,8 @@ def sample_cfg(
         case env_utils.AssetVariant.PRIMITIVE:
             pose_range["z"] = (0.1, 0.1)
         case env_utils.AssetVariant.DATASET:
-            match env_cfg.scenario:
-                case env_utils.Scenario.MARS:
+            match env_cfg.domain:
+                case env_utils.Domain.MARS:
                     pose_range.update(
                         {
                             "z": (0.03, 0.03),

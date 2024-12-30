@@ -216,7 +216,11 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     checkpoint.load(checkpoint_path, keys=["agent"])
 
     print("Start evaluation")
-    policy = lambda *run_args: agent.policy(*run_args, mode="eval")
+
+    # policy = lambda *run_args: agent.policy(*run_args, mode="eval")
+    def policy(*run_args):
+        return agent.policy(*run_args, mode="eval")
+
     driver.reset(agent.init_policy)
     while step < run_args.steps:
         driver(policy, steps=10)

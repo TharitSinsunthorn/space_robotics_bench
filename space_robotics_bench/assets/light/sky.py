@@ -44,10 +44,10 @@ def sky_from_env_cfg(
     #     enable_film_grain=True,
     # )
 
-    match env_cfg.scenario:
-        case env_utils.Scenario.EARTH:
+    match env_cfg.domain:
+        case env_utils.Domain.EARTH:
             texture_file = f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr"
-        case env_utils.Scenario.MARS:
+        case env_utils.Domain.MARS:
             rtx_settings.simple_fog(
                 color=(0.8, 0.4, 0.2),
                 intensity=0.25,
@@ -56,7 +56,7 @@ def sky_from_env_cfg(
                 fog_distance_density=0.05,
             )
             texture_file = path.join(SRB_ASSETS_DIR_SRB_HDRI, "martian_sky_day.hdr")
-        case env_utils.Scenario.ORBIT:
+        case env_utils.Domain.ORBIT:
             texture_file = path.join(SRB_ASSETS_DIR_SRB_HDRI, "low_lunar_orbit.jpg")
 
     if texture_file is None:
@@ -64,7 +64,7 @@ def sky_from_env_cfg(
     return AssetBaseCfg(
         prim_path=prim_path,
         spawn=sim_utils.DomeLightCfg(
-            intensity=0.25 * env_cfg.scenario.light_intensity,
+            intensity=0.25 * env_cfg.domain.light_intensity,
             texture_file=texture_file,
             **spawn_kwargs,
         ),

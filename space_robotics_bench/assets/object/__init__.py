@@ -1,10 +1,8 @@
-from os import path
 from typing import Any, Dict, Tuple
 
 import space_robotics_bench.core.envs as env_utils
 import space_robotics_bench.core.sim as sim_utils
 from space_robotics_bench.core.asset import AssetBaseCfg, RigidObjectCfg
-from space_robotics_bench.paths import SRB_ASSETS_DIR
 from space_robotics_bench.utils import color as color_utils
 
 from .debris import CubesatDebris
@@ -50,8 +48,8 @@ def object_of_interest_from_env_cfg(
             )
 
         case env_utils.AssetVariant.DATASET:
-            match env_cfg.scenario:
-                case env_utils.Scenario.MARS:
+            match env_cfg.domain:
+                case env_utils.Domain.MARS:
                     if spawn_kwargs.get("mesh_collision_props", None) is None:
                         spawn_kwargs["mesh_collision_props"] = (
                             sim_utils.MeshCollisionPropertiesCfg(
@@ -90,13 +88,13 @@ def object_of_interest_from_env_cfg(
             #     **spawn_kwargs,
             # )
 
-            match env_cfg.scenario:
-                case env_utils.Scenario.ORBIT:
+            match env_cfg.domain:
+                case env_utils.Domain.ORBIT:
                     spawn = CubesatDebris(
                         **spawn_kwargs,
                     )
 
-                case env_utils.Scenario.MOON:
+                case env_utils.Domain.MOON:
                     spawn = LunarRockCfg(
                         num_assets=num_assets,
                         seed=env_cfg.seed + procgen_seed_offset,

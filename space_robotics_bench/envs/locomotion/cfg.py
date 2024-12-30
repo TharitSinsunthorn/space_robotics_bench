@@ -139,7 +139,7 @@ class BaseLocomotionEnvCfg(BaseEnvCfg):
         self.decimation = int(self.agent_rate / self.env_rate)
         self.sim.dt = self.env_rate
         self.sim.render_interval = self.decimation
-        self.sim.gravity = (0.0, 0.0, -self.env_cfg.scenario.gravity_magnitude)
+        self.sim.gravity = (0.0, 0.0, -self.env_cfg.domain.gravity_magnitude)
         # TODO: Fix because self.scene.num_envs is not updated at this moment (everywhere)
         # Increase GPU settings based on the number of environments
         gpu_capacity_factor = math.pow(self.scene.num_envs, 0.5)

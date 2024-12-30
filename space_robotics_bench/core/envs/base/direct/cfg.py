@@ -2,7 +2,7 @@ import gymnasium
 from omni.isaac.lab.envs import DirectRLEnvCfg
 from omni.isaac.lab.utils import configclass
 
-from space_robotics_bench.core.envs.cfg import EnvironmentConfig
+from space_robotics_bench.core.envs.env_cfg import EnvironmentConfig
 
 
 @configclass

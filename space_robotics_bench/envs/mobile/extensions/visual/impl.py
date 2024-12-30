@@ -29,7 +29,7 @@ class VisualMobileRoboticsEnvExt:
                 getattr(cfg.scene, key).spawn.clipping_range,
             )
             for key, sensor in self.scene._sensors.items()
-            if type(sensor) == Camera
+            if isinstance(sensor, Camera)
         }
 
     def _get_observations(self) -> Dict[str, torch.Tensor]:

@@ -18,12 +18,12 @@ from space_robotics_bench.envs import (
 @configclass
 class TaskCfg(BaseSpacecraftRoboticsEnvCfg):
     def __post_init__(self):
-        if self.env_cfg.scenario != env_utils.Scenario.ORBIT:
+        if self.env_cfg.domain != env_utils.Domain.ORBIT:
             print(
-                f"[WARN] Environment requires ORBIT scenario ({self.env_cfg.scenario} ignored)",
+                f"[WARN] Environment requires ORBIT scenario ({self.env_cfg.domain} ignored)",
                 file=sys.stderr,
             )
-            self.env_cfg.scenario = env_utils.Scenario.ORBIT
+            self.env_cfg.domain = env_utils.Domain.ORBIT
         if self.env_cfg.assets.terrain.variant != env_utils.AssetVariant.NONE:
             print(
                 f"[WARN] Environment requires NONE terrain ({self.env_cfg.assets.terrain.variant} ignored)",

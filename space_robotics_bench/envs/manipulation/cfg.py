@@ -120,7 +120,7 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
         self.decimation = int(self.agent_rate / self.env_rate)
         self.sim.dt = self.env_rate
         self.sim.render_interval = self.decimation
-        self.sim.gravity = (0.0, 0.0, -self.env_cfg.scenario.gravity_magnitude)
+        self.sim.gravity = (0.0, 0.0, -self.env_cfg.domain.gravity_magnitude)
         # Increase GPU settings based on the number of environments
         gpu_capacity_factor = math.pow(self.scene.num_envs, 0.2)
         self.sim.physx.gpu_heap_capacity *= gpu_capacity_factor
@@ -138,7 +138,7 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
         )
 
         ## Scene
-        if self.env_cfg.scenario == env_utils.Scenario.ORBIT:
+        if self.env_cfg.domain == env_utils.Domain.ORBIT:
             self.scene.env_spacing = 42.0
         self.scene.light = assets.sunlight_from_env_cfg(self.env_cfg)
         self.scene.sky = assets.sky_from_env_cfg(self.env_cfg)
@@ -214,7 +214,7 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
         self.events.reset_rand_robot_state.params[
             "asset_cfg"
         ].joint_names = self.robot_cfg.regex_joints_arm
-        if self.env_cfg.scenario == env_utils.Scenario.ORBIT:
+        if self.env_cfg.domain == env_utils.Domain.ORBIT:
             # Fix the orientation of the light such that it fits with the orbital HDR
             self.events.reset_rand_light_rot.params[
                 "orientation_distribution_params"

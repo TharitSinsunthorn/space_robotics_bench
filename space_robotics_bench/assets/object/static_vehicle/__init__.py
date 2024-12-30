@@ -18,8 +18,8 @@ def vehicle_from_env_cfg(
         case env_utils.AssetVariant.NONE:
             return None
         case _:
-            match env_cfg.scenario:
-                case env_utils.Scenario.MOON | env_utils.Scenario.MARS:
+            match env_cfg.domain:
+                case env_utils.Domain.MOON | env_utils.Domain.MARS:
                     return ConstructionRover()
-                case env_utils.Scenario.ORBIT:
+                case env_utils.Domain.ORBIT:
                     return Gateway()

@@ -134,7 +134,7 @@ class BaseAerialRoboticsEnvCfg(BaseEnvCfg):
         self.decimation = int(self.agent_rate / self.env_rate)
         self.sim.dt = self.env_rate
         self.sim.render_interval = self.decimation
-        self.sim.gravity = (0.0, 0.0, -self.env_cfg.scenario.gravity_magnitude)
+        self.sim.gravity = (0.0, 0.0, -self.env_cfg.domain.gravity_magnitude)
         # Increase GPU settings based on the number of environments
         gpu_capacity_factor = self.scene.num_envs
         self.sim.physx.gpu_heap_capacity *= gpu_capacity_factor

@@ -323,7 +323,10 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     # policy = lambda *run_args: agent.policy(
     #     *run_args, mode="explore" if should_expl(step) else "train"
     # )
-    policy = lambda *run_args: agent.policy(*run_args, mode="train")
+    # policy = lambda *run_args: agent.policy(*run_args, mode="train")
+    def policy(*run_args) -> tuple:
+        return agent.policy(*run_args, mode="train")
+
     driver.reset(agent.init_policy)
     while step < run_args.steps:
         driver(policy, steps=10)
