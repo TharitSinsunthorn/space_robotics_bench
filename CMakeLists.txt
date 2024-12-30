@@ -25,7 +25,7 @@ install(PROGRAMS
 )
 
 ## Install directories
-install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 ## Setup the project
 ament_package()

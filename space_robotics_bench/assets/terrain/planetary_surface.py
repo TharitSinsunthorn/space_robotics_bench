@@ -1,10 +1,8 @@
-from pydantic import PositiveFloat
-from simforge.integrations.isaaclab import SimforgeAssetCfg
-from simforge.typing import TexResConfig
 from simforge_foundry import models as sf_models
 
 import space_robotics_bench.core.sim as sim_utils
 from space_robotics_bench.core.asset import AssetBaseCfg, Surface
+from space_robotics_bench.core.sim import SimforgeAssetCfg
 
 
 class MoonSurface(Surface):
@@ -16,9 +14,6 @@ class MoonSurface(Surface):
         ),
     )
 
-    density: PositiveFloat | None = None
-    texture_resolution: TexResConfig | None = None
-
 
 class MarsSurface(Surface):
     asset_cfg: AssetBaseCfg = AssetBaseCfg(
@@ -28,6 +23,3 @@ class MarsSurface(Surface):
             collision_props=sim_utils.CollisionPropertiesCfg(),
         ),
     )
-
-    density: PositiveFloat | None = None
-    texture_resolution: TexResConfig | None = None

@@ -2,70 +2,38 @@ from __future__ import annotations
 
 from functools import cached_property
 from itertools import chain
-from typing import Any, ClassVar, Dict, Iterable, List, Mapping, Sequence, Tuple, Type
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+)
 
 from pydantic import BaseModel
 from simforge import BlGeometry, BlModel
 from simforge.integrations.isaaclab import SimforgeAssetCfg
+from simforge.typing import TexResConfig
 
 from space_robotics_bench.core.asset import AssetBaseCfg
 from space_robotics_bench.core.asset.asset_type import AssetType
-from space_robotics_bench.utils import convert_to_snake_case
-
-INPUT_BLOCKLIST = {"asset_cfg"}
+from space_robotics_bench.utils import convert_to_snake_case, logging
 
 
 class Asset(BaseModel):
+    INPUT_BLOCKLIST: ClassVar[Set] = {"asset_cfg"}
     asset_cfg: AssetBaseCfg
+
+    texture_resolution: TexResConfig | None = None
 
     @cached_property
     def name(self) -> str:
         return convert_to_snake_case(self.__class__.__name__)
-
-    @cached_property
-    def is_randomizable(self) -> bool:
-        return False
-
-    @cached_property
-    def inputs(self) -> Mapping[str, Any]:
-        return {
-            k: getattr(self, k)
-            for k in chain(
-                self.__class__.model_fields.keys(), self.model_computed_fields.keys()
-            )
-            if k not in INPUT_BLOCKLIST
-        }
-
-    def model_post_init(self, __context):
-        if isinstance(self.asset_cfg.spawn, SimforgeAssetCfg):
-            for asset in self.asset_cfg.spawn.assets:
-                if isinstance(asset, BlGeometry):
-                    for k, v in self.inputs.items():
-                        if v is None:
-                            continue
-                        for op in asset.ops:
-                            if hasattr(op, k):
-                                setattr(op, k, v)
-                elif isinstance(asset, BlModel):
-                    for k, v in self.inputs.items():
-                        if v is None:
-                            continue
-                        for op in asset.geo.ops:
-                            if hasattr(op, k):
-                                setattr(op, k, v)
-                        if asset.mat is not None and hasattr(asset.mat.shader, k):
-                            setattr(asset.mat.shader, k, v)
-                        if hasattr(asset, k):
-                            setattr(asset, k, v)
-                # TODO: Support BlArticulation assets
-        else:
-            for k, v in self.inputs.items():
-                if v is None:
-                    continue
-                if hasattr(self.asset_cfg.spawn, k):
-                    setattr(self.asset_cfg.spawn, k, v)
-
-        return super().model_post_init(__context)
 
     def __new__(cls, *args, **kwargs):
         if cls in (
@@ -119,6 +87,54 @@ class Asset(BaseModel):
     def asset_registry(cls) -> Mapping[AssetType, Sequence[Type[Asset]]]:
         return AssetRegistry.registry
 
+    @property
+    def inputs(self) -> Mapping[str, Any]:
+        return {
+            k: v
+            for k, v in {
+                k: getattr(self, k)
+                for k in chain(
+                    self.__class__.model_fields.keys(),
+                    self.model_computed_fields.keys(),
+                )
+                if k not in self.INPUT_BLOCKLIST
+            }.items()
+            if v is not None
+        }
+
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+
+        # Apply direct attributes as inputs to the underlying asset configuration
+        inputs = self.inputs
+        if len(inputs) == 0:
+            return
+        if isinstance(self.asset_cfg.spawn, SimforgeAssetCfg):
+            for asset in self.asset_cfg.spawn.assets:
+                match asset:
+                    case geo if isinstance(geo, BlGeometry):
+                        for k, v in inputs.items():
+                            for op in geo.ops:
+                                if hasattr(op, k):
+                                    setattr(op, k, v)
+                    case model if isinstance(model, BlModel):
+                        for k, v in inputs.items():
+                            for op in model.geo.ops:
+                                if hasattr(op, k):
+                                    setattr(op, k, v)
+                            if model.mat is not None and hasattr(model.mat.shader, k):
+                                setattr(model.mat.shader, k, v)
+                            if hasattr(model, k):
+                                setattr(model, k, v)
+                    case _:
+                        logging.warning(
+                            f"SimForge asset of type '{type(asset)}' is not supported for input processing"
+                        )
+        else:
+            for k, v in inputs.items():
+                if hasattr(self.asset_cfg.spawn, k):
+                    setattr(self.asset_cfg.spawn, k, v)
+
 
 class AssetRegistry:
     registry: ClassVar[Dict[AssetType, List[Type[Asset]]]] = {}
@@ -130,11 +146,11 @@ class AssetRegistry:
         return cls.registry.keys()
 
     @classmethod
-    def items(cls) -> Iterable[Tuple[AssetType, Type[Asset]]]:
+    def items(cls) -> Iterable[Tuple[AssetType, Iterable[Type[Asset]]]]:
         return cls.registry.items()
 
     @classmethod
-    def values(cls) -> Iterable[Sequence[Type[Asset]]]:
+    def values(cls) -> Iterable[Iterable[Type[Asset]]]:
         return cls.registry.values()
 
     @classmethod

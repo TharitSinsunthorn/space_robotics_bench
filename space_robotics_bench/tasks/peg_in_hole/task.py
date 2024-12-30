@@ -10,7 +10,7 @@ from pydantic import NonNegativeInt
 import space_robotics_bench.core.envs as env_utils
 import space_robotics_bench.utils.math as math_utils
 from space_robotics_bench import assets
-from space_robotics_bench.core.asset import AssetCfg, RigidObject, RigidObjectCfg
+from space_robotics_bench.core.asset import Object, RigidObject, RigidObjectCfg
 from space_robotics_bench.envs import (
     BaseManipulationEnv,
     BaseManipulationEnvCfg,
@@ -23,7 +23,7 @@ from space_robotics_bench.envs import (
 ##############
 
 
-class PegCfg(AssetCfg, arbitrary_types_allowed=True):
+class PegCfg(Object, arbitrary_types_allowed=True):
     ## Model
     asset_cfg: RigidObjectCfg
 
@@ -43,7 +43,7 @@ class PegCfg(AssetCfg, arbitrary_types_allowed=True):
     state_randomizer: EventTermCfg | None = None
 
 
-class HoleCfg(AssetCfg):
+class HoleCfg(Object):
     ## Geometry
     offset_pos_bottom: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     offset_pos_entrance: Tuple[float, float, float]

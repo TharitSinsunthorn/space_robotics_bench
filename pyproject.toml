@@ -8,6 +8,10 @@ allow-direct-references = true
 [tool.pytest.ini_options]
 env = ["SRB_SKIP_REGISTRATION=true"]
 
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+follow_imports = "silent"
+
 [project]
 name = "space_robotics_bench"
 version = "0.0.1"
@@ -66,4 +70,5 @@ tests = ["pytest~=8.0"]
 traceback = ["rich~=13.0"]
 
 # [project.scripts]
-# srb = "space_robotics_bench:__main__"
+# space_robotics_bench = "space_robotics_bench.__main__:main"
+# srb = "space_robotics_bench.__main__:main"

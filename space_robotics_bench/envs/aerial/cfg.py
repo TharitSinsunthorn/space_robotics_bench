@@ -154,23 +154,18 @@ class BaseAerialRoboticsEnvCfg(BaseEnvCfg):
         ## Scene
         self.scene.light = assets.sunlight_from_env_cfg(self.env_cfg)
         self.scene.sky = assets.sky_from_env_cfg(self.env_cfg)
-        # self.scene.terrain = assets.terrain_from_env_cfg(
-        #     self.env_cfg,
-        #     num_assets=self.scene.num_envs,
-        #     size=(self.scene.env_spacing - 1,) * 2,
-        #     procgen_kwargs={
-        #         "density": 0.24,
-        #         "texture_resolution": 6144,
-        #     },
-        # )
         self.terrain_cfg = assets.MarsSurface(
             scale=(
                 self.scene.env_spacing - 1.0,
                 self.scene.env_spacing - 1.0,
                 0.1 * self.scene.env_spacing,
             ),
-            density=0.25,
-            # texture_resolution=128,
+            density=0.5,
+            # texture_resolution={
+            #     BakeType.ALBEDO: 4069,
+            #     BakeType.NORMAL: 6144,
+            #     BakeType.ROUGHNESS: 1024,
+            # },
         )
         self.scene.terrain = self.terrain_cfg.asset_cfg
         self.robot_cfg = assets.Ingenuity()

@@ -139,17 +139,22 @@ class BaseMobileRoboticsEnvCfg(BaseEnvCfg):
         ## Scene
         self.scene.light = assets.sunlight_from_env_cfg(self.env_cfg)
         self.scene.sky = assets.sky_from_env_cfg(self.env_cfg)
-        self.scene.terrain = assets.terrain_from_env_cfg(
-            self.env_cfg,
-            num_assets=self.scene.num_envs,
-            size=(self.scene.env_spacing - 1,) * 2,
-            procgen_kwargs={
-                "density": 0.16,
-                "flat_area_size": 4.0,
-                "texture_resolution": 4096,
-            },
+        self.terrain_cfg = assets.MarsSurface(
+            scale=(
+                self.scene.env_spacing - 1.0,
+                self.scene.env_spacing - 1.0,
+                0.1 * self.scene.env_spacing,
+            ),
+            density=0.25,
+            flat_area_size=4.0,
+            # texture_resolution={
+            #     BakeType.ALBEDO: 2048,
+            #     BakeType.NORMAL: 4069,
+            #     BakeType.ROUGHNESS: 1024,
+            # },
         )
-        self.robot_cfg = assets.rover_from_env_cfg(self.env_cfg)
+        self.scene.terrain = self.terrain_cfg.asset_cfg
+        self.robot_cfg = assets.Perseverance()
         self.scene.robot = self.robot_cfg.asset_cfg
 
         ## Actions

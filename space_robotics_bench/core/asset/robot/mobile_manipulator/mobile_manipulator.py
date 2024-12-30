@@ -99,11 +99,13 @@ class MobileManipulatorRegistry:
         return cls.registry.keys()
 
     @classmethod
-    def items(cls) -> Iterable[Tuple[MobileManipulatorType, Type[MobileManipulator]]]:
+    def items(
+        cls,
+    ) -> Iterable[Tuple[MobileManipulatorType, Iterable[Type[MobileManipulator]]]]:
         return cls.registry.items()
 
     @classmethod
-    def values(cls) -> Iterable[Sequence[Type[MobileManipulator]]]:
+    def values(cls) -> Iterable[Iterable[Type[MobileManipulator]]]:
         return cls.registry.values()
 
     @classmethod

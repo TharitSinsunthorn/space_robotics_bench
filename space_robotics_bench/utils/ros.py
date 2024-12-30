@@ -21,7 +21,7 @@ def enable_ros2_bridge():
     extensions = extension_manager.get_extensions()
 
     # Extract the ROS extension
-    ros_extension = [ext for ext in extensions if "ros2_bridge" in ext["id"]][0]
+    ros_extension = next(ext for ext in extensions if "ros2_bridge" in ext["id"])
 
     # Load the ROS extension if it is not already loaded
     if not extension_manager.is_extension_enabled(ros_extension["id"]):

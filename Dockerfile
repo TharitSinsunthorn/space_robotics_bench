@@ -222,10 +222,11 @@ RUN echo -e "\n# Execute command" >> /entrypoint.bash && \
     sed -i '$a source /entrypoint.bash --' ~/.bashrc
 ENTRYPOINT ["/entrypoint.bash"]
 
-# hadolint ignore=SC2046
+## Install dependencies
+# hadolint ignore=DL3013,SC2046
 RUN --mount=type=bind,source=pyproject.toml,target="${SRB_PATH}/pyproject.toml" \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir toml~=0.10 && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir $("${ISAAC_SIM_PYTHON}" -c "import toml, itertools; data = toml.load(open('${SRB_PATH}/pyproject.toml')); project_name = data['project']['name']; deps = [dep for dep in data['project'].get('dependencies', []) if project_name not in dep]; opt_deps = list(itertools.chain(*[opt for opt in data['project'].get('optional-dependencies', {}).values() if not any(project_name in dep for dep in opt)])); print(' '.join(deps + opt_deps))")
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --ignore-installed toml~=0.10 && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir $(python -c "f='${SRB_PATH}/pyproject.toml'; from toml import load; print(' '.join(filter(lambda d: not d.startswith(p['name']), (*p.get('dependencies', ()), *(d for ds in p.get('optional-dependencies', {}).values() for d in ds)))) if (p := load(f).get('project', None)) else '')")
 
 ## Install ROS dependencies in advance to cache the layers (speeds up rebuilds)
 COPY ./package.xml "${SRB_PATH}/"
@@ -237,15 +238,15 @@ RUN apt-get update && \
 ## Copy the source code into the image
 COPY . "${SRB_PATH}"
 
-## Build Rust targets
-# hadolint ignore=SC1091
-RUN source /entrypoint.bash -- && \
-    cargo build --release --workspace --all-targets
+# ## Build Rust targets
+# # hadolint ignore=SC1091
+# RUN source /entrypoint.bash -- && \
+#     cargo build --release --workspace --all-targets
 
 ## Install project as editable Python module
 # hadolint ignore=SC1091
 RUN source /entrypoint.bash -- && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SRB_PATH}[all]"
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --no-deps --editable "${SRB_PATH}[all]"
 
 ## Install project as ROS package
 ARG ROS_WS="/opt/ros/${ROS_DISTRO}/ws"

@@ -1,7 +1,18 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import Any, ClassVar, Dict, Iterable, List, Mapping, Sequence, Tuple, Type
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+)
 
 from space_robotics_bench.core.asset import ArticulationCfg, RigidObjectCfg
 from space_robotics_bench.core.asset.asset import Asset
@@ -12,6 +23,8 @@ from space_robotics_bench.utils import convert_to_snake_case
 
 
 class Robot(Asset, asset_entrypoint=AssetType.ROBOT):
+    INPUT_BLOCKLIST: ClassVar[Set] = {"asset_cfg", "action_cfg", "frame_base"}
+
     asset_cfg: ArticulationCfg | RigidObjectCfg
     action_cfg: Any
     frame_base: Frame
@@ -80,11 +93,11 @@ class RobotRegistry:
         return cls.registry.keys()
 
     @classmethod
-    def items(cls) -> Iterable[Tuple[RobotType, Type[Robot]]]:
+    def items(cls) -> Iterable[Tuple[RobotType, Iterable[Type[Robot]]]]:
         return cls.registry.items()
 
     @classmethod
-    def values(cls) -> Iterable[Sequence[Type[Robot]]]:
+    def values(cls) -> Iterable[Iterable[Type[Robot]]]:
         return cls.registry.values()
 
     @classmethod

@@ -142,19 +142,34 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
             self.scene.env_spacing = 42.0
         self.scene.light = assets.sunlight_from_env_cfg(self.env_cfg)
         self.scene.sky = assets.sky_from_env_cfg(self.env_cfg)
-        self.robot_cfg = assets.manipulator_from_env_cfg(self.env_cfg)
+        # self.robot_cfg = assets.manipulator_from_env_cfg(self.env_cfg)
+        self.robot_cfg = assets.Franka()
         self.scene.robot = self.robot_cfg.asset_cfg
         self.vehicle_cfg = assets.vehicle_from_env_cfg(self.env_cfg)
-        self.scene.terrain = assets.terrain_from_env_cfg(
-            self.env_cfg,
-            num_assets=self.scene.num_envs,
-            size=(self.scene.env_spacing - 1,) * 2,
-            procgen_kwargs={
-                "density": 0.04,
-                "flat_area_size": 2.0,
-                "texture_resolution": 2048,
-            },
+        # self.scene.terrain = assets.terrain_from_env_cfg(
+        #     self.env_cfg,
+        #     num_assets=self.scene.num_envs,
+        #     size=(self.scene.env_spacing - 1,) * 2,
+        #     procgen_kwargs={
+        #         "density": 0.04,
+        #         "flat_area_size": 2.0,
+        #         "texture_resolution": 2048,
+        #     },
+        # )
+        self.terrain_cfg = assets.MarsSurface(
+            scale=(
+                self.scene.env_spacing - 1.0,
+                self.scene.env_spacing - 1.0,
+                0.1 * self.scene.env_spacing,
+            ),
+            density=0.5,
+            # texture_resolution={
+            #     BakeType.ALBEDO: 4069,
+            #     BakeType.NORMAL: 6144,
+            #     BakeType.ROUGHNESS: 1024,
+            # },
         )
+        self.scene.terrain = self.terrain_cfg.asset_cfg
         if self.vehicle_cfg:
             # Add vehicle to scene
             self.scene.vehicle = self.vehicle_cfg.asset_cfg
@@ -175,9 +190,9 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
 
         ## Sensors
         self.scene.tf_robot_ee = FrameTransformerCfg(
-            prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.base_frame.prim_relpath}",
+            prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.frame_base.prim_relpath}",
             target_frames=[
-                FrameTransformerCfg.Frame(
+                FrameTransformerCfg.FrameCfg(
                     name="robot_ee",
                     prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.frame_ee.prim_relpath}",
                     offset=OffsetCfg(

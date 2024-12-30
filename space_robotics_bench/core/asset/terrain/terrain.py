@@ -11,6 +11,7 @@ from space_robotics_bench.core.asset.asset_type import AssetType
 class Terrain(Asset, asset_entrypoint=AssetType.TERRAIN):
     # TODO: Rename to size
     scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat] | None = None
+    density: PositiveFloat | None = None
 
     @classmethod
     def asset_registry(cls) -> Sequence[Type[Terrain]]:
@@ -18,7 +19,7 @@ class Terrain(Asset, asset_entrypoint=AssetType.TERRAIN):
 
 
 class Surface(Terrain, asset_metaclass=True):
-    pass
+    flat_area_size: PositiveFloat | None = None
 
 
 class Underground(Terrain, asset_metaclass=True):

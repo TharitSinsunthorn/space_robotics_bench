@@ -173,6 +173,20 @@ class BaseLocomotionEnvCfg(BaseEnvCfg):
                 "texture_resolution": 4096,
             },
         )
+        self.terrain_cfg = assets.MarsSurface(
+            scale=(
+                48.0,
+                48.0,
+                0.1 * self.scene.env_spacing,
+            ),
+            density=0.2,
+            # texture_resolution={
+            #     BakeType.ALBEDO: 4069,
+            #     BakeType.NORMAL: 6144,
+            #     BakeType.ROUGHNESS: 1024,
+            # },
+        )
+        self.scene.terrain = self.terrain_cfg.asset_cfg
 
         ## Actions
         self.actions = self.robot_cfg.action_cfg

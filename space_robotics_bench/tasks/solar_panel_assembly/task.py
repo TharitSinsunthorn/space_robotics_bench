@@ -10,7 +10,7 @@ import space_robotics_bench.core.envs as env_utils
 import space_robotics_bench.core.sim as sim_utils
 import space_robotics_bench.utils.math as math_utils
 from space_robotics_bench import assets
-from space_robotics_bench.core.asset import AssetCfg, RigidObject, RigidObjectCfg
+from space_robotics_bench.core.asset import Object, RigidObject, RigidObjectCfg
 from space_robotics_bench.core.managers import EventTermCfg, SceneEntityCfg
 from space_robotics_bench.core.markers import (
     VisualizationMarkers,
@@ -30,7 +30,7 @@ from ..peg_in_hole.task import peg_and_hole_cfg
 ##############
 
 
-class PanelCfg(AssetCfg, arbitrary_types_allowed=True):
+class PanelCfg(Object, arbitrary_types_allowed=True):
     ## Geometry
     offset_pos: Tuple[float, float, float] = (0.0, 0.0, 0.15)
 

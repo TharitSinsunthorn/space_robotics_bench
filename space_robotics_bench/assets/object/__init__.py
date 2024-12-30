@@ -7,11 +7,13 @@ from space_robotics_bench.core.asset import AssetBaseCfg, RigidObjectCfg
 from space_robotics_bench.paths import SRB_ASSETS_DIR
 from space_robotics_bench.utils import color as color_utils
 
-# from .peg_in_hole_procgen import HoleProcgenCfg, PegProcgenCfg
+from .debris import CubesatDebris
+from .peg_in_hole_procgen import HoleProcgenCfg, PegProcgenCfg
 from .peg_in_hole_profile import HoleProfileCfg, PegProfileCfg, PegProfileShortCfg
 from .rock_procgen import LunarRockCfg
 from .sample_tube import SampleTubeCfg
 from .solar_panel import SolarPanelCfg
+from .static_vehicle import *  # noqa: F403
 
 
 @staticmethod
@@ -89,28 +91,10 @@ def object_of_interest_from_env_cfg(
             # )
 
             match env_cfg.scenario:
-                # case env_utils.Scenario.ORBIT:
-                #     spawn = MultiAssetCfg(
-                #         assets_cfg=[
-                #             sim_utils.UsdFileCfg(
-                #                 usd_path=path.join(
-                #                     SRB_ASSETS_DIR,
-                #                     "cubesat",
-                #                     f"cubesat{id}.usdz",
-                #                 ),
-                #                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                #                     disable_gravity=True,
-                #                     max_depenetration_velocity=5.0,
-                #                 ),
-                #                 collision_props=sim_utils.CollisionPropertiesCfg(),
-                #                 mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
-                #                     mesh_approximation="sdf",
-                #                 ),
-                #                 activate_contact_sensors=True,
-                #             )
-                #             for id in range(32)
-                #         ]
-                #     )
+                case env_utils.Scenario.ORBIT:
+                    spawn = CubesatDebris(
+                        **spawn_kwargs,
+                    )
 
                 case env_utils.Scenario.MOON:
                     spawn = LunarRockCfg(
@@ -128,20 +112,6 @@ def object_of_interest_from_env_cfg(
                 #     )
                 case _:
                     return None
-
-            # TODO: Fix scale
-
-            # if env_cfg.scenario != env_utils.Scenario.ORBIT:
-            #     for node_cfg in spawn.geometry_nodes.values():
-            #         if "scale" in node_cfg:
-            #             node_cfg["scale"] = size
-
-            #     for key, value in procgen_kwargs.items():
-            #         for node_cfg in spawn.geometry_nodes.values():
-            #             if key in node_cfg:
-            #                 node_cfg[key] = value
-            #             elif hasattr(spawn, key):
-            #                 setattr(spawn, key, value)
 
     if spawn is None:
         raise NotImplementedError
@@ -209,40 +179,8 @@ def peg_in_hole_from_env_cfg(
                         mesh_approximation="sdf",
                     )
                 )
-            # TODO: Fix
-            # spawn_peg = PegProcgenCfg(
-            #     num_assets=num_assets,
-            #     usd_file_cfg=sim_utils.UsdFileCfg(
-            #         usd_path="IGNORED",
-            #         **spawn_kwargs_peg,
-            #     ),
-            #     seed=env_cfg.seed + procgen_seed_offset,
-            #     detail=env_cfg.detail,
-            # )
-            # spawn_hole = HoleProcgenCfg(
-            #     num_assets=num_assets,
-            #     usd_file_cfg=sim_utils.UsdFileCfg(
-            #         usd_path="IGNORED",
-            #         **spawn_kwargs_hole,
-            #     ),
-            #     seed=env_cfg.seed + procgen_seed_offset,
-            #     detail=env_cfg.detail,
-            # )
-
-            for spawn, procgen_kwargs in (
-                (spawn_peg, procgen_kwargs_peg),
-                (spawn_hole, procgen_kwargs_hole),
-            ):
-                for node_cfg in spawn.geometry_nodes.values():
-                    if "scale" in node_cfg:
-                        node_cfg["scale"] = size
-
-                for key, value in procgen_kwargs.items():
-                    for node_cfg in spawn.geometry_nodes.values():
-                        if key in node_cfg:
-                            node_cfg[key] = value
-                        elif hasattr(spawn, key):
-                            setattr(spawn, key, value)
+            spawn_peg = PegProcgenCfg(**spawn_kwargs_peg)
+            spawn_hole = HoleProcgenCfg(**spawn_kwargs_hole)
 
     return RigidObjectCfg(
         prim_path=prim_path_peg,

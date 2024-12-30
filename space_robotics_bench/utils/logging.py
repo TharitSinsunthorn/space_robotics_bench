@@ -22,6 +22,7 @@ __all__ = [
 logger = logging.getLogger("simforge")
 
 # Set the logger level
+# TODO: Set to INFO
 logger.setLevel(environ.get("SRB_LOG_LEVEL", "DEBUG").upper())
 
 

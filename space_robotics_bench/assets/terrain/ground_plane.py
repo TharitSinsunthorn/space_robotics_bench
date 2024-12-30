@@ -6,7 +6,6 @@ class GroundPlane(Surface):
     asset_cfg: AssetBaseCfg = AssetBaseCfg(
         prim_path="/World/terrain",
         spawn=sim_utils.GroundPlaneCfg(
-            # size=size,
             color=(0.0, 158.0 / 255.0, 218.0 / 255.0),
         ),
     )

@@ -9,7 +9,7 @@ from space_robotics_bench.core.actions import (
 from space_robotics_bench.core.asset import Frame, Spacecraft
 
 
-class CubeSat(Spacecraft):
+class Cubesat(Spacecraft):
     ## Model
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/robot",
@@ -30,13 +30,8 @@ class CubeSat(Spacecraft):
 
     ## Actions
     action_cfg: SpacecraftActionGroupCfg = SpacecraftActionGroupCfg(
-        flight=SpacecraftActionCfg(
-            asset_name="robot",
-            scale=0.1,
-        )
+        flight=SpacecraftActionCfg(asset_name="robot", scale=0.1)
     )
 
     ## Frames
-    frame_base: Frame = Frame(
-        prim_relpath="",
-    )
+    frame_base: Frame = Frame(prim_relpath="")
