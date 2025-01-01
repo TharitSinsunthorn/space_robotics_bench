@@ -3,8 +3,8 @@
 Testing script for running tasks with random actions
 
 Examples:
-    ros2 run space_robotics_bench random_agent.py
-    ros2 run space_robotics_bench random_agent.py --task sample_collection --num_envs 4
+    ros2 run srb random_agent.py
+    ros2 run srb random_agent.py --task sample_collection --num_envs 4
 """
 
 from _cli_utils import add_default_cli_args, argparse, launch_app, shutdown_app
@@ -22,8 +22,8 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     from omni.isaac.kit import SimulationApp
     from omni.isaac.lab.utils.dict import print_dict
 
-    import space_robotics_bench  # noqa: F401
-    from space_robotics_bench.utils.parsing import create_logdir_path, parse_task_cfg
+    import srb  # noqa: F401
+    from srb.utils.parsing import create_logdir_path, parse_task_cfg
 
     ## Extract simulation app
     sim_app: SimulationApp = launcher.app

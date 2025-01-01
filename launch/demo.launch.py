@@ -10,8 +10,8 @@ A basic set of arguments can be passed to the script to select the task and cust
 the simulation environment. For more advanced configurations, please refer to the script itself.
 
 Examples:
-    ros2 launch space_robotics_bench demo.launch.py
-    ros2 launch space_robotics_bench demo.launch.py task:=sample_collection num_envs:=16
+    ros2 launch srb demo.launch.py
+    ros2 launch srb demo.launch.py task:=sample_collection num_envs:=16
 """
 
 from os import path

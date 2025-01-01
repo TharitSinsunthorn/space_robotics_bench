@@ -3,7 +3,7 @@
 Utility script for listing all registered the Space Robotics Bench
 
 Usage:
-    ros2 run space_robotics_bench list_envs.py
+    ros2 run srb list_envs.py
 """
 
 from _cli_utils import add_default_cli_args, argparse, launch_app, shutdown_app
@@ -13,8 +13,8 @@ def main():
     import gymnasium
     from prettytable import PrettyTable
 
-    import space_robotics_bench  # noqa: F401
-    from space_robotics_bench.utils.registry import get_srb_tasks
+    import srb  # noqa: F401
+    from srb.utils.registry import get_srb_tasks
 
     # Table config
     table = PrettyTable(["id (task/demo)", "entrypoint", "config"])

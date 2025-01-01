@@ -3,8 +3,8 @@
 Teleoperation script for running tasks with human-in-the-loop control
 
 Examples:
-    ros2 run space_robotics_bench teleop.py
-    ros2 run space_robotics_bench teleop.py --task sample_collection --num_envs 4 --teleop_device spacemouse
+    ros2 run srb teleop.py
+    ros2 run srb teleop.py --task sample_collection --num_envs 4 --teleop_device spacemouse
 """
 
 from _cli_utils import add_default_cli_args, argparse, launch_app, shutdown_app
@@ -23,19 +23,19 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     from omni.isaac.lab.utils.dict import print_dict
     from rclpy.executors import MultiThreadedExecutor
 
-    import space_robotics_bench  # Noqa: F401
-    from space_robotics_bench.core import mdp
-    from space_robotics_bench.core.actions import (
+    import srb  # Noqa: F401
+    from srb.core import mdp
+    from srb.core.actions import (
         ManipulatorTaskSpaceActionCfg,
         MultiCopterActionGroupCfg,
         SpacecraftActionGroupCfg,
         WheeledRoverActionGroupCfg,
     )
-    from space_robotics_bench.core.interfaces import ROS2, GuiInterface
-    from space_robotics_bench.core.managers import SceneEntityCfg
-    from space_robotics_bench.core.teleop_devices import CombinedInterface
-    from space_robotics_bench.utils.parsing import create_logdir_path, parse_task_cfg
-    from space_robotics_bench.utils.ros import enable_ros2_bridge
+    from srb.core.interfaces import ROS2, GuiInterface
+    from srb.core.managers import SceneEntityCfg
+    from srb.core.teleop_devices import CombinedInterface
+    from srb.utils.parsing import create_logdir_path, parse_task_cfg
+    from srb.utils.ros import enable_ros2_bridge
 
     enable_ros2_bridge()
     import rclpy

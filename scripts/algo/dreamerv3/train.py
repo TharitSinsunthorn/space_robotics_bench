@@ -27,14 +27,14 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     from omni.isaac.lab.utils.dict import print_dict
     from omni.isaac.lab.utils.io import dump_pickle, dump_yaml
 
-    import space_robotics_bench  # noqa: F401
-    from space_robotics_bench.core.sim import SimulationContext
-    from space_robotics_bench.core.wrappers.dreamerv3 import (
+    import srb  # noqa: F401
+    from srb.core.sim import SimulationContext
+    from srb.core.wrappers.dreamerv3 import (
         DriverParallelEnv,
         EmbodiedEnvWrapper,
         process_dreamerv3_cfg,
     )
-    from space_robotics_bench.utils.parsing import (
+    from srb.utils.parsing import (
         create_logdir_path,
         get_last_run_logdir_path,
         load_cfg_from_registry,

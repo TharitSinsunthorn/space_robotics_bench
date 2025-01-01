@@ -35,7 +35,7 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     from robomimic.utils.logutils import DataLogger, PrintLogger
     from torch.utils.data import DataLoader
 
-    import space_robotics_bench  # noqa: F401
+    import srb  # noqa: F401
 
     ## Extract simulation app
     _sim_app: SimulationApp = launcher.app

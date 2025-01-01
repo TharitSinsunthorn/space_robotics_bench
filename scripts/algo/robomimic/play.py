@@ -19,8 +19,8 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     import torch
     from omni.isaac.kit import SimulationApp
 
-    import space_robotics_bench  # noqa: F401
-    from space_robotics_bench.utils.parsing import parse_task_cfg
+    import srb  # noqa: F401
+    from srb.utils.parsing import parse_task_cfg
 
     ## Extract simulation app
     sim_app: SimulationApp = launcher.app

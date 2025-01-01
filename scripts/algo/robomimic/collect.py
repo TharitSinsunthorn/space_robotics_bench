@@ -25,17 +25,17 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     from omni.isaac.lab.utils.dict import print_dict
     from omni.isaac.lab.utils.io import dump_pickle, dump_yaml
 
-    import space_robotics_bench  # Noqa: F401
-    from space_robotics_bench.core import mdp
-    from space_robotics_bench.core.actions import (
+    import srb  # Noqa: F401
+    from srb.core import mdp
+    from srb.core.actions import (
         ManipulatorTaskSpaceActionCfg,
         MultiCopterActionGroupCfg,
         WheeledRoverActionGroupCfg,
     )
-    from space_robotics_bench.core.managers import SceneEntityCfg
-    from space_robotics_bench.core.teleop_devices import CombinedInterface
-    from space_robotics_bench.core.wrappers.robomimic import RobomimicDataCollector
-    from space_robotics_bench.utils.parsing import create_logdir_path, parse_task_cfg
+    from srb.core.managers import SceneEntityCfg
+    from srb.core.teleop_devices import CombinedInterface
+    from srb.core.wrappers.robomimic import RobomimicDataCollector
+    from srb.utils.parsing import create_logdir_path, parse_task_cfg
 
     if args.headless and "keyboard" in args.teleop_device:
         raise ValueError("Native teleoperation is only supported in GUI mode.")

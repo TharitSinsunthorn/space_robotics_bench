@@ -20,7 +20,7 @@ fi
 CARGO_RUN_CMD=(
     cargo run
     --manifest-path "${CARGO_MANIFEST_PATH}"
-    --package space_robotics_bench_gui
+    --package srb_gui
     --bin gui
     "${RUN_OPTS}"
     "${*:1}"

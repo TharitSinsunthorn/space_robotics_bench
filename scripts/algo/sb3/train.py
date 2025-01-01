@@ -28,12 +28,9 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     from stable_baselines3.common.logger import configure
     from stable_baselines3.common.vec_env import VecNormalize
 
-    import space_robotics_bench  # noqa: F401
-    from space_robotics_bench.core.wrappers.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
-    from space_robotics_bench.utils.parsing import (
-        load_cfg_from_registry,
-        parse_task_cfg,
-    )
+    import srb  # noqa: F401
+    from srb.core.wrappers.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
+    from srb.utils.parsing import load_cfg_from_registry, parse_task_cfg
 
     ## Extract simulation app
     _sim_app: SimulationApp = launcher.app

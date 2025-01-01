@@ -18,7 +18,7 @@ concurrency:
 env:
   MSRV: "1.80"
   CARGO_TERM_COLOR: always
-  GUI_PACKAGE_NAME: space_robotics_bench_gui
+  GUI_PACKAGE_NAME: srb_gui
 
 jobs:
   rustfmt:

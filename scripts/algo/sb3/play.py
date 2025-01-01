@@ -22,9 +22,9 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     from stable_baselines3 import PPO
     from stable_baselines3.common.vec_env import VecNormalize
 
-    import space_robotics_bench  # noqa: F401
-    from space_robotics_bench.core.wrappers.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
-    from space_robotics_bench.utils.parsing import (
+    import srb  # noqa: F401
+    from srb.core.wrappers.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
+    from srb.utils.parsing import (
         get_checkpoint_path,
         load_cfg_from_registry,
         parse_task_cfg,

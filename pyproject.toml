@@ -13,9 +13,9 @@ plugins = ["pydantic.mypy"]
 follow_imports = "silent"
 
 [project]
-name = "space_robotics_bench"
+name = "srb"
 version = "0.0.1"
-description = "Comprehensive benchmark for space robotics"
+description = "Space Robotics Bench"
 authors = [{ name = "Andrej Orsula", email = "orsula.andrej@gmail.com" }]
 maintainers = [{ name = "Andrej Orsula", email = "orsula.andrej@gmail.com" }]
 urls = { Repository = "https://github.com/AndrejOrsula/space_robotics_bench", Documentation = "https://AndrejOrsula.github.io/space_robotics_bench" }
@@ -32,7 +32,7 @@ license = { text = "MIT OR Apache-2.0" }
 requires-python = "==3.10.*"
 dependencies = [
   ## Simulation
-  # TODO: Add isaac lab
+  # TODO: Add isaac lab to dependencies
   "oxidasim~=0.1",
   ## Assets
   "simforge~=0.1",
@@ -43,19 +43,15 @@ dependencies = [
 [project.optional-dependencies]
 all = [
   ## Algorithms
-  "space_robotics_bench[algo]",
+  "srb[algo]",
   ## Hardware
-  "space_robotics_bench[hw]",
+  "srb[hw]",
   ## Utils
-  "space_robotics_bench[cli]",
-  "space_robotics_bench[dev]",
+  "srb[cli]",
+  "srb[dev]",
 ]
 ## Algorithms
-algo = [
-  "space_robotics_bench[dreamerv3]",
-  "space_robotics_bench[robomimic]",
-  "space_robotics_bench[sb3]",
-]
+algo = ["srb[dreamerv3]", "srb[robomimic]", "srb[sb3]"]
 dreamerv3 = [
   "dreamerv3@git+https://github.com/AndrejOrsula/dreamerv3.git@58bd8ff875077a859b68f9ad94d89129d4f8dd68",
 ]
@@ -64,19 +60,15 @@ robomimic = [
 ]
 sb3 = ["stable-baselines3~=2.0", "sb3-contrib~=2.0"]
 ## Hardware
-hw = ["space_robotics_bench[spacemouse]"]
+hw = ["srb[spacemouse]"]
 spacemouse = ["pyspacemouse~=1.0"]
 ## Utils
-cli = ["space_robotics_bench[rich]", "argcomplete~=1.0"]
-dev = [
-  "space_robotics_bench[test]",
-  "space_robotics_bench[tracing]",
-  "devtools~=0.12",
-]
+cli = ["srb[rich]", "argcomplete~=1.0"]
+dev = ["srb[test]", "srb[tracing]", "devtools~=0.12"]
 rich = ["rich~=13.0"]
 test = ["pytest~=8.0"]
-tracing = ["space_robotics_bench[rich]", "logfire~=2.0"]
+tracing = ["srb[rich]", "logfire~=2.0"]
 
 [project.scripts]
-space_robotics_bench = "space_robotics_bench.__main__:main"
-srb = "space_robotics_bench.__main__:main"
+space_robotics_bench = "srb.__main__:main"
+srb = "srb.__main__:main"

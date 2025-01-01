@@ -1,6 +1,6 @@
 [workspace.package]
 authors = ["Andrej Orsula <orsula.andrej@gmail.com>"]
-description = "Comprehensive benchmark for space robotics"
+description = "Space Robotics Bench"
 categories = ["science::robotics"]
 keywords = ["benchmark", "robotics", "simulation", "space"]
 readme = "README.md"
@@ -15,4 +15,4 @@ publish = false
 
 [workspace]
 resolver = "2"
-members = ["crates/space_robotics_bench_gui"]
+members = ["crates/srb_gui"]

@@ -3,8 +3,8 @@
 Entrypoint script for iterfacing over ROS 2
 
 Examples:
-    ros2 run space_robotics_bench ros2.py
-    ros2 run space_robotics_bench ros2.py --task sample_collection --num_envs 4
+    ros2 run srb ros2.py
+    ros2 run srb ros2.py --task sample_collection --num_envs 4
 """
 
 from _cli_utils import add_default_cli_args, argparse, launch_app, shutdown_app
@@ -20,9 +20,9 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     from omni.isaac.kit import SimulationApp
     from omni.isaac.lab.utils.dict import print_dict
 
-    import space_robotics_bench  # Noqa: F401
-    from space_robotics_bench.core.interfaces import ROS2
-    from space_robotics_bench.utils.parsing import create_logdir_path, parse_task_cfg
+    import srb  # Noqa: F401
+    from srb.core.interfaces import ROS2
+    from srb.utils.parsing import create_logdir_path, parse_task_cfg
 
     ## Extract simulation app
     sim_app: SimulationApp = launcher.app

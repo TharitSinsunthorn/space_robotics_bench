@@ -1570,7 +1570,7 @@ wheels = [
 ]
 
 [[package]]
-name = "space-robotics-bench"
+name = "srb"
 version = "0.0.1"
 source = { editable = "." }
 dependencies = [
@@ -1649,18 +1649,18 @@ requires-dist = [
     { name = "robomimic", marker = "extra == 'robomimic'", git = "https://github.com/ARISE-Initiative/robomimic.git?rev=29d6ca229dec3327f87b54cf1688a94177f92af6#29d6ca229dec3327f87b54cf1688a94177f92af6" },
     { name = "sb3-contrib", marker = "extra == 'sb3'", specifier = "~=2.0" },
     { name = "simforge", specifier = "~=0.1" },
-    { name = "space-robotics-bench", extras = ["algo"], marker = "extra == 'all'" },
-    { name = "space-robotics-bench", extras = ["cli"], marker = "extra == 'all'" },
-    { name = "space-robotics-bench", extras = ["dev"], marker = "extra == 'all'" },
-    { name = "space-robotics-bench", extras = ["dreamerv3"], marker = "extra == 'algo'" },
-    { name = "space-robotics-bench", extras = ["hw"], marker = "extra == 'all'" },
-    { name = "space-robotics-bench", extras = ["rich"], marker = "extra == 'cli'" },
-    { name = "space-robotics-bench", extras = ["rich"], marker = "extra == 'tracing'" },
-    { name = "space-robotics-bench", extras = ["robomimic"], marker = "extra == 'algo'" },
-    { name = "space-robotics-bench", extras = ["sb3"], marker = "extra == 'algo'" },
-    { name = "space-robotics-bench", extras = ["spacemouse"], marker = "extra == 'hw'" },
-    { name = "space-robotics-bench", extras = ["test"], marker = "extra == 'dev'" },
-    { name = "space-robotics-bench", extras = ["tracing"], marker = "extra == 'dev'" },
+    { name = "srb", extras = ["algo"], marker = "extra == 'all'" },
+    { name = "srb", extras = ["cli"], marker = "extra == 'all'" },
+    { name = "srb", extras = ["dev"], marker = "extra == 'all'" },
+    { name = "srb", extras = ["dreamerv3"], marker = "extra == 'algo'" },
+    { name = "srb", extras = ["hw"], marker = "extra == 'all'" },
+    { name = "srb", extras = ["rich"], marker = "extra == 'cli'" },
+    { name = "srb", extras = ["rich"], marker = "extra == 'tracing'" },
+    { name = "srb", extras = ["robomimic"], marker = "extra == 'algo'" },
+    { name = "srb", extras = ["sb3"], marker = "extra == 'algo'" },
+    { name = "srb", extras = ["spacemouse"], marker = "extra == 'hw'" },
+    { name = "srb", extras = ["test"], marker = "extra == 'dev'" },
+    { name = "srb", extras = ["tracing"], marker = "extra == 'dev'" },
     { name = "stable-baselines3", marker = "extra == 'sb3'", specifier = "~=2.0" },
 ]
 
