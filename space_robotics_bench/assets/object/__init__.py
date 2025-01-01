@@ -97,7 +97,7 @@ def object_of_interest_from_env_cfg(
                 case env_utils.Domain.MOON:
                     spawn = LunarRockCfg(
                         num_assets=num_assets,
-                        seed=env_cfg.seed + procgen_seed_offset,
+                        # seed=env_cfg.seed + procgen_seed_offset,
                         **spawn_kwargs,
                     )
 

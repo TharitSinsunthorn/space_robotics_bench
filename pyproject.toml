@@ -31,12 +31,11 @@ readme = "README.md"
 license = { text = "MIT OR Apache-2.0" }
 requires-python = "==3.10.*"
 dependencies = [
-  # TODO: Enable dependencies
-  # ## Assets
-  # "simforge~=0.1",
-  # "simforge_foundry~=0.1",
-  # ## Simulation
-  # "oxidasim~=0.1",
+  ## Simulation
+  # TODO: Add isaac lab
+  "oxidasim~=0.1",
+  ## Assets
+  "simforge~=0.1",
   ## Typing
   "pydantic~=2.0",
 ]
@@ -44,31 +43,40 @@ dependencies = [
 [project.optional-dependencies]
 all = [
   ## Algorithms
+  "space_robotics_bench[algo]",
+  ## Hardware
+  "space_robotics_bench[hw]",
+  ## Utils
+  "space_robotics_bench[cli]",
+  "space_robotics_bench[dev]",
+]
+## Algorithms
+algo = [
   "space_robotics_bench[dreamerv3]",
   "space_robotics_bench[robomimic]",
   "space_robotics_bench[sb3]",
-  ## Hardware
-  "space_robotics_bench[spacemouse]",
-  ## Utils
-  "space_robotics_bench[tables]",
-  "space_robotics_bench[tests]",
-  "space_robotics_bench[traceback]",
 ]
-## Algorithms
 dreamerv3 = [
   "dreamerv3@git+https://github.com/AndrejOrsula/dreamerv3.git@58bd8ff875077a859b68f9ad94d89129d4f8dd68",
 ]
 robomimic = [
   "robomimic@git+https://github.com/ARISE-Initiative/robomimic.git@29d6ca229dec3327f87b54cf1688a94177f92af6",
 ]
-sb3 = ["stable-baselines3~=2.3", "sb3-contrib~=2.3"]
+sb3 = ["stable-baselines3~=2.0", "sb3-contrib~=2.0"]
 ## Hardware
-spacemouse = ["pyspacemouse~=1.1"]
+hw = ["space_robotics_bench[spacemouse]"]
+spacemouse = ["pyspacemouse~=1.0"]
 ## Utils
-tables = ["prettytable~=3.0"]
-tests = ["pytest~=8.0"]
-traceback = ["rich~=13.0"]
+cli = ["space_robotics_bench[rich]", "argcomplete~=1.0"]
+dev = [
+  "space_robotics_bench[test]",
+  "space_robotics_bench[tracing]",
+  "devtools~=0.12",
+]
+rich = ["rich~=13.0"]
+test = ["pytest~=8.0"]
+tracing = ["space_robotics_bench[rich]", "logfire~=2.0"]
 
-# [project.scripts]
-# space_robotics_bench = "space_robotics_bench.__main__:main"
-# srb = "space_robotics_bench.__main__:main"
+[project.scripts]
+space_robotics_bench = "space_robotics_bench.__main__:main"
+srb = "space_robotics_bench.__main__:main"

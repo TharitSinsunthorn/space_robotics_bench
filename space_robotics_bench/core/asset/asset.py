@@ -16,12 +16,11 @@ from typing import (
 )
 
 from pydantic import BaseModel
-from simforge import BlGeometry, BlModel
-from simforge.integrations.isaaclab import SimforgeAssetCfg
-from simforge.typing import TexResConfig
+from simforge import BlGeometry, BlModel, TexResConfig
 
 from space_robotics_bench.core.asset import AssetBaseCfg
 from space_robotics_bench.core.asset.asset_type import AssetType
+from space_robotics_bench.core.sim import SimforgeAssetCfg
 from space_robotics_bench.utils import convert_to_snake_case, logging
 
 
@@ -146,7 +145,7 @@ class AssetRegistry:
         return cls.registry.keys()
 
     @classmethod
-    def items(cls) -> Iterable[Tuple[AssetType, Iterable[Type[Asset]]]]:
+    def items(cls) -> Iterable[Tuple[AssetType, Sequence[Type[Asset]]]]:
         return cls.registry.items()
 
     @classmethod

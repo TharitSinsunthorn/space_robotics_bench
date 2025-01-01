@@ -2,7 +2,7 @@ import logging
 import sys
 from os import environ
 
-from simforge.utils.tracing import with_logfire, with_rich
+from space_robotics_bench.utils.tracing import with_logfire, with_rich
 
 __all__ = [
     "critical",
@@ -19,10 +19,10 @@ __all__ = [
 ]
 
 # Create a logger
-logger = logging.getLogger("simforge")
+logger = logging.getLogger("space_robotics_bench")
 
 # Set the logger level
-# TODO: Set to INFO
+# TODO: Set to info
 logger.setLevel(environ.get("SRB_LOG_LEVEL", "DEBUG").upper())
 
 

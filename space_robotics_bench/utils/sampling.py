@@ -2,7 +2,14 @@ from typing import Iterable, List, Tuple
 
 import numpy as np
 import torch
-from oxidasim.sampling import *  # noqa: F403
+from oxidasim.sampling import (  # noqa: F401
+    sample_poisson_disk_2d,
+    sample_poisson_disk_2d_looped,
+    sample_poisson_disk_2d_parallel,
+    sample_poisson_disk_3d,
+    sample_poisson_disk_3d_looped,
+    sample_poisson_disk_3d_parallel,
+)
 from pxr import Gf
 
 

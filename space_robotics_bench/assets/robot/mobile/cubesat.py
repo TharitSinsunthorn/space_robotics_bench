@@ -1,5 +1,5 @@
 from omni.isaac.lab.assets.rigid_object import RigidObjectCfg
-from simforge_foundry.models import Cubesat
+from simforge_foundry import model as sf_model
 
 import space_robotics_bench.core.sim as sim_utils
 from space_robotics_bench.core.actions import (
@@ -14,7 +14,7 @@ class Cubesat(Spacecraft):
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/robot",
         spawn=sim_utils.SimforgeAssetCfg(
-            assets=[Cubesat()],
+            assets=[sf_model.Cubesat()],
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 disable_gravity=True,
                 max_depenetration_velocity=5.0,

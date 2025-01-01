@@ -3,6 +3,8 @@ import pkgutil
 import sys
 from typing import Iterable, List
 
+from space_robotics_bench.utils import logging
+
 
 def import_recursively(module_name: str, ignorelist: List[str] = []):
     package = importlib.import_module(module_name)
@@ -16,7 +18,7 @@ def _import_recursively_impl(
     path: Iterable[str],
     prefix: str = "",
     ignorelist: List[str] = [],
-):
+) -> Iterable[pkgutil.ModuleInfo]:
     def seen(p, m={}):
         if p in m:
             return True
@@ -31,8 +33,9 @@ def _import_recursively_impl(
         if info.ispkg:
             try:
                 __import__(info.name)
-            except Exception:
-                raise
+            except Exception as e:
+                logging.critical(f"Failed to import '{info.name}'")
+                raise e
             else:
                 paths = getattr(sys.modules[info.name], "__path__", None) or []
                 paths = [path for path in paths if not seen(path)]

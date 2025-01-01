@@ -87,7 +87,7 @@ class MobileRobotRegistry:
         return cls.registry.keys()
 
     @classmethod
-    def items(cls) -> Iterable[Tuple[MobileRobotType, Iterable[Type[MobileRobot]]]]:
+    def items(cls) -> Iterable[Tuple[MobileRobotType, Sequence[Type[MobileRobot]]]]:
         return cls.registry.items()
 
     @classmethod

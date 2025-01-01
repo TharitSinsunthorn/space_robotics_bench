@@ -1,13 +1,14 @@
 from functools import cache
+from importlib.util import find_spec
 from os import environ
 
 
 @cache
 def with_rich() -> bool:
-    try:
-        from rich import traceback
-    except ImportError:
+    if find_spec("rich") is None:
         return False
+
+    from rich import traceback
 
     if environ.get("SRB_WITH_TRACEBACK", "true").lower() not in ("true", "1"):
         return False
@@ -28,10 +29,10 @@ def with_rich() -> bool:
 
 @cache
 def with_logfire() -> bool:
-    try:
-        import logfire
-    except ImportError:
+    if find_spec("logfire") is None:
         return False
+
+    import logfire
 
     if environ.get("SRB_WITH_LOGFIRE", "true").lower() not in ("true", "1"):
         return False
@@ -40,7 +41,7 @@ def with_logfire() -> bool:
         send_to_logfire=environ.get("LOGFIRE_SEND_TO_LOGFIRE", "false").lower()
         in ("true", "1")
         or environ.get("SRB_WITH_LOGFIRE_SEND", "false").lower() in ("true", "1"),
-        service_name="srb",
+        service_name="space_robotics_bench",
         console=False,
     )
     logfire.instrument_pydantic()

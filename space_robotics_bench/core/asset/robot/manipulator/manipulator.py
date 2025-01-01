@@ -87,7 +87,7 @@ class ManipulatorRegistry:
         return cls.registry.keys()
 
     @classmethod
-    def items(cls) -> Iterable[Tuple[ManipulatorType, Iterable[Type[Manipulator]]]]:
+    def items(cls) -> Iterable[Tuple[ManipulatorType, Sequence[Type[Manipulator]]]]:
         return cls.registry.items()
 
     @classmethod
