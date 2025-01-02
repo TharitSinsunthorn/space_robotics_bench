@@ -1,5 +1,3 @@
-from os import path
-
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.actuators import ImplicitActuatorCfg
 from omni.isaac.lab.assets.articulation import ArticulationCfg
@@ -17,7 +15,9 @@ class Ingenuity(MultiCopter):
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
         spawn=sim_utils.UsdFileCfg(
-            usd_path=path.join(SRB_ASSETS_DIR_SRB_ROBOT, "ingenuity", "ingenuity.usdc"),
+            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("ingenuity")
+            .joinpath("ingenuity.usdc")
+            .as_posix(),
             articulation_props=sim_utils.ArticulationRootPropertiesCfg(
                 enabled_self_collisions=False,
                 solver_position_iteration_count=8,

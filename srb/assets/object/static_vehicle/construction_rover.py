@@ -1,5 +1,3 @@
-from os import path
-
 import srb.core.sim as sim_utils
 import srb.utils.math as math_utils
 from srb.core.asset import AssetBaseCfg, Frame, StaticVehicle, Transform
@@ -11,11 +9,9 @@ class ConstructionRover(StaticVehicle):
     asset_cfg: AssetBaseCfg = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/vehicle",
         spawn=sim_utils.UsdFileCfg(
-            usd_path=path.join(
-                SRB_ASSETS_DIR_SRB_VEHICLE,
-                "construction_rover",
-                "construction_rover.usdc",
-            ),
+            usd_path=SRB_ASSETS_DIR_SRB_VEHICLE.joinpath("construction_rover")
+            .joinpath("construction_rover.usdc")
+            .as_posix(),
         ),
     )
 

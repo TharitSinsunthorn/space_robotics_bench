@@ -19,7 +19,7 @@ def register_srb_tasks(
     *,
     default_entry_point: gymnasium.Env | None = None,
     default_task_cfg: Any | None = None,
-    default_cfg_dir: str | None = SRB_HYPERPARAMS_DIR,
+    default_cfg_dir: str | None = SRB_HYPERPARAMS_DIR.as_posix(),
 ):
     for id, cfg in tasks.items():
         entry_point: gymnasium.Env = cfg.get("entry_point", default_entry_point)  # type: ignore

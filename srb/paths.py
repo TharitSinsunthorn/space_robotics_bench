@@ -1,22 +1,20 @@
-from os import path
-
-# TODO: Convert everything into pathlib.Path objects
+from pathlib import Path
 
 # Path to repository root directory
-SRB_DIR = path.dirname(path.dirname(path.realpath(__file__)))
+SRB_DIR = Path(__file__).resolve().parent.parent
 
 # Path to assets directory
-SRB_ASSETS_DIR = path.join(SRB_DIR, "assets")
-SRB_ASSETS_DIR_SRB = path.join(SRB_ASSETS_DIR, "srb_assets")
-SRB_ASSETS_DIR_SRB_HDRI = path.join(SRB_ASSETS_DIR_SRB, "hdri")
-SRB_ASSETS_DIR_SRB_MODEL = path.join(SRB_ASSETS_DIR_SRB, "model")
-SRB_ASSETS_DIR_SRB_OBJECT = path.join(SRB_ASSETS_DIR_SRB_MODEL, "object")
-SRB_ASSETS_DIR_SRB_ROBOT = path.join(SRB_ASSETS_DIR_SRB_MODEL, "robot")
-SRB_ASSETS_DIR_SRB_TERRAIN = path.join(SRB_ASSETS_DIR_SRB_MODEL, "terrain")
-SRB_ASSETS_DIR_SRB_VEHICLE = path.join(SRB_ASSETS_DIR_SRB_MODEL, "vehicle")
+SRB_ASSETS_DIR = SRB_DIR.joinpath("assets")
+SRB_ASSETS_DIR_SRB = SRB_ASSETS_DIR.joinpath("srb_assets")
+SRB_ASSETS_DIR_SRB_HDRI = SRB_ASSETS_DIR_SRB.joinpath("hdri")
+SRB_ASSETS_DIR_SRB_MODEL = SRB_ASSETS_DIR_SRB.joinpath("model")
+SRB_ASSETS_DIR_SRB_OBJECT = SRB_ASSETS_DIR_SRB_MODEL.joinpath("object")
+SRB_ASSETS_DIR_SRB_ROBOT = SRB_ASSETS_DIR_SRB_MODEL.joinpath("robot")
+SRB_ASSETS_DIR_SRB_TERRAIN = SRB_ASSETS_DIR_SRB_MODEL.joinpath("terrain")
+SRB_ASSETS_DIR_SRB_VEHICLE = SRB_ASSETS_DIR_SRB_MODEL.joinpath("vehicle")
 
 # Path to hyperparameters directory
-SRB_HYPERPARAMS_DIR = path.join(SRB_DIR, "hyperparams")
+SRB_HYPERPARAMS_DIR = SRB_DIR.joinpath("hyperparams")
 
 # Path to scripts directory
-SRB_SCRIPTS_DIR = path.join(SRB_DIR, "scripts")
+SRB_SCRIPTS_DIR = SRB_DIR.joinpath("scripts")

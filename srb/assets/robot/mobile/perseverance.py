@@ -1,5 +1,3 @@
-from os import path
-
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.actuators import ImplicitActuatorCfg
 from omni.isaac.lab.assets.articulation import ArticulationCfg
@@ -16,11 +14,9 @@ class Perseverance(WheeledRobot):
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
         spawn=sim_utils.UsdFileCfg(
-            usd_path=path.join(
-                SRB_ASSETS_DIR_SRB_ROBOT,
-                "perseverance",
-                "perseverance.usdc",
-            ),
+            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("perseverance")
+            .joinpath("perseverance.usdc")
+            .as_posix(),
             collision_props=sim_utils.CollisionPropertiesCfg(
                 contact_offset=0.02, rest_offset=0.005
             ),

@@ -1,5 +1,3 @@
-from os import path
-
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.actuators import ImplicitActuatorCfg
 from omni.isaac.lab.controllers import DifferentialIKControllerCfg
@@ -18,11 +16,9 @@ class Franka(SingleArmManipulator):
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
         spawn=sim_utils.UsdFileCfg(
-            usd_path=path.join(
-                SRB_ASSETS_DIR_SRB_ROBOT,
-                "franka",
-                "panda.usdc",
-            ),
+            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("franka")
+            .joinpath("panda.usdc")
+            .as_posix(),
             activate_contact_sensors=True,
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 disable_gravity=True,

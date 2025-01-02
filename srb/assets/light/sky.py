@@ -1,4 +1,3 @@
-from os import path
 from typing import Any, Dict
 
 from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
@@ -55,9 +54,13 @@ def sky_from_env_cfg(
                 height_density=0.5,
                 fog_distance_density=0.05,
             )
-            texture_file = path.join(SRB_ASSETS_DIR_SRB_HDRI, "martian_sky_day.hdr")
+            texture_file = SRB_ASSETS_DIR_SRB_HDRI.joinpath(
+                "martian_sky_day.hdr"
+            ).as_posix()
         case env_utils.Domain.ORBIT:
-            texture_file = path.join(SRB_ASSETS_DIR_SRB_HDRI, "low_lunar_orbit.jpg")
+            texture_file = SRB_ASSETS_DIR_SRB_HDRI.joinpath(
+                "low_lunar_orbit.jpg"
+            ).as_posix()
 
     if texture_file is None:
         return None
