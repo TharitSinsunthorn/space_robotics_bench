@@ -1,7 +1,12 @@
 from pathlib import Path
 
+# TODO: Move to utils
+
 # Path to repository root directory
 SRB_DIR = Path(__file__).resolve().parent.parent
+
+# Path to apps (experience) directory
+SRB_APPS_DIR = SRB_DIR.joinpath("apps")
 
 # Path to assets directory
 SRB_ASSETS_DIR = SRB_DIR.joinpath("assets")

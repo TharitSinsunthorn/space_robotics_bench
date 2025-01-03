@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 # PYTHON_ARGCOMPLETE_OK
-# from simforge.core import AssetRegistry, ModelFileFormat
-# from simforge.utils import SF_CACHE_DIR, convert_to_snake_case, logging
+from __future__ import annotations
+
 import argparse
 import sys
+from enum import Enum, auto
 from importlib.util import find_spec
-from os import path
-from typing import Literal
+from typing import TYPE_CHECKING, Iterable, Literal
+
+from srb.paths import SRB_APPS_DIR
+
+if TYPE_CHECKING:
+    from omni.isaac.lab.app import AppLauncher
 
 
 def main():
@@ -72,65 +77,161 @@ def launch_gui():
 
 
 ### List ###
-def list_registered():
-    # if AssetRegistry.n_assets() == 0:
-    #     raise ValueError("Cannot list SimForge assets because none are registered")
-
+def list_registered(category: str | Iterable[str], skip_visual_env: bool, **kwargs):
     if not find_spec("rich"):
-        raise ImportError('The "rich" package is required to list SimForge assets')
+        raise ImportError(
+            'The "rich" package is required to list registered entities of the Space Robotics Bench'
+        )
 
-    # table = Table(title="SimForge Asset Registry")
-    # table.add_column("#", justify="right", style="cyan", no_wrap=True)
-    # table.add_column("Type", justify="center", style="magenta", no_wrap=True)
-    # table.add_column("Package", justify="center", style="green", no_wrap=True)
-    # table.add_column("Name", justify="left", style="blue", no_wrap=True)
-    # table.add_column("Semantics", justify="left", style="red")
-    # table.add_column("Cached", justify="left", style="yellow")
-    # i = 0
-    # for asset_type, asset_classes in AssetRegistry.items():
-    #     cache_dir_for_type = SF_CACHE_DIR.joinpath(str(asset_type))
-    #     for j, asset_class in enumerate(asset_classes):
-    #         i += 1
-    #         asset_name = convert_to_snake_case(asset_class.__name__)
-    #         pkg_name = asset_class.__module__.split(".", 1)[0]
-    #         asset_cache_dir = cache_dir_for_type.joinpath(asset_name)
-    #         asset_cache = {
-    #             path.name: len(
-    #                 [asset for asset in os.listdir(path) if not asset.endswith(".json")]
-    #             )
-    #             for path in (
-    #                 (
-    #                     asset_cache_dir.joinpath(hexdigest)
-    #                     for hexdigest in os.listdir(asset_cache_dir)
-    #                 )
-    #                 if asset_cache_dir.is_dir()
-    #                 else ()
-    #             )
-    #             if path.is_dir()
-    #         }
-    #         table.add_row(
-    #             str(i),
-    #             str(asset_type),
-    #             f"[link=file://{os.path.dirname(inspect.getabsfile(importlib.import_module(pkg_name)))}]{pkg_name}[/link]",
-    #             f"[link=vscode://file/{inspect.getabsfile(asset_class)}:{inspect.getsourcelines(asset_class)[1]}]{asset_name}[/link]",
-    #             str(asset_class.SEMANTICS),
-    #             (
-    #                 ""
-    #                 if not asset_cache
-    #                 else f"[bold][link=file://{asset_cache_dir}]{sum(asset_cache.values())}[/link]:[/bold] "
-    #                 + ", ".join(
-    #                     f"[[link=file://{asset_cache_dir.joinpath(hexdigest)}]{n_assets}|{hexdigest[:hash_len]}[/link]]"
-    #                     for hexdigest, n_assets in sorted(
-    #                         asset_cache.items(),
-    #                         key=lambda x: x[1],
-    #                         reverse=True,
-    #                     )
-    #                     if n_assets > 0
-    #                 )
-    #             ),
-    #             end_section=(j + 1) == len(asset_classes),
-    #         )
-    # print(table)
+    from omni.isaac.lab.app import AppLauncher
+
+    # Launch Isaac Sim
+    launcher = AppLauncher(launcher_args={"headless": True})
+
+    import importlib
+    import inspect
+
+    import gymnasium
+    from rich import print
+    from rich.table import Table
+
+    from srb.core.asset import AssetRegistry, AssetType, RobotRegistry
+    from srb.utils import convert_to_snake_case
+    from srb.utils.registry import get_srb_tasks
+
+    # Standardize category
+    category = (
+        {RegisteredEntity.from_str(category)}
+        if isinstance(category, str)
+        else set(map(RegisteredEntity.from_str, category))
+    )
+    if RegisteredEntity.ALL in category:
+        category = {RegisteredEntity.ASSET, RegisteredEntity.ENV}
+    if RegisteredEntity.ASSET in category:
+        category.remove(RegisteredEntity.ASSET)
+        category.add(RegisteredEntity.OBJECT)
+        category.add(RegisteredEntity.TERRAIN)
+        category.add(RegisteredEntity.ROBOT)
+
+    # Print table for assets
+    if (
+        RegisteredEntity.OBJECT in category
+        or RegisteredEntity.TERRAIN in category
+        or RegisteredEntity.ROBOT in category
+    ):
+        table = Table(title="Assets of the Space Robotics Bench")
+        table.add_column("#", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Type", justify="center", style="magenta", no_wrap=True)
+        table.add_column("Subtype", justify="center", style="red", no_wrap=True)
+        table.add_column("Parent Class", justify="left", style="green", no_wrap=True)
+        table.add_column("Name", justify="left", style="blue", no_wrap=True)
+        i = 0
+        if RegisteredEntity.OBJECT in category:
+            import srb.assets.object as _  # noqa: F401
+
+            asset_type = AssetType.OBJECT
+            asset_classes = AssetRegistry.registry.get(asset_type, ())
+            for j, asset_class in enumerate(asset_classes):
+                i += 1
+                asset_name = convert_to_snake_case(asset_class.__name__)
+                parent_class = asset_class.__bases__[0]
+                table.add_row(
+                    str(i),
+                    str(asset_type),
+                    "",
+                    f"[link=vscode://file/{inspect.getabsfile(parent_class)}:{inspect.getsourcelines(parent_class)[1]}]{parent_class.__name__}[/link]",
+                    f"[link=vscode://file/{inspect.getabsfile(asset_class)}:{inspect.getsourcelines(asset_class)[1]}]{asset_name}[/link]",
+                    end_section=(j + 1) == len(asset_classes),
+                )
+        if RegisteredEntity.TERRAIN in category:
+            import srb.assets.terrain as _  # noqa: F401
+
+            asset_type = AssetType.TERRAIN
+            asset_classes = AssetRegistry.registry.get(asset_type, ())
+            for j, asset_class in enumerate(asset_classes):
+                i += 1
+                asset_name = convert_to_snake_case(asset_class.__name__)
+                parent_class = asset_class.__bases__[0]
+                table.add_row(
+                    str(i),
+                    str(asset_type),
+                    "",
+                    f"[link=vscode://file/{inspect.getabsfile(parent_class)}:{inspect.getsourcelines(parent_class)[1]}]{parent_class.__name__}[/link]",
+                    f"[link=vscode://file/{inspect.getabsfile(asset_class)}:{inspect.getsourcelines(asset_class)[1]}]{asset_name}[/link]",
+                    end_section=(j + 1) == len(asset_classes),
+                )
+        if RegisteredEntity.ROBOT in category:
+            import srb.assets.robot as _  # noqa: F401
+
+            asset_type = AssetType.ROBOT
+            for asset_subtype, asset_classes in RobotRegistry.items():
+                for j, asset_class in enumerate(asset_classes):
+                    i += 1
+                    asset_name = convert_to_snake_case(asset_class.__name__)
+                    parent_class = asset_class.__bases__[0]
+                    table.add_row(
+                        str(i),
+                        str(asset_type),
+                        str(asset_subtype),
+                        f"[link=vscode://file/{inspect.getabsfile(parent_class)}:{inspect.getsourcelines(parent_class)[1]}]{parent_class.__name__}[/link]",
+                        f"[link=vscode://file/{inspect.getabsfile(asset_class)}:{inspect.getsourcelines(asset_class)[1]}]{asset_name}[/link]",
+                        end_section=(j + 1) == len(asset_classes),
+                    )
+        print(table)
+
+    # Print table for environments
+    if RegisteredEntity.ENV in category:
+        import srb.tasks as _  # noqa: F401
+
+        table = Table(title="Tasks of the Space Robotics Bench")
+        table.add_column("#", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Type", justify="center", style="bold blue", no_wrap=True)
+        table.add_column("ID", justify="left", style="blue", no_wrap=True)
+        table.add_column("Entrypoint", justify="left", style="green", no_wrap=True)
+        table.add_column("Config", justify="left", style="yellow", no_wrap=True)
+        i = 0
+        for task_id in get_srb_tasks():
+            if skip_visual_env and task_id.endswith("_visual"):
+                continue
+            i += 1
+            env = gymnasium.registry[task_id]
+            entrypoint_str = env.entry_point
+            entrypoint_module, entrypoint_class = entrypoint_str.split(":")
+            entrypoint_module = importlib.import_module(entrypoint_module)
+            entrypoint_class = getattr(entrypoint_module, entrypoint_class)
+            entrypoint_parent = entrypoint_class.__bases__[0]
+            cfg_class = env.kwargs["task_cfg"]
+            cfg_parent = cfg_class.__bases__[0]
+            table.add_row(
+                str(i),
+                "demo" if "demo" in entrypoint_module.__name__ else "task",
+                task_id,
+                f"[link=vscode://file/{inspect.getabsfile(entrypoint_class)}:{inspect.getsourcelines(entrypoint_class)[1]}]{entrypoint_class.__name__}[/link]([red][link=vscode://file/{inspect.getabsfile(entrypoint_parent)}:{inspect.getsourcelines(entrypoint_parent)[1]}]{entrypoint_parent.__name__}[/link][/red])",
+                f"[link=vscode://file/{inspect.getabsfile(cfg_class)}:{inspect.getsourcelines(cfg_class)[1]}]{cfg_class.__name__}[/link]([magenta][link=vscode://file/{inspect.getabsfile(cfg_parent)}:{inspect.getsourcelines(cfg_parent)[1]}]{cfg_parent.__name__}[/link][/magenta])",
+            )
+        print(table)
+
+    # Shutdown Isaac Sim
+    launcher.app.close()
+
+
+class RegisteredEntity(str, Enum):
+    ALL = auto()
+    ASSET = auto()
+    ENV = auto()  # TODO: Rename to TASK
+    OBJECT = auto()
+    ROBOT = auto()
+    TERRAIN = auto()
+
+    def __str__(self) -> str:
+        return self.name.lower()
+
+    @classmethod
+    def from_str(cls, string: str) -> RegisteredEntity:
+        try:
+            return next(format for format in cls if string.upper() == format.name)
+        except StopIteration:
+            raise ValueError(f'String "{string}" is not a valid "{cls.__name__}"')
 
 
 ### CLI ###
@@ -274,6 +375,8 @@ def parse_cli_args() -> argparse.Namespace:
             help="Disable most of the Isaac Sim UI and set it to fullscreen.",
         )
 
+        # AppLauncher.add_app_launcher_args(p)
+
     _gui_parser = subparsers.add_parser(
         "gui",
         help="gui subcommands",
@@ -289,12 +392,19 @@ def parse_cli_args() -> argparse.Namespace:
         argument_default=argparse.SUPPRESS,
     )
     list_parser.add_argument(
-        "filter",
-        help="List filter",
+        "category",
+        help="Filter of categories to list",
         nargs="*",
         type=str,
-        choices=("all", "assets", "object", "robot", "terrain", "env"),
-        default=["all"],
+        choices=sorted(map(str, RegisteredEntity)),
+        default=str(RegisteredEntity.ALL),
+    )
+    list_parser.add_argument(
+        "-s",
+        "--skip_visual_env",
+        action="store_true",
+        default=False,
+        help='Flag to skip "*_visual" environments',
     )
 
     if find_spec("argcomplete"):
@@ -327,22 +437,22 @@ class _AutoNamespaceTaskAction(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
-# from omni.isaac.lab.app import AppLauncher
+def launch_app(args: argparse.Namespace) -> "AppLauncher":
+    from omni.isaac.lab.app import AppLauncher
 
-# def launch_app(args: argparse.Namespace) -> AppLauncher:
-#     _autoenable_cameras(args)
-#     _autoselect_experience(args)
+    _autoenable_cameras(args)
+    _autoselect_experience(args)
 
-#     launcher = AppLauncher(launcher_args=args)
+    launcher = AppLauncher(launcher_args=args)
 
-#     if args.disable_ui:
-#         _disable_ui()
+    if args.disable_ui:
+        _disable_ui()
 
-#     return launcher
+    return launcher
 
 
-# def shutdown_app(launcher: AppLauncher):
-#     launcher.app.close()
+def shutdown_app(launcher: "AppLauncher"):
+    launcher.app.close()
 
 
 def _autoenable_cameras(args: argparse.Namespace):
@@ -352,9 +462,6 @@ def _autoenable_cameras(args: argparse.Namespace):
 
 def _autoselect_experience(args: argparse.Namespace):
     ## Get relative path to the experience
-    project_dir = path.dirname(path.dirname(path.realpath(__file__)))
-    experience_dir = path.join(project_dir, "apps")
-
     ## Select the experience based on args
     experience = "srb"
     if args.headless:
@@ -364,7 +471,7 @@ def _autoselect_experience(args: argparse.Namespace):
     experience += ".kit"
 
     ## Set the experience
-    args.experience = path.join(experience_dir, experience)
+    args.experience = SRB_APPS_DIR.joinpath(experience).as_posix
 
 
 def _disable_ui():

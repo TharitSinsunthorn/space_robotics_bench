@@ -1,7 +1,5 @@
 import argparse
-import subprocess
-import sys
-from os import environ, path
+from os import path
 
 from omni.isaac.lab.app import AppLauncher
 
@@ -94,7 +92,6 @@ def add_default_cli_args(parser: argparse.Namespace):
 
 
 def launch_app(args: argparse.Namespace) -> AppLauncher:
-    _update_extension_module()
     _autoenable_cameras(args)
     _autoselect_experience(args)
 
@@ -108,32 +105,6 @@ def launch_app(args: argparse.Namespace) -> AppLauncher:
 
 def shutdown_app(launcher: AppLauncher):
     launcher.app.close()
-
-
-def _update_extension_module():
-    if environ.get("SRB_UPDATE_EXTENSION_MODULE", "false").lower() in ["true", "1"]:
-        print("Updating Rust extension module...")
-        result = subprocess.run(
-            [
-                environ.get("ISAAC_SIM_PYTHON", "python3"),
-                "-m",
-                "pip",
-                "install",
-                "--no-input",
-                "--no-clean",
-                "--no-compile",
-                "--no-deps",
-                "--no-color",
-                "--disable-pip-version-check",
-                "--no-python-version-warning",
-                "--editable",
-                path.dirname(path.dirname(path.realpath(__file__))),
-            ],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode != 0:
-            print(result.stderr, file=sys.stderr)
 
 
 def _autoenable_cameras(args: argparse.Namespace):
