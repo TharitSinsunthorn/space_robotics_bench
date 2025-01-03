@@ -7,7 +7,7 @@ from srb.core.asset import ArticulationCfg
 from srb.core.asset.robot.manipulator.manipulator_type import ManipulatorType
 from srb.core.asset.robot.robot import Robot
 from srb.core.asset.robot.robot_type import RobotType
-from srb.utils import convert_to_snake_case
+from srb.utils.str import convert_to_snake_case
 
 
 class Manipulator(Robot, robot_entrypoint=RobotType.MANIPULATOR):

@@ -15,8 +15,8 @@ from srb.core.actions import (
 )
 from srb.core.envs import BaseEnv
 from srb.envs import BaseAerialRoboticsEnv, BaseManipulationEnv, BaseMobileRoboticsEnv
-from srb.utils import convert_to_snake_case
 from srb.utils.ros import enable_ros2_bridge
+from srb.utils.str import convert_to_snake_case
 
 enable_ros2_bridge()
 from builtin_interfaces.msg import Time  # noqa: E402

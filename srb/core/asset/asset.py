@@ -21,7 +21,8 @@ from simforge import BlGeometry, BlModel, TexResConfig
 from srb.core.asset import AssetBaseCfg
 from srb.core.asset.asset_type import AssetType
 from srb.core.sim import SimforgeAssetCfg
-from srb.utils import convert_to_snake_case, logging
+from srb.utils import logging
+from srb.utils.str import convert_to_snake_case
 
 
 class Asset(BaseModel):

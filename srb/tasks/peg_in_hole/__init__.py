@@ -1,4 +1,4 @@
-from srb.utils import register_srb_tasks
+from srb.utils.registry import register_srb_tasks
 
 from .task import Task, TaskCfg
 from .task_visual import VisualTask, VisualTaskCfg

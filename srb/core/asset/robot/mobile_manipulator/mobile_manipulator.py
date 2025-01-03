@@ -9,7 +9,7 @@ from srb.core.asset.robot.mobile_manipulator.mobile_manipulator_type import (
 )
 from srb.core.asset.robot.robot import Robot
 from srb.core.asset.robot.robot_type import RobotType
-from srb.utils import convert_to_snake_case
+from srb.utils.str import convert_to_snake_case
 
 
 class MobileManipulator(Robot, robot_entrypoint=RobotType.MOBILE_MANIPULATOR):

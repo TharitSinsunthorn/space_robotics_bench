@@ -6,21 +6,15 @@ import argparse
 import sys
 from enum import Enum, auto
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Iterable, Literal
+from pathlib import Path
+from typing import Iterable, Literal
 
-from srb.paths import SRB_APPS_DIR
-
-if TYPE_CHECKING:
-    from omni.isaac.lab.app import AppLauncher
+from omni.isaac.lab.app import AppLauncher
 
 
 def main():
     def impl(
-        subcommand: Literal[
-            "agent",
-            "gui",
-            "ls",
-        ],
+        subcommand: Literal["agent", "gui", "ls"],
         **kwargs,
     ):
         match subcommand:
@@ -37,16 +31,10 @@ def main():
 
 
 ### Agent ###
-def agent_main():
+def agent_main(**kwargs):
     def impl(
         agent_subcommand: Literal[
-            "collect",
-            "train",
-            "play",
-            "rand",
-            "zero",
-            "teleop",
-            "ros",
+            "collect", "train", "play", "rand", "zero", "teleop", "ros"
         ],
         **kwargs,
     ):
@@ -68,16 +56,83 @@ def agent_main():
             case _:
                 raise ValueError(f'Unknown agent subcommand: "{agent_subcommand}"')
 
-    impl(**vars(parse_cli_args()))
+    launcher = AppLauncher(launcher_args=kwargs)
+    impl(**kwargs)
+    launcher.app.close()
+
+    def launch_app(args: argparse.Namespace) -> AppLauncher:
+        from omni.isaac.lab.app import AppLauncher
+
+        _autoenable_cameras(args)
+        _autoselect_experience(args)
+
+        launcher = AppLauncher(launcher_args=args)
+
+        if args.disable_ui:
+            _disable_ui()
+
+        return launcher
+
+    def shutdown_app(launcher: AppLauncher):
+        launcher.app.close()
+
+    def _autoenable_cameras(args: argparse.Namespace):
+        if not args.enable_cameras and (args.video or "visual" in args.task):
+            args.enable_cameras = True
+
+    def _autoselect_experience(args: argparse.Namespace):
+        from srb.paths import SRB_APPS_DIR
+
+        ## Get relative path to the experience
+        ## Select the experience based on args
+        experience = "srb"
+        if args.headless:
+            experience += ".headless"
+        if args.enable_cameras:
+            experience += ".rendering"
+        experience += ".kit"
+
+        ## Set the experience
+        args.experience = SRB_APPS_DIR.joinpath(experience).as_posix
+
+    def _disable_ui():
+        import carb.settings
+
+        settings = carb.settings.get_settings()
+        settings.set("/app/window/hideUi", True)
+        settings.set("/app/window/fullscreen", True)
 
 
 ### GUI ###
-def launch_gui():
-    raise NotImplementedError()
+def launch_gui(release: bool):
+    import subprocess
+
+    from srb.paths import SRB_DIR
+    from srb.utils import logging
+
+    try:
+        args = [
+            "cargo",
+            "run",
+            "--manifest-path",
+            SRB_DIR.joinpath("Cargo.toml").as_posix(),
+            "--package",
+            "srb_gui",
+            "--bin",
+            "gui",
+        ] + (["--release"] if release else [])
+        logging.info(
+            "Launching GUI of the Space Robotics Bench with the following command: "
+            + " ".join((f'"{arg}"' if " " in arg else arg) for arg in args)
+        )
+        subprocess.run(args, check=True)
+    except subprocess.CalledProcessError as e:
+        logging.critical("Launching GUI failed due to the exception above")
+        exit(e.returncode)
 
 
 ### List ###
-def list_registered(category: str | Iterable[str], skip_visual_env: bool, **kwargs):
+def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
     if not find_spec("rich"):
         raise ImportError(
             'The "rich" package is required to list registered entities of the Space Robotics Bench'
@@ -86,7 +141,7 @@ def list_registered(category: str | Iterable[str], skip_visual_env: bool, **kwar
     from omni.isaac.lab.app import AppLauncher
 
     # Launch Isaac Sim
-    launcher = AppLauncher(launcher_args={"headless": True})
+    launcher = AppLauncher(headless=True)
 
     import importlib
     import inspect
@@ -96,8 +151,8 @@ def list_registered(category: str | Iterable[str], skip_visual_env: bool, **kwar
     from rich.table import Table
 
     from srb.core.asset import AssetRegistry, AssetType, RobotRegistry
-    from srb.utils import convert_to_snake_case
     from srb.utils.registry import get_srb_tasks
+    from srb.utils.str import convert_to_snake_case
 
     # Standardize category
     category = (
@@ -181,22 +236,26 @@ def list_registered(category: str | Iterable[str], skip_visual_env: bool, **kwar
 
     # Print table for environments
     if RegisteredEntity.ENV in category:
-        import srb.tasks as _  # noqa: F401
+        import srb.tasks as srb_tasks
 
-        table = Table(title="Tasks of the Space Robotics Bench")
+        table = Table(title="Environments of the Space Robotics Bench")
         table.add_column("#", justify="right", style="cyan", no_wrap=True)
         table.add_column("Type", justify="center", style="bold blue", no_wrap=True)
         table.add_column("ID", justify="left", style="blue", no_wrap=True)
-        table.add_column("Entrypoint", justify="left", style="green", no_wrap=True)
-        table.add_column("Config", justify="left", style="yellow", no_wrap=True)
+        table.add_column("Entrypoint", justify="left", style="green")
+        table.add_column("Config", justify="left", style="yellow")
+        table.add_column("Path", justify="left", style="white")
         i = 0
         for task_id in get_srb_tasks():
-            if skip_visual_env and task_id.endswith("_visual"):
+            if not show_all and task_id.endswith("_visual"):
                 continue
             i += 1
             env = gymnasium.registry[task_id]
             entrypoint_str = env.entry_point
-            entrypoint_module, entrypoint_class = entrypoint_str.split(":")
+            entrypoint_module, entrypoint_class = str(entrypoint_str).split(":")
+            env_module_path = inspect.getabsfile(
+                importlib.import_module(entrypoint_module.rsplit(".", 1)[0])
+            )
             entrypoint_module = importlib.import_module(entrypoint_module)
             entrypoint_class = getattr(entrypoint_module, entrypoint_class)
             entrypoint_parent = entrypoint_class.__bases__[0]
@@ -205,9 +264,10 @@ def list_registered(category: str | Iterable[str], skip_visual_env: bool, **kwar
             table.add_row(
                 str(i),
                 "demo" if "demo" in entrypoint_module.__name__ else "task",
-                task_id,
+                task_id.removeprefix("srb/"),
                 f"[link=vscode://file/{inspect.getabsfile(entrypoint_class)}:{inspect.getsourcelines(entrypoint_class)[1]}]{entrypoint_class.__name__}[/link]([red][link=vscode://file/{inspect.getabsfile(entrypoint_parent)}:{inspect.getsourcelines(entrypoint_parent)[1]}]{entrypoint_parent.__name__}[/link][/red])",
                 f"[link=vscode://file/{inspect.getabsfile(cfg_class)}:{inspect.getsourcelines(cfg_class)[1]}]{cfg_class.__name__}[/link]([magenta][link=vscode://file/{inspect.getabsfile(cfg_parent)}:{inspect.getsourcelines(cfg_parent)[1]}]{cfg_parent.__name__}[/link][/magenta])",
+                f"[link=vscode://file/{env_module_path}]{Path(env_module_path).parent.relative_to(Path(inspect.getabsfile(srb_tasks)).parent)}[/link]",
             )
         print(table)
 
@@ -218,7 +278,7 @@ def list_registered(category: str | Iterable[str], skip_visual_env: bool, **kwar
 class RegisteredEntity(str, Enum):
     ALL = auto()
     ASSET = auto()
-    ENV = auto()  # TODO: Rename to TASK
+    ENV = auto()
     OBJECT = auto()
     ROBOT = auto()
     TERRAIN = auto()
@@ -322,9 +382,8 @@ def parse_cli_args() -> argparse.Namespace:
             "--demo",
             help="Name of the environment to select",
             type=str,
-            action=_AutoNamespaceTaskAction,
+            action=AutoNamespaceTaskAction,
             default="srb/sample_collection",
-            required=True,
         )
         group.add_argument(
             "--seed", type=int, default=None, help="Seed used for the environment"
@@ -375,13 +434,20 @@ def parse_cli_args() -> argparse.Namespace:
             help="Disable most of the Isaac Sim UI and set it to fullscreen.",
         )
 
-        # AppLauncher.add_app_launcher_args(p)
+        AppLauncher.add_app_launcher_args(p)
 
-    _gui_parser = subparsers.add_parser(
+    gui_parser = subparsers.add_parser(
         "gui",
-        help="gui subcommands",
+        help="Launch GUI",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         argument_default=argparse.SUPPRESS,
+    )
+    gui_parser.add_argument(
+        "-r",
+        "--release",
+        action="store_true",
+        default=False,
+        help="Run GUI in release mode",
     )
 
     list_parser = subparsers.add_parser(
@@ -400,11 +466,11 @@ def parse_cli_args() -> argparse.Namespace:
         default=str(RegisteredEntity.ALL),
     )
     list_parser.add_argument(
-        "-s",
-        "--skip_visual_env",
+        "-a",
+        "--show_all",
         action="store_true",
         default=False,
-        help='Flag to skip "*_visual" environments',
+        help='Show all registered entities ("*_visual" environments are hidden by default)',
     )
 
     if find_spec("argcomplete"):
@@ -423,7 +489,7 @@ def parse_cli_args() -> argparse.Namespace:
     return args
 
 
-class _AutoNamespaceTaskAction(argparse.Action):
+class AutoNamespaceTaskAction(argparse.Action):
     def __call__(
         self,
         parser: argparse.ArgumentParser,
@@ -435,51 +501,6 @@ class _AutoNamespaceTaskAction(argparse.Action):
             DEFAULT_TASK_NAMESPACE: str = "srb"
             values = f"{DEFAULT_TASK_NAMESPACE}/{values}"
         setattr(namespace, self.dest, values)
-
-
-def launch_app(args: argparse.Namespace) -> "AppLauncher":
-    from omni.isaac.lab.app import AppLauncher
-
-    _autoenable_cameras(args)
-    _autoselect_experience(args)
-
-    launcher = AppLauncher(launcher_args=args)
-
-    if args.disable_ui:
-        _disable_ui()
-
-    return launcher
-
-
-def shutdown_app(launcher: "AppLauncher"):
-    launcher.app.close()
-
-
-def _autoenable_cameras(args: argparse.Namespace):
-    if not args.enable_cameras and (args.video or "visual" in args.task):
-        args.enable_cameras = True
-
-
-def _autoselect_experience(args: argparse.Namespace):
-    ## Get relative path to the experience
-    ## Select the experience based on args
-    experience = "srb"
-    if args.headless:
-        experience += ".headless"
-    if args.enable_cameras:
-        experience += ".rendering"
-    experience += ".kit"
-
-    ## Set the experience
-    args.experience = SRB_APPS_DIR.joinpath(experience).as_posix
-
-
-def _disable_ui():
-    import carb.settings
-
-    settings = carb.settings.get_settings()
-    settings.set("/app/window/hideUi", True)
-    settings.set("/app/window/fullscreen", True)
 
 
 if __name__ == "__main__":

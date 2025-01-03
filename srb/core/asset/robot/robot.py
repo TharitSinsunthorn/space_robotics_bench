@@ -19,7 +19,7 @@ from srb.core.asset.asset import Asset
 from srb.core.asset.asset_type import AssetType
 from srb.core.asset.common import Frame
 from srb.core.asset.robot.robot_type import RobotType
-from srb.utils import convert_to_snake_case
+from srb.utils.str import convert_to_snake_case
 
 
 class Robot(Asset, asset_entrypoint=AssetType.ROBOT):

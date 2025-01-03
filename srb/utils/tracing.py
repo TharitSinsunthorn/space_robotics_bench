@@ -1,3 +1,4 @@
+import importlib
 from functools import cache
 from importlib.util import find_spec
 from os import environ
@@ -13,15 +14,18 @@ def with_rich() -> bool:
     if environ.get("SRB_WITH_TRACEBACK", "true").lower() not in ("true", "1"):
         return False
 
-    import numpy
-    import pydantic
-    import torch
+    suppress = []
+    for mod in ("pydantic", "numpy", "torch"):
+        try:
+            suppress.append(importlib.import_module(mod))
+        except Exception:
+            pass
 
     traceback.install(
         width=120,
         show_locals=environ.get("SRB_WITH_TRACEBACK_LOCALS", "false").lower()
         in ("true", "1"),
-        suppress=(numpy, pydantic, torch),
+        suppress=suppress,
     )
 
     return True

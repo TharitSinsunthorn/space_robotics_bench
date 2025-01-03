@@ -4,7 +4,8 @@ import torch
 from omni.isaac.lab.scene import InteractiveScene
 from omni.isaac.lab.sensors import Camera
 
-from srb.utils import image_proc, sanitize_cam_name
+from srb.utils import image_proc
+from srb.utils.str import sanitize_cam_name
 
 from .cfg import VisualManipulationEnvExtCfg
 
