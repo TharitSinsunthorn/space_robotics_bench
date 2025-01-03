@@ -22,7 +22,7 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     from omni.isaac.kit import SimulationApp
     from omni.isaac.lab.utils.dict import print_dict
 
-    import srb  # noqa: F401
+    import srb.task as _  # noqa: F401
     from srb.utils.parsing import create_logdir_path, parse_task_cfg
 
     ## Extract simulation app

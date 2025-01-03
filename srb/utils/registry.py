@@ -2,8 +2,8 @@ from typing import Any, List, Literal, Mapping
 
 import gymnasium
 
-from srb.paths import SRB_HYPERPARAMS_DIR
 from srb.utils.cfg import parse_algo_configs
+from srb.utils.path import SRB_HYPERPARAMS_DIR
 
 SRB_NAMESPACE: str = "srb"
 

@@ -81,7 +81,7 @@ def agent_main(**kwargs):
             args.enable_cameras = True
 
     def _autoselect_experience(args: argparse.Namespace):
-        from srb.paths import SRB_APPS_DIR
+        from srb.utils.path import SRB_APPS_DIR
 
         ## Get relative path to the experience
         ## Select the experience based on args
@@ -107,8 +107,8 @@ def agent_main(**kwargs):
 def launch_gui(release: bool):
     import subprocess
 
-    from srb.paths import SRB_DIR
     from srb.utils import logging
+    from srb.utils.path import SRB_DIR
 
     try:
         args = [
@@ -182,7 +182,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
         table.add_column("Name", justify="left", style="blue", no_wrap=True)
         i = 0
         if RegisteredEntity.OBJECT in category:
-            import srb.assets.object as _  # noqa: F401
+            import srb.asset.object as _  # noqa: F401
 
             asset_type = AssetType.OBJECT
             asset_classes = AssetRegistry.registry.get(asset_type, ())
@@ -199,7 +199,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                     end_section=(j + 1) == len(asset_classes),
                 )
         if RegisteredEntity.TERRAIN in category:
-            import srb.assets.terrain as _  # noqa: F401
+            import srb.asset.terrain as _  # noqa: F401
 
             asset_type = AssetType.TERRAIN
             asset_classes = AssetRegistry.registry.get(asset_type, ())
@@ -216,7 +216,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                     end_section=(j + 1) == len(asset_classes),
                 )
         if RegisteredEntity.ROBOT in category:
-            import srb.assets.robot as _  # noqa: F401
+            import srb.asset.robot as _  # noqa: F401
 
             asset_type = AssetType.ROBOT
             for asset_subtype, asset_classes in RobotRegistry.items():
@@ -236,7 +236,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
 
     # Print table for environments
     if RegisteredEntity.ENV in category:
-        import srb.tasks as srb_tasks
+        import srb.task as srb_tasks
 
         table = Table(title="Environments of the Space Robotics Bench")
         table.add_column("#", justify="right", style="cyan", no_wrap=True)

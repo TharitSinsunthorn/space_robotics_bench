@@ -14,7 +14,7 @@ from srb.core.actions import (
     WheeledRoverActionGroupCfg,
 )
 from srb.core.envs import BaseEnv
-from srb.envs import BaseAerialRoboticsEnv, BaseManipulationEnv, BaseMobileRoboticsEnv
+from srb.env import BaseAerialRoboticsEnv, BaseManipulationEnv, BaseMobileRoboticsEnv
 from srb.utils.ros import enable_ros2_bridge
 from srb.utils.str import convert_to_snake_case
 

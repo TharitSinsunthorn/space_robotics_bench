@@ -8,7 +8,7 @@ from rclpy.node import Node
 from std_msgs.msg import Bool, Empty, Float64
 
 from srb.core.envs import BaseEnv
-from srb.envs import BaseAerialRoboticsEnv, BaseManipulationEnv, BaseMobileRoboticsEnv
+from srb.env import BaseAerialRoboticsEnv, BaseManipulationEnv, BaseMobileRoboticsEnv
 
 
 class GuiInterface:
