@@ -21,6 +21,8 @@ class BaseEnv(DirectRLEnv, metaclass=__PostInitCaller):
     Extended version of :class:`omni.isaac.lab.envs.DirectRLEnv`.
     """
 
+    cfg: BaseEnvCfg
+
     def __init__(self, cfg: BaseEnvCfg, render_mode: str | None = None, **kwargs):
         super().__init__(cfg, render_mode, **kwargs)
 

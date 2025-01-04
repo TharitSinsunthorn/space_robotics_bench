@@ -1,5 +1,6 @@
 from omni.isaac.lab.devices import *  # noqa: F403
 
+from .cb_keyboard import CbKeyboard  # noqa: F401
 from .se3_keyboard import Se3Keyboard  # noqa: F401
 from .se3_ros2 import Se3ROS2  # noqa: F401
 from .se3_spacemouse import Se3SpaceMouse  # noqa: F401

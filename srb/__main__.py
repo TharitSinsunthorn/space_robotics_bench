@@ -7,9 +7,18 @@ import sys
 from enum import Enum, auto
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Iterable, Literal
+from typing import TYPE_CHECKING, Iterable, Literal, Sequence
 
+import gymnasium
 from omni.isaac.lab.app import AppLauncher
+from rich import print
+
+from srb.utils.path import SRB_APPS_DIR, SRB_DIR
+
+if TYPE_CHECKING:
+    from omni.isaac.kit import SimulationApp
+
+    from srb.core.envs import BaseEnv
 
 
 def main():
@@ -31,7 +40,17 @@ def main():
 
 
 ### Agent ###
-def agent_main(**kwargs):
+def agent_main(
+    task,
+    video,
+    video_length,
+    video_interval,
+    num_envs,
+    device,
+    disable_fabric,
+    disable_ui: bool,
+    **kwargs,
+):
     def impl(
         agent_subcommand: Literal[
             "collect", "train", "play", "rand", "zero", "teleop", "ros"
@@ -46,61 +65,318 @@ def agent_main(**kwargs):
             case "play":
                 raise NotImplementedError()
             case "rand":
-                raise NotImplementedError()
+                random_agent(**kwargs)
             case "zero":
-                raise NotImplementedError()
+                zero_agent(**kwargs)
             case "teleop":
-                raise NotImplementedError()
+                teleop_agent(**kwargs)
             case "ros":
-                raise NotImplementedError()
+                ros_agent(**kwargs)
             case _:
                 raise ValueError(f'Unknown agent subcommand: "{agent_subcommand}"')
 
+    # Preprocess kwargs
+    kwargs["experience"] = SRB_APPS_DIR.joinpath(
+        f'srb.{"headless." if kwargs["headless"] else ""}{"rendering." if kwargs["enable_cameras"] else ""}kit'
+    )
+    kwargs["enable_cameras"] = (
+        kwargs["enable_cameras"] or video or task.endswith("_visual")
+    )
+
+    # Launch Isaac Sim
     launcher = AppLauncher(launcher_args=kwargs)
-    impl(**kwargs)
+
+    # TODO: Try to get rid of this one
+    from omni.isaac.lab.utils.dict import print_dict
+
+    import srb.task as _  # noqa: F401
+    from srb.core.teleop_devices import CbKeyboard
+    from srb.utils import logging
+    from srb.utils.parsing import create_logdir_path, parse_task_cfg
+
+    # Post-launch configuration
+    if disable_ui:
+        from srb.utils.isaacsim import hide_ui
+
+        hide_ui()
+
+    # Parse task configuration
+    task_cfg = parse_task_cfg(
+        task_name=task,
+        device=device,
+        num_envs=num_envs,
+        use_fabric=not disable_fabric,
+    )
+
+    # Create the environment and initialize it
+    env = gymnasium.make(
+        id=task, cfg=task_cfg, render_mode="rgb_array" if video else None
+    )
+    env.reset()
+
+    # Add wrapper for video recording
+    if video:
+        logdir = Path(create_logdir_path(kwargs["agent_subcommand"], task))
+        video_kwargs = {
+            "video_folder": logdir.joinpath("videos"),
+            "step_trigger": lambda step: step % video_interval == 0,
+            "video_length": video_length,
+            "disable_logger": True,
+        }
+        logging.info("Recording videos during training.")
+        print_dict(video_kwargs, nesting=4)
+        env = gymnasium.wrappers.RecordVideo(env, **video_kwargs)
+
+    # Add keyboard callbacks
+    if not kwargs["headless"] and kwargs["agent_subcommand"] != "teleop":
+        _cb_keyboard = CbKeyboard({"L": env.reset})
+
+    # Run the implementation
+    impl(env=env, sim_app=launcher.app, **kwargs)
+
+    # Close the environment
+    env.close()
+    # Shutdown Isaac Sim
     launcher.app.close()
 
-    def launch_app(args: argparse.Namespace) -> AppLauncher:
-        from omni.isaac.lab.app import AppLauncher
 
-        _autoenable_cameras(args)
-        _autoselect_experience(args)
+def random_agent(
+    env: "BaseEnv",
+    sim_app: "SimulationApp",
+    **kwargs,
+):
+    import torch
 
-        launcher = AppLauncher(launcher_args=args)
+    # from srb.utils import logging
 
-        if args.disable_ui:
-            _disable_ui()
+    with torch.inference_mode():
+        while sim_app.is_running():
+            actions = torch.from_numpy(env.action_space.sample()).to(device=env.device)
 
-        return launcher
+            observation, reward, terminated, truncated, info = env.step(actions)
 
-    def shutdown_app(launcher: AppLauncher):
-        launcher.app.close()
+            # logging.debug(
+            #     f"actions: {actions}\n"
+            #     f"observation: {observation}\n"
+            #     f"reward: {reward}\n"
+            #     f"terminated: {terminated}\n"
+            #     f"truncated: {truncated}\n"
+            #     f"info: {info}\n"
+            # )
 
-    def _autoenable_cameras(args: argparse.Namespace):
-        if not args.enable_cameras and (args.video or "visual" in args.task):
-            args.enable_cameras = True
 
-    def _autoselect_experience(args: argparse.Namespace):
-        from srb.utils.path import SRB_APPS_DIR
+def zero_agent(
+    env: "BaseEnv",
+    sim_app: "SimulationApp",
+    **kwargs,
+):
+    import torch
 
-        ## Get relative path to the experience
-        ## Select the experience based on args
-        experience = "srb"
-        if args.headless:
-            experience += ".headless"
-        if args.enable_cameras:
-            experience += ".rendering"
-        experience += ".kit"
+    # from srb.utils import logging
 
-        ## Set the experience
-        args.experience = SRB_APPS_DIR.joinpath(experience).as_posix
+    actions = torch.zeros(env.action_space.shape, device=env.device)  # type: ignore
 
-    def _disable_ui():
-        import carb.settings
+    with torch.inference_mode():
+        while sim_app.is_running():
+            observation, reward, terminated, truncated, info = env.step(actions)
 
-        settings = carb.settings.get_settings()
-        settings.set("/app/window/hideUi", True)
-        settings.set("/app/window/fullscreen", True)
+            # logging.debug(
+            #     f"actions: {actions}\n"
+            #     f"observation: {observation}\n"
+            #     f"reward: {reward}\n"
+            #     f"terminated: {terminated}\n"
+            #     f"truncated: {truncated}\n"
+            #     f"info: {info}\n"
+            # )
+
+
+def teleop_agent(
+    env: "BaseEnv",
+    sim_app: "SimulationApp",
+    headless: bool,
+    teleop_device: Sequence[str],
+    pos_sensitivity: float,
+    rot_sensitivity: float,
+    ros2_integration: bool,
+    gui_integration: bool,
+    disable_control_scheme_inversion: bool,
+    **kwargs,
+):
+    import threading
+
+    import numpy as np
+    import torch
+    from rclpy.executors import MultiThreadedExecutor
+
+    from srb.core import mdp
+    from srb.core.actions import (
+        ManipulatorTaskSpaceActionCfg,
+        MultiCopterActionGroupCfg,
+        SpacecraftActionGroupCfg,
+        WheeledRoverActionGroupCfg,
+    )
+    from srb.core.interfaces import ROS2, GuiInterface
+    from srb.core.managers import SceneEntityCfg
+    from srb.core.teleop_devices import CombinedInterface
+    from srb.utils.ros import enable_ros2_bridge
+
+    enable_ros2_bridge()
+    import rclpy
+    from rclpy.node import Node
+
+    if headless and len(teleop_device) == 1 and "keyboard" in teleop_device:
+        raise ValueError("Native teleoperation is only supported in GUI mode.")
+
+    # Disable truncation
+    if hasattr(env.cfg, "enable_truncation"):
+        env.cfg.enable_truncation = False
+
+    # ROS 2 node
+    rclpy.init(args=None)
+    ros_node = Node("srb")  # type: ignore
+
+    ## Teleop interface
+    teleop_interface = CombinedInterface(
+        devices=teleop_device,
+        node=ros_node,
+        pos_sensitivity=pos_sensitivity,
+        rot_sensitivity=rot_sensitivity,
+        action_cfg=env.cfg.actions,
+    )
+
+    def cb_reset():
+        global should_reset
+        should_reset = True
+
+    global should_reset
+    should_reset = False
+    teleop_interface.add_callback("L", cb_reset)
+
+    teleop_interface.reset()
+    print(teleop_interface)
+
+    ## ROS 2 interface
+    if ros2_integration:
+        ros2_interface = ROS2(env, node=ros_node)
+
+    ## GUI interface
+    if gui_integration:
+        gui_interface = GuiInterface(env, node=ros_node)
+
+    ## Initialize the environment
+    observation, info = env.reset()
+
+    def process_actions(
+        twist: np.ndarray | torch.Tensor, gripper_cmd: bool
+    ) -> torch.Tensor:
+        twist = torch.tensor(twist, dtype=torch.float32, device=env.device).repeat(
+            env.num_envs, 1
+        )
+        if isinstance(env.cfg.actions, ManipulatorTaskSpaceActionCfg):
+            if not disable_control_scheme_inversion:
+                twist[:, :2] *= -1.0
+            gripper_action = torch.zeros(twist.shape[0], 1, device=twist.device)
+            gripper_action[:] = -1.0 if gripper_cmd else 1.0
+            return torch.concat([twist, gripper_action], dim=1)
+        elif isinstance(env.cfg.actions, MultiCopterActionGroupCfg):
+            return torch.concat(
+                [
+                    twist[:, :3],
+                    twist[:, 5].unsqueeze(1),
+                ],
+                dim=1,
+            )
+
+        elif isinstance(env.cfg.actions, WheeledRoverActionGroupCfg):
+            return twist[:, :2]
+
+        elif isinstance(env.cfg.actions, SpacecraftActionGroupCfg):
+            return twist[:, :6]
+        else:
+            raise NotImplementedError()
+
+    # ROS 2 executor
+    executor = MultiThreadedExecutor(num_threads=2)
+    executor.add_node(ros_node)
+    thread = threading.Thread(target=executor.spin)
+    thread.daemon = True
+    thread.start()
+
+    ## Run the environment
+    with torch.inference_mode():
+        while sim_app.is_running():
+            # Get actions from the teleoperation interface
+            actions = process_actions(*teleop_interface.advance())
+
+            # Step the environment
+            observation, reward, terminated, truncated, info = env.step(actions)
+
+            # Note: Each environment is automatically reset (independently) when terminated or truncated
+
+            # Provide force feedback for teleop devices
+            if isinstance(env.cfg.actions, ManipulatorTaskSpaceActionCfg):
+                FT_FEEDBACK_SCALE = torch.tensor([0.16, 0.16, 0.16, 0.0, 0.0, 0.0])
+                ft_feedback_asset_cfg = SceneEntityCfg(
+                    "robot",
+                    body_names=env.cfg.robot_cfg.regex_links_hand,
+                )
+                ft_feedback_asset_cfg.resolve(env.scene)
+                ft_feedback = (
+                    FT_FEEDBACK_SCALE
+                    * mdp.body_incoming_wrench_mean(
+                        env=env,
+                        asset_cfg=ft_feedback_asset_cfg,
+                    )[0, ...].cpu()
+                )
+                teleop_interface.set_ft_feedback(ft_feedback)
+
+            ## ROS 2 interface
+            if ros2_integration:
+                ros2_interface.publish(observation, reward, terminated, truncated, info)
+                ros2_interface.update()
+
+            ## GUI interface
+            if gui_integration:
+                gui_interface.update()
+
+            if should_reset:
+                should_reset = False
+                teleop_interface.reset()
+                observation, info = env.reset()
+
+
+def ros_agent(
+    env: "BaseEnv",
+    sim_app: "SimulationApp",
+    **kwargs,
+):
+    import torch
+
+    from srb.core.interfaces import ROS2
+
+    # Disable truncation
+    if hasattr(env.cfg, "enable_truncation"):
+        env.cfg.enable_truncation = False
+
+    ## Create ROS 2 interface
+    ros2_interface = ROS2(env)
+
+    ## Run the environment with ROS 2 interface
+    with torch.inference_mode():
+        while sim_app.is_running():
+            # Get actions from ROS 2
+            actions = ros2_interface.actions
+
+            # Step the environment
+            observation, reward, terminated, truncated, info = env.step(actions)
+
+            # Publish to ROS 2
+            ros2_interface.publish(observation, reward, terminated, truncated, info)
+
+            # Process requests from ROS 2
+            ros2_interface.update()
+
+            # Note: Each environment is automatically reset (independently) when terminated or truncated
 
 
 ### GUI ###
@@ -108,7 +384,6 @@ def launch_gui(release: bool):
     import subprocess
 
     from srb.utils import logging
-    from srb.utils.path import SRB_DIR
 
     try:
         args = [
@@ -138,16 +413,14 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
             'The "rich" package is required to list registered entities of the Space Robotics Bench'
         )
 
-    from omni.isaac.lab.app import AppLauncher
-
     # Launch Isaac Sim
-    launcher = AppLauncher(headless=True)
+    launcher = AppLauncher(
+        headless=True, experience=SRB_APPS_DIR.joinpath("srb.barebones.kit")
+    )
 
     import importlib
     import inspect
 
-    import gymnasium
-    from rich import print
     from rich.table import Table
 
     from srb.core.asset import AssetRegistry, AssetType, RobotRegistry
@@ -358,6 +631,7 @@ def parse_cli_args() -> argparse.Namespace:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         argument_default=argparse.SUPPRESS,
     )
+
     ros_agent_parser = agent_subparsers.add_parser(
         "ros",
         help="ROS 2 or Space ROS agent",
@@ -435,6 +709,45 @@ def parse_cli_args() -> argparse.Namespace:
         )
 
         AppLauncher.add_app_launcher_args(p)
+
+    teleop_group = teleop_agent_parser.add_argument_group("Teleop")
+    teleop_group.add_argument(
+        "--teleop_device",
+        type=str,
+        nargs="+",
+        default=["keyboard"],
+        help="Device for interacting with environment",
+    )
+    teleop_group.add_argument(
+        "--pos_sensitivity",
+        type=float,
+        default=10.0,
+        help="Sensitivity factor for translation.",
+    )
+    teleop_group.add_argument(
+        "--rot_sensitivity",
+        type=float,
+        default=40.0,
+        help="Sensitivity factor for rotation.",
+    )
+    teleop_group.add_argument(
+        "--disable_control_scheme_inversion",
+        action="store_true",
+        default=False,
+        help="Flag to disable inverting the control scheme due to view for manipulation-based tasks.",
+    )
+    teleop_group.add_argument(
+        "--ros2_integration",
+        action="store_true",
+        default=False,
+        help="Flag to enable ROS 2 interface for subscribing to per-env actions and publishing per-env observations",
+    )
+    teleop_group.add_argument(
+        "--gui_integration",
+        action="store_true",
+        default=False,
+        help="Flag to enable GUI integration",
+    )
 
     gui_parser = subparsers.add_parser(
         "gui",
