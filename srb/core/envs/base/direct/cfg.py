@@ -31,6 +31,7 @@ class BaseEnvCfg(DirectRLEnvCfg):
     # TODO: Fix in a better way
     action_space = gymnasium.spaces.Box(low=-1.0, high=1.0, shape=(1,))
     observation_space = gymnasium.spaces.Box(low=-1.0, high=1.0, shape=(1,))
+    state_space = gymnasium.spaces.Box(low=-1.0, high=1.0, shape=(1,))
 
     # TODO: Tackle this and other variables of the superclass
     rerender_on_reset: bool = True

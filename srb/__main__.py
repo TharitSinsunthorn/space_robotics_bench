@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Iterable, Literal, Sequence
 
 import gymnasium
 from omni.isaac.lab.app import AppLauncher
-from rich import print
 
 from srb.utils.path import SRB_APPS_DIR, SRB_DIR
 
@@ -51,30 +50,6 @@ def agent_main(
     disable_ui: bool,
     **kwargs,
 ):
-    def impl(
-        agent_subcommand: Literal[
-            "collect", "train", "play", "rand", "zero", "teleop", "ros"
-        ],
-        **kwargs,
-    ):
-        match agent_subcommand:
-            case "collect":
-                raise NotImplementedError()
-            case "train":
-                raise NotImplementedError()
-            case "play":
-                raise NotImplementedError()
-            case "rand":
-                random_agent(**kwargs)
-            case "zero":
-                zero_agent(**kwargs)
-            case "teleop":
-                teleop_agent(**kwargs)
-            case "ros":
-                ros_agent(**kwargs)
-            case _:
-                raise ValueError(f'Unknown agent subcommand: "{agent_subcommand}"')
-
     # Preprocess kwargs
     kwargs["experience"] = SRB_APPS_DIR.joinpath(
         f'srb.{"headless." if kwargs["headless"] else ""}{"rendering." if kwargs["enable_cameras"] else ""}kit'
@@ -92,50 +67,89 @@ def agent_main(
     import srb.task as _  # noqa: F401
     from srb.core.teleop_devices import CbKeyboard
     from srb.utils import logging
-    from srb.utils.parsing import create_logdir_path, parse_task_cfg
+    from srb.utils.hydra import hydra_task_config
+    from srb.utils.isaacsim import hide_ui
+    from srb.utils.parsing import create_logdir_path
 
     # Post-launch configuration
     if disable_ui:
-        from srb.utils.isaacsim import hide_ui
-
         hide_ui()
 
-    # Parse task configuration
-    task_cfg = parse_task_cfg(
+    @hydra_task_config(
         task_name=task,
-        device=device,
-        num_envs=num_envs,
-        use_fabric=not disable_fabric,
+        agent_cfg_entry_point=f'{kwargs["algo"]}_cfg' if kwargs.get("algo") else None,
     )
+    def hydra_main(env_cfg: dict | None = None, agent_cfg: dict | None = None):
+        # Create the environment and initialize it
+        env = gymnasium.make(
+            id=task, cfg=env_cfg, render_mode="rgb_array" if video else None
+        )
+        env.reset()
 
-    # Create the environment and initialize it
-    env = gymnasium.make(
-        id=task, cfg=task_cfg, render_mode="rgb_array" if video else None
-    )
-    env.reset()
+        # Wrap the environment
+        if env:
+            # Add wrapper for video recording
+            if video:
+                logdir = Path(create_logdir_path(kwargs["agent_subcommand"], task))
+                video_kwargs = {
+                    "video_folder": logdir.joinpath("videos"),
+                    "step_trigger": lambda step: step % video_interval == 0,
+                    "video_length": video_length,
+                    "disable_logger": True,
+                }
+                logging.info("Recording videos during training.")
+                print_dict(video_kwargs, nesting=4)
+                env = gymnasium.wrappers.RecordVideo(env, **video_kwargs)
 
-    # Add wrapper for video recording
-    if video:
-        logdir = Path(create_logdir_path(kwargs["agent_subcommand"], task))
-        video_kwargs = {
-            "video_folder": logdir.joinpath("videos"),
-            "step_trigger": lambda step: step % video_interval == 0,
-            "video_length": video_length,
-            "disable_logger": True,
-        }
-        logging.info("Recording videos during training.")
-        print_dict(video_kwargs, nesting=4)
-        env = gymnasium.wrappers.RecordVideo(env, **video_kwargs)
+            # Add keyboard callbacks
+            if not kwargs["headless"] and kwargs["agent_subcommand"] not in [
+                "teleop",
+                "collect",
+            ]:
+                _cb_keyboard = CbKeyboard({"L": env.reset})
 
-    # Add keyboard callbacks
-    if not kwargs["headless"] and kwargs["agent_subcommand"] != "teleop":
-        _cb_keyboard = CbKeyboard({"L": env.reset})
+        # Run the implementation
+        def agent_impl(
+            agent_subcommand: Literal[
+                "zero",
+                "rand",
+                "teleop",
+                "ros",
+                "train",
+                "play",
+                "collect",
+                "learn",
+            ],
+            **kwargs,
+        ):
+            match agent_subcommand:
+                case "zero":
+                    zero_agent(**kwargs)
+                case "rand":
+                    random_agent(**kwargs)
+                case "teleop":
+                    teleop_agent(**kwargs)
+                case "ros":
+                    ros_agent(**kwargs)
+                case "train":
+                    raise NotImplementedError()
+                case "play":
+                    raise NotImplementedError()
+                case "collect":
+                    raise NotImplementedError()
+                case "learn":
+                    raise NotImplementedError()
+                case _:
+                    raise ValueError(f'Unknown agent subcommand: "{agent_subcommand}"')
 
-    # Run the implementation
-    impl(env=env, sim_app=launcher.app, **kwargs)
+        agent_impl(env=env, sim_app=launcher.app, **kwargs)
 
-    # Close the environment
-    env.close()
+        # Close the environment
+        if env:
+            env.close()
+
+    hydra_main()
+
     # Shutdown Isaac Sim
     launcher.app.close()
 
@@ -253,6 +267,9 @@ def teleop_agent(
     teleop_interface.add_callback("L", cb_reset)
 
     teleop_interface.reset()
+
+    if find_spec("rich"):
+        from rich import print
     print(teleop_interface)
 
     ## ROS 2 interface
@@ -421,6 +438,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
     import importlib
     import inspect
 
+    from rich import print
     from rich.table import Table
 
     from srb.core.asset import AssetRegistry, AssetType, RobotRegistry
@@ -584,6 +602,7 @@ def parse_cli_args() -> argparse.Namespace:
         required=True,
     )
 
+    # Agent
     agent_parser = subparsers.add_parser(
         "agent",
         help="Agent subcommands",
@@ -595,9 +614,27 @@ def parse_cli_args() -> argparse.Namespace:
         dest="agent_subcommand",
         required=True,
     )
-    collect_agent_parser = agent_subparsers.add_parser(
-        "collect",
-        help="Collect demonstrations",
+    zero_agent_parser = agent_subparsers.add_parser(
+        "zero",
+        help="Zero agent",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        argument_default=argparse.SUPPRESS,
+    )
+    rand_agent_parser = agent_subparsers.add_parser(
+        "rand",
+        help="Random agent",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        argument_default=argparse.SUPPRESS,
+    )
+    teleop_agent_parser = agent_subparsers.add_parser(
+        "teleop",
+        help="Teleoperate agent",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        argument_default=argparse.SUPPRESS,
+    )
+    ros_agent_parser = agent_subparsers.add_parser(
+        "ros",
+        help="ROS 2 or Space ROS agent",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         argument_default=argparse.SUPPRESS,
     )
@@ -613,43 +650,31 @@ def parse_cli_args() -> argparse.Namespace:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         argument_default=argparse.SUPPRESS,
     )
-    rand_agent_parser = agent_subparsers.add_parser(
-        "rand",
-        help="Random agent",
+    collect_agent_parser = agent_subparsers.add_parser(
+        "collect",
+        help="Collect demonstrations",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         argument_default=argparse.SUPPRESS,
     )
-    zero_agent_parser = agent_subparsers.add_parser(
-        "zero",
-        help="Zero agent",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
-    )
-    teleop_agent_parser = agent_subparsers.add_parser(
-        "teleop",
-        help="Teleoperate agent",
+    learn_agent_parser = agent_subparsers.add_parser(
+        "learn",
+        help="Learn from demonstrations",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         argument_default=argparse.SUPPRESS,
     )
 
-    ros_agent_parser = agent_subparsers.add_parser(
-        "ros",
-        help="ROS 2 or Space ROS agent",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
-    )
-
-    for p in (
-        collect_agent_parser,
-        train_agent_parser,
-        play_agent_parser,
-        rand_agent_parser,
+    for _agent_parser in (
         zero_agent_parser,
+        rand_agent_parser,
         teleop_agent_parser,
         ros_agent_parser,
+        train_agent_parser,
+        play_agent_parser,
+        collect_agent_parser,
+        learn_agent_parser,
     ):
-        group = p.add_argument_group("Environment")
-        group.add_argument(
+        environment_group = _agent_parser.add_argument_group("Environment")
+        environment_group.add_argument(
             # TODO: Make --env first
             "--task",
             "--env",
@@ -659,18 +684,17 @@ def parse_cli_args() -> argparse.Namespace:
             action=AutoNamespaceTaskAction,
             default="srb/sample_collection",
         )
-        group.add_argument(
+        environment_group.add_argument(
             "--seed", type=int, default=None, help="Seed used for the environment"
         )
-        group.add_argument(
+        environment_group.add_argument(
             "--num_envs",
             type=int,
             default=1,
             help="Number of environments to simulate in parallel.",
         )
 
-        # Compute
-        compute_group = p.add_argument_group("Compute")
+        compute_group = _agent_parser.add_argument_group("Compute")
         compute_group.add_argument(
             "--disable_fabric",
             action="store_true",
@@ -678,8 +702,7 @@ def parse_cli_args() -> argparse.Namespace:
             help="Disable fabric and use USD I/O operations.",
         )
 
-        # Video recording
-        video_recording_group = p.add_argument_group("Video")
+        video_recording_group = _agent_parser.add_argument_group("Video")
         video_recording_group.add_argument(
             "--video",
             action="store_true",
@@ -699,8 +722,7 @@ def parse_cli_args() -> argparse.Namespace:
             help="Interval between video recordings (in steps).",
         )
 
-        # Experience
-        experience_group = p.add_argument_group("Experience")
+        experience_group = _agent_parser.add_argument_group("Experience")
         experience_group.add_argument(
             "--disable_ui",
             action="store_true",
@@ -708,47 +730,78 @@ def parse_cli_args() -> argparse.Namespace:
             help="Disable most of the Isaac Sim UI and set it to fullscreen.",
         )
 
-        AppLauncher.add_app_launcher_args(p)
+        AppLauncher.add_app_launcher_args(_agent_parser)
 
-    teleop_group = teleop_agent_parser.add_argument_group("Teleop")
-    teleop_group.add_argument(
-        "--teleop_device",
-        type=str,
-        nargs="+",
-        default=["keyboard"],
-        help="Device for interacting with environment",
-    )
-    teleop_group.add_argument(
-        "--pos_sensitivity",
-        type=float,
-        default=10.0,
-        help="Sensitivity factor for translation.",
-    )
-    teleop_group.add_argument(
-        "--rot_sensitivity",
-        type=float,
-        default=40.0,
-        help="Sensitivity factor for rotation.",
-    )
-    teleop_group.add_argument(
-        "--disable_control_scheme_inversion",
+    for _agent_parser in (
+        teleop_agent_parser,
+        collect_agent_parser,
+    ):
+        teleop_group = _agent_parser.add_argument_group("Teleop")
+        teleop_group.add_argument(
+            "--teleop_device",
+            type=str,
+            nargs="+",
+            default=["keyboard"],  # TODO: Convert to enum
+            help="Device for interacting with environment",
+        )
+        teleop_group.add_argument(
+            "--pos_sensitivity",
+            type=float,
+            default=10.0,
+            help="Sensitivity factor for translation.",
+        )
+        teleop_group.add_argument(
+            "--rot_sensitivity",
+            type=float,
+            default=40.0,
+            help="Sensitivity factor for rotation.",
+        )
+        teleop_group.add_argument(
+            "--disable_control_scheme_inversion",
+            action="store_true",
+            default=False,
+            help="Flag to disable inverting the control scheme due to view for manipulation-based tasks.",
+        )
+        teleop_group.add_argument(
+            "--ros2_integration",
+            action="store_true",
+            default=False,  # TODO: Convert to "integrations" list alongside gui (with enum)
+            help="Flag to enable ROS 2 interface for subscribing to per-env actions and publishing per-env observations",
+        )
+        teleop_group.add_argument(
+            "--gui_integration",
+            action="store_true",
+            default=False,
+            help="Flag to enable GUI integration",
+        )
+
+    for _agent_parser in (
+        train_agent_parser,
+        play_agent_parser,
+    ):
+        algorithm_group = _agent_parser.add_argument_group("Algorithm")
+        algorithm_group.add_argument(
+            "--algo",
+            type=str,
+            default="ppo",  # TODO: Enum
+            help="Name of the algorithm\n(ppo, sac, ppo_lstm)",
+        )
+        algorithm_group.add_argument(
+            "--model_size",
+            type=str,
+            default="debug",  # TODO: Enum
+            help="Size of the model to train\n(debug, size12m, size25m, size50m, size100m, size200m, size400m)",
+        )
+
+    train_group = train_agent_parser.add_argument_group("Train")
+    train_group.add_argument(
+        "--continue_training",
         action="store_true",
         default=False,
-        help="Flag to disable inverting the control scheme due to view for manipulation-based tasks.",
-    )
-    teleop_group.add_argument(
-        "--ros2_integration",
-        action="store_true",
-        default=False,
-        help="Flag to enable ROS 2 interface for subscribing to per-env actions and publishing per-env observations",
-    )
-    teleop_group.add_argument(
-        "--gui_integration",
-        action="store_true",
-        default=False,
-        help="Flag to enable GUI integration",
+        help="Continue training the model from the checkpoint of the last run.",
     )
 
+    # GUI
     gui_parser = subparsers.add_parser(
         "gui",
         help="Launch GUI",
@@ -763,6 +816,7 @@ def parse_cli_args() -> argparse.Namespace:
         help="Run GUI in release mode",
     )
 
+    # List
     list_parser = subparsers.add_parser(
         "ls",
         help="List registered assets and environments"
@@ -795,9 +849,7 @@ def parse_cli_args() -> argparse.Namespace:
         sys.argv = [sys.argv[0], *sys.argv[(sys.argv.index("--") + 1) :]]
 
     args, unknown_args = parser.parse_known_args()
-    if unknown_args:
-        unknown_args = (f'"{arg}"' if " " in arg else arg for arg in unknown_args)
-        raise ValueError(f'Unknown args encountered: {" ".join(unknown_args)}')
+    sys.argv = [sys.argv[0], *unknown_args]
 
     return args
 
