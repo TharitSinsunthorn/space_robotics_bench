@@ -61,15 +61,15 @@ def agent_main(
     # Launch Isaac Sim
     launcher = AppLauncher(launcher_args=kwargs)
 
-    # TODO: Try to get rid of this one
-    from omni.isaac.lab.utils.dict import print_dict
-
     import srb.task as _  # noqa: F401
     from srb.core.teleop_devices import CbKeyboard
     from srb.utils import logging
     from srb.utils.hydra import hydra_task_config
     from srb.utils.isaacsim import hide_ui
     from srb.utils.parsing import create_logdir_path
+
+    if find_spec("rich"):
+        from rich import print
 
     # Post-launch configuration
     if disable_ui:
@@ -86,27 +86,25 @@ def agent_main(
         )
         env.reset()
 
-        # Wrap the environment
-        if env:
-            # Add wrapper for video recording
-            if video:
-                logdir = Path(create_logdir_path(kwargs["agent_subcommand"], task))
-                video_kwargs = {
-                    "video_folder": logdir.joinpath("videos"),
-                    "step_trigger": lambda step: step % video_interval == 0,
-                    "video_length": video_length,
-                    "disable_logger": True,
-                }
-                logging.info("Recording videos during training.")
-                print_dict(video_kwargs, nesting=4)
-                env = gymnasium.wrappers.RecordVideo(env, **video_kwargs)
+        # Add wrapper for video recording
+        if video:
+            logdir = Path(create_logdir_path(kwargs["agent_subcommand"], task))
+            video_kwargs = {
+                "video_folder": logdir.joinpath("videos"),
+                "step_trigger": lambda step: step % video_interval == 0,
+                "video_length": video_length,
+                "disable_logger": True,
+            }
+            logging.info("Recording videos during training.")
+            print(video_kwargs)
+            env = gymnasium.wrappers.RecordVideo(env, **video_kwargs)
 
-            # Add keyboard callbacks
-            if not kwargs["headless"] and kwargs["agent_subcommand"] not in [
-                "teleop",
-                "collect",
-            ]:
-                _cb_keyboard = CbKeyboard({"L": env.reset})
+        # Add keyboard callbacks
+        if not kwargs["headless"] and kwargs["agent_subcommand"] not in [
+            "teleop",
+            "collect",
+        ]:
+            _cb_keyboard = CbKeyboard({"L": env.reset})
 
         # Run the implementation
         def agent_impl(
@@ -138,6 +136,7 @@ def agent_main(
                 case "collect":
                     raise NotImplementedError()
                 case "learn":
+                    # NOTE: Learning from demonstration does not require the environment
                     raise NotImplementedError()
                 case _:
                     raise ValueError(f'Unknown agent subcommand: "{agent_subcommand}"')
@@ -145,8 +144,7 @@ def agent_main(
         agent_impl(env=env, sim_app=launcher.app, **kwargs)
 
         # Close the environment
-        if env:
-            env.close()
+        env.close()
 
     hydra_main()
 
@@ -847,7 +845,6 @@ def parse_cli_args() -> argparse.Namespace:
 
     if "--" in sys.argv:
         sys.argv = [sys.argv[0], *sys.argv[(sys.argv.index("--") + 1) :]]
-
     args, unknown_args = parser.parse_known_args()
     sys.argv = [sys.argv[0], *unknown_args]
 

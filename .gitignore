@@ -23,6 +23,7 @@ target/
 ## Logs
 logs/
 *.log
+outputs/
 
 ## Apptainer
 **/*.sif
