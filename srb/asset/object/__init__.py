@@ -8,7 +8,7 @@ from srb.utils import color as color_utils
 from .debris import CubesatDebris
 from .peg_in_hole_procgen import HoleProcgenCfg, PegProcgenCfg
 from .peg_in_hole_profile import HoleProfileCfg, PegProfileCfg, PegProfileShortCfg
-from .rock_procgen import LunarRockCfg
+from .rock_procgen import LunarRockCfg, MarsRockCfg
 from .sample_tube import SampleTubeCfg
 from .solar_panel import SolarPanelCfg
 from .static_vehicle import *  # noqa: F403
@@ -101,13 +101,11 @@ def object_of_interest_from_env_cfg(
                         **spawn_kwargs,
                     )
 
-                # case env_utils.Scenario.MARS:
-                #     spawn = MartianRockProcgenCfg(
-                #         num_assets=num_assets,
-                #         usd_file_cfg=usd_file_cfg,
-                #         seed=env_cfg.seed + procgen_seed_offset,
-                #         detail=env_cfg.detail,
-                #     )
+                case env_utils.Domain.MARS:
+                    spawn = MarsRockCfg(
+                        num_assets=num_assets,
+                        **spawn_kwargs,
+                    )
                 case _:
                     return None
 

@@ -86,6 +86,8 @@ def agent_main(
         )
         env.reset()
 
+        print(f"||||||||||||||cfg: {env.cfg.env_cfg}")
+
         # Add wrapper for video recording
         if video:
             logdir = Path(create_logdir_path(kwargs["agent_subcommand"], task))

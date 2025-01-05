@@ -1,3 +1,4 @@
+import enum
 import functools
 from collections.abc import Callable
 
@@ -22,7 +23,9 @@ from omni.isaac.lab.utils import (
     replace_slices_with_strings,
     replace_strings_with_slices,
 )
+from pydantic import BaseModel
 
+from srb.utils import logging
 from srb.utils.parsing import load_cfg_from_registry
 
 # TODO: Combine with cfg and parsing modules
@@ -131,9 +134,7 @@ def hydra_task_config(
 # TODO: Clean-up
 
 
-def reconstruct_object(
-    obj: Any, updates: Mapping[str, Any], visited: set = None
-) -> Any:
+def reconstruct_object(obj: Any, updates: Mapping[str, Any]) -> Any:
     """
     Reconstruct an object, applying updates. Handles various types, including functions.
 
@@ -147,24 +148,38 @@ def reconstruct_object(
     """
 
     try:
-        # Initialize the visited set if not already provided
-        if visited is None:
-            visited = set()
+        if isinstance(obj, BaseModel):
+            type_hints = get_type_hints(obj.__class__)
+            new_kwargs = {}
+            for field_name, field_type in type_hints.items():
+                if field_name.startswith("_"):
+                    continue
+                current_value = getattr(obj, field_name, None)
+                update_value = updates.get(field_name, None)
+                if update_value is not None:
+                    new_kwargs[field_name] = reconstruct_object(
+                        current_value, update_value
+                    )
+                else:
+                    new_kwargs[field_name] = current_value
 
-        obj_id = id(obj)
-        if obj_id in visited:
-            raise ValueError(f"Circular reference detected for object {obj}")
+            return obj.__class__(**new_kwargs)
 
-        visited.add(obj_id)
+        if isinstance(obj, enum.Enum):
+            if isinstance(updates, str):
+                return obj.__class__[updates.strip().upper()]
+            if isinstance(updates, Mapping) and "_name_" in updates.keys():
+                return obj.__class__[updates["_name_"]]
+            # Handle enums with NONE value
+            if updates is None and hasattr(obj, "NONE"):
+                return obj.__class__.NONE
 
         # Handle primitive and immutable types (strings, integers, etc.)
         if isinstance(obj, (str, int, float, bool, type(None))):
-            visited.remove(obj_id)
             return updates if updates is not None else obj
 
         # Handle callable objects (e.g., functions)
         if callable(obj):
-            visited.remove(obj_id)
             # Return the original function if it doesn't require reconstruction
             return obj
 
@@ -173,13 +188,10 @@ def reconstruct_object(
             result = obj.__class__(
                 (
                     key,
-                    reconstruct_object(
-                        obj.get(key, None), updates.get(key, None), visited
-                    ),
+                    reconstruct_object(obj.get(key, None), updates.get(key, None)),
                 )
                 for key in set(obj) | set(updates)
             )
-            visited.remove(obj_id)
             return result
 
         # Handle iterables (e.g., lists, tuples)
@@ -191,9 +203,8 @@ def reconstruct_object(
                     f"Incompatible update type for iterable: {type(updates)}"
                 )
             result = obj.__class__(
-                reconstruct_object(o, u, visited) for o, u in zip(obj, updates)
+                reconstruct_object(o, u) for o, u in zip(obj, updates)
             )
-            visited.remove(obj_id)
             return result
 
         # Handle dataclasses and objects with attributes
@@ -207,17 +218,22 @@ def reconstruct_object(
                 update_value = updates.get(field_name, None)
                 if update_value is not None:
                     new_kwargs[field_name] = reconstruct_object(
-                        current_value, update_value, visited
+                        current_value, update_value
                     )
                 else:
                     new_kwargs[field_name] = current_value
 
-            visited.remove(obj_id)
             return obj.__class__(**new_kwargs)
 
         # In case the object doesn't match any of the known types, return it directly
-        visited.remove(obj_id)
         return updates if updates is not None else obj
-    except Exception:
-        visited.remove(obj_id)
+    except Exception as e:
+        logging.error(
+            f"Reconstruction error\n"
+            f"\tobject type: {type(obj)}\n"
+            f"\tobject value: {obj}\n"
+            f"\tupdates type: {type(updates)}\n"
+            f"\tupdates value: {updates}\n"
+            f"\texception: {e}\n"
+        )
         return obj
