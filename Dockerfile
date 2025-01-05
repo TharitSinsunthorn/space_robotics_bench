@@ -179,7 +179,8 @@ RUN if [[ "${INSTALL_SPACEROS,,}" = true ]]; then \
 
 ## Install Blender
 ARG BLENDER_PATH="/root/blender"
-ARG BLENDER_VERSION="4.3.0"
+ARG BLENDER_VERSION="4.3.2"
+ENV BLENDER_PYTHON="${BLENDER_PATH}/${BLENDER_VERSION%.*}/python/bin/python3.11"
 # hadolint ignore=SC2016
 RUN echo -e "\n# Blender ${BLENDER_VERSION}" >> /entrypoint.bash && \
     echo "export PATH=\"${BLENDER_PATH}\${PATH:+:\${PATH}}\"" >> /entrypoint.bash && \
@@ -241,7 +242,7 @@ ARG OXIDASIM_BRANCH="main"
 RUN if [[ "${DEV,,}" = true ]]; then \
     source /entrypoint.bash -- && \
     git clone "${OXIDASIM_REMOTE}" "${OXIDASIM_PATH}" --branch "${OXIDASIM_BRANCH}" && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --no-deps --editable "${OXIDASIM_PATH}[all]" ; \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${OXIDASIM_PATH}[all]" ; \
     fi
 
 ARG SIMFORGE_PATH="/root/simforge"
@@ -249,7 +250,8 @@ ARG SIMFORGE_REMOTE="https://github.com/AndrejOrsula/simforge.git"
 ARG SIMFORGE_BRANCH="main"
 RUN if [[ "${DEV,,}" = true ]]; then \
     git clone "${SIMFORGE_REMOTE}" "${SIMFORGE_PATH}" --branch "${SIMFORGE_BRANCH}" && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --no-deps --editable "${SIMFORGE_PATH}[all]" ; \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_PATH}[all]" && \
+    "${BLENDER_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_PATH}[dev]" ; \
     fi
 
 ARG SIMFORGE_FOUNDRY_PATH="/root/simforge_foundry"
@@ -257,7 +259,8 @@ ARG SIMFORGE_FOUNDRY_REMOTE="https://github.com/AndrejOrsula/simforge_foundry.gi
 ARG SIMFORGE_FOUNDRY_BRANCH="dev"
 RUN if [[ "${DEV,,}" = true ]]; then \
     git clone "${SIMFORGE_FOUNDRY_REMOTE}" "${SIMFORGE_FOUNDRY_PATH}" --branch "${SIMFORGE_FOUNDRY_BRANCH}" && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --no-deps --editable "${SIMFORGE_FOUNDRY_PATH}[all]" ; \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_FOUNDRY_PATH}" && \
+    "${BLENDER_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_FOUNDRY_PATH}" ; \
     fi
 
 ## Install DreamerV3 locally to enable mounting the source code into the container
@@ -311,6 +314,7 @@ RUN mv "${PYTHONEXE}" "${PYTHONEXE}.original" && \
     echo -e '#!/bin/bash\n${ISAAC_SIM_PYTHON} "${@}"' > "${PYTHONEXE}" && \
     chmod +x "${PYTHONEXE}"
 ENV PYTHONEXE="${PYTHONEXE}.original"
+
 ## Configure argcomplete
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
