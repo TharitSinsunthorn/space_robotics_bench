@@ -12,15 +12,15 @@ ament_python_install_package(srb)
 set(SCRIPTS_DIR scripts)
 install(PROGRAMS
 # TODO: Remove procgen cache and maybe other scripts
-    ${SCRIPTS_DIR}/utils/clean_procgen_cache.py
-    ${SCRIPTS_DIR}/utils/tensorboard.bash
-    ${SCRIPTS_DIR}/utils/update_assets.bash
-    ${SCRIPTS_DIR}/gui.bash
-    ${SCRIPTS_DIR}/list_envs.py
-    ${SCRIPTS_DIR}/random_agent.py
-    ${SCRIPTS_DIR}/ros2.py
-    ${SCRIPTS_DIR}/teleop.py
-    ${SCRIPTS_DIR}/zero_agent.py
+    # ${SCRIPTS_DIR}/utils/clean_procgen_cache.py
+    # ${SCRIPTS_DIR}/utils/tensorboard.bash
+    # ${SCRIPTS_DIR}/utils/update_assets.bash
+    # ${SCRIPTS_DIR}/gui.bash
+    # ${SCRIPTS_DIR}/list_envs.py
+    # ${SCRIPTS_DIR}/random_agent.py
+    # ${SCRIPTS_DIR}/ros2.py
+    # ${SCRIPTS_DIR}/teleop.py
+    # ${SCRIPTS_DIR}/zero_agent.py
     DESTINATION lib/${PROJECT_NAME}
 )
 

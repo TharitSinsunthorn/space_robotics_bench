@@ -224,11 +224,56 @@ RUN --mount=type=bind,source=pyproject.toml,target="${SRB_PATH}/pyproject.toml" 
     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir $(python -c "f='${SRB_PATH}/pyproject.toml'; from toml import load; print(' '.join(filter(lambda d: not d.startswith(p['name']), (*p.get('dependencies', ()), *(d for ds in p.get('optional-dependencies', {}).values() for d in ds)))) if (p := load(f).get('project', None)) else '')")
 
 ## Install ROS dependencies in advance to cache the layers (speeds up rebuilds)
-COPY ./package.xml "${SRB_PATH}/"
-RUN apt-get update && \
+RUN --mount=type=bind,source=package.xml,target="${SRB_PATH}/package.xml" \
+    apt-get update && \
     rosdep update --rosdistro "${ROS_DISTRO}" && \
     DEBIAN_FRONTEND=noninteractive rosdep install --default-yes --ignore-src --rosdistro "${ROS_DISTRO}" --from-paths "${SRB_PATH}" && \
     rm -rf /var/lib/apt/lists/* /root/.ros/rosdep/sources.cache
+
+###############
+### Develop ###
+###############
+ARG DEV=true
+
+ARG OXIDASIM_PATH="/root/oxidasim"
+ARG OXIDASIM_REMOTE="https://github.com/AndrejOrsula/oxidasim.git"
+ARG OXIDASIM_BRANCH="main"
+RUN if [[ "${DEV,,}" = true ]]; then \
+    source /entrypoint.bash -- && \
+    git clone "${OXIDASIM_REMOTE}" "${OXIDASIM_PATH}" --branch "${OXIDASIM_BRANCH}" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --no-deps --editable "${OXIDASIM_PATH}[all]" ; \
+    fi
+
+ARG SIMFORGE_PATH="/root/simforge"
+ARG SIMFORGE_REMOTE="https://github.com/AndrejOrsula/simforge.git"
+ARG SIMFORGE_BRANCH="main"
+RUN if [[ "${DEV,,}" = true ]]; then \
+    git clone "${SIMFORGE_REMOTE}" "${SIMFORGE_PATH}" --branch "${SIMFORGE_BRANCH}" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --no-deps --editable "${SIMFORGE_PATH}[all]" ; \
+    fi
+
+ARG SIMFORGE_FOUNDRY_PATH="/root/simforge_foundry"
+ARG SIMFORGE_FOUNDRY_REMOTE="https://github.com/AndrejOrsula/simforge_foundry.git"
+ARG SIMFORGE_FOUNDRY_BRANCH="dev"
+RUN if [[ "${DEV,,}" = true ]]; then \
+    git clone "${SIMFORGE_FOUNDRY_REMOTE}" "${SIMFORGE_FOUNDRY_PATH}" --branch "${SIMFORGE_FOUNDRY_BRANCH}" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --no-deps --editable "${SIMFORGE_FOUNDRY_PATH}[all]" ; \
+    fi
+
+## Install DreamerV3 locally to enable mounting the source code into the container
+ARG DREAMERV3_PATH="/root/dreamerv3"
+ARG DREAMERV3_REMOTE="https://github.com/AndrejOrsula/dreamerv3.git"
+ARG DREAMERV3_BRANCH="dev"
+RUN if [[ "${DEV,,}" = true ]]; then \
+    git clone "${DREAMERV3_REMOTE}" "${DREAMERV3_PATH}" --branch "${DREAMERV3_BRANCH}" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir -r "${DREAMERV3_PATH}/embodied/requirements.txt" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir -r "${DREAMERV3_PATH}/dreamerv3/requirements.txt" -f "https://storage.googleapis.com/jax-releases/jax_cuda_releases.html" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${DREAMERV3_PATH}" ; \
+    fi
+
+###############
+### Build ###
+###############
 
 ## Copy the source code into the image
 COPY . "${SRB_PATH}"
@@ -261,15 +306,16 @@ CMD ["bash"]
 ## Skip writing Python bytecode to the disk to avoid polluting mounted host volume with `__pycache__` directories
 ENV PYTHONDONTWRITEBYTECODE=1
 
-###############
-### Develop ###
-###############
+## Make the default Python executable point to the Isaac Sim Python
+RUN mv "${PYTHONEXE}" "${PYTHONEXE}.original" && \
+    echo -e '#!/bin/bash\n${ISAAC_SIM_PYTHON} "${@}"' > "${PYTHONEXE}" && \
+    chmod +x "${PYTHONEXE}"
+ENV PYTHONEXE="${PYTHONEXE}.original"
+## Configure argcomplete
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
+    bash-completion && \
+    echo "source /etc/bash_completion" >> "/etc/bash.bashrc" && \
+    register-python-argcomplete3 srb > "/etc/bash_completion.d/srb"
 
-# ## Install DreamerV3 locally to enable mounting the source code into the container
-# ARG DREAMERV3_PATH="/root/dreamerv3"
-# ARG DREAMERV3_REMOTE="https://github.com/AndrejOrsula/dreamerv3.git"
-# ARG DREAMERV3_BRANCH="dev"
-# RUN git clone "${DREAMERV3_REMOTE}" "${DREAMERV3_PATH}" --branch "${DREAMERV3_BRANCH}" && \
-#     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir -r "${DREAMERV3_PATH}/embodied/requirements.txt" && \
-#     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir -r "${DREAMERV3_PATH}/dreamerv3/requirements.txt" -f "https://storage.googleapis.com/jax-releases/jax_cuda_releases.html" && \
-#     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${DREAMERV3_PATH}"
+# TODO: Clean-up Dockerfile
