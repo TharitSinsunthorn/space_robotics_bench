@@ -5,6 +5,7 @@ from omni.isaac.lab.envs import ViewerCfg
 from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
 from omni.isaac.lab.scene import InteractiveSceneCfg
 from omni.isaac.lab.utils import configclass
+from simforge import BakeType
 
 import srb.core.sim as sim_utils
 from srb import asset
@@ -107,7 +108,7 @@ class BaseMobileRoboticsEnvCfg(BaseEnvCfg):
     )
 
     ## Scene
-    scene = InteractiveSceneCfg(num_envs=1, env_spacing=65.0, replicate_physics=False)
+    scene = InteractiveSceneCfg(num_envs=1, env_spacing=64.0, replicate_physics=False)
 
     ## Events
     events = BaseMobileRoboticsEnvEventCfg()
@@ -139,19 +140,20 @@ class BaseMobileRoboticsEnvCfg(BaseEnvCfg):
         ## Scene
         self.scene.light = asset.sunlight_from_env_cfg(self.env_cfg)
         self.scene.sky = asset.sky_from_env_cfg(self.env_cfg)
-        self.terrain_cfg = asset.MarsSurface(
-            scale=(
+        self.terrain_cfg = asset.terrain_from_env_cfg(
+            self.env_cfg,
+            num_assets=self.scene.num_envs,
+            size=(
                 self.scene.env_spacing - 1.0,
                 self.scene.env_spacing - 1.0,
-                0.1 * self.scene.env_spacing,
             ),
-            density=0.25,
+            density=0.2,
             flat_area_size=4.0,
-            # texture_resolution={
-            #     BakeType.ALBEDO: 2048,
-            #     BakeType.NORMAL: 4069,
-            #     BakeType.ROUGHNESS: 1024,
-            # },
+            texture_resolution={
+                BakeType.ALBEDO: 6 * 1024,
+                BakeType.NORMAL: 4 * 1024,
+                BakeType.ROUGHNESS: 2 * 1024,
+            },
         )
         self.scene.terrain = self.terrain_cfg.asset_cfg
         self.robot_cfg = asset.Perseverance()

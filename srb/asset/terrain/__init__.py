@@ -1,77 +1,53 @@
-from .ground_plane import *  # noqa: F403
-from .planetary_surface import *  # noqa: F403
+import math
+from typing import Any, Dict, Tuple
 
-# import math
-# from typing import Any, Dict, Tuple
-# import srb.core.envs as env_utils
-# import srb.core.sim as sim_utils
-# from srb.core.asset import AssetBaseCfg
+import srb.core.envs as env_utils
+from srb.core.asset import Terrain
 
-# def terrain_from_env_cfg(
-#     env_cfg: env_utils.EnvironmentConfig,
-#     *,
-#     size: Tuple[float, float] = (10.0, 10.0),
-#     num_assets: int = 1,
-#     prim_path: str = "{ENV_REGEX_NS}/terrain",
-#     spawn_kwargs: Dict[str, Any] = {},
-#     procgen_kwargs: Dict[str, Any] = {},
-#     **kwargs,
-# ) -> AssetBaseCfg | None:
-#     spawn = None
+# TODO: Downgrade assets to be spawners instead of asset_base
+from .ground_plane import GroundPlane
+from .planetary_surface import MarsSurface, MoonSurface
 
-#     match env_cfg.assets.terrain.variant:
-#         case env_utils.AssetVariant.PRIMITIVE:
-#             prim_path = "/World/terrain"
-#             size = (
-#                 10 * math.sqrt(num_assets) * size[0],
-#                 10 * math.sqrt(num_assets) * size[1],
-#             )
-#             spawn = sim_utils.GroundPlaneCfg(
-#                 size=size, color=(0.0, 158.0 / 255.0, 218.0 / 255.0), **spawn_kwargs
-#             )
 
-#         case env_utils.AssetVariant.PROCEDURAL:
-#             if spawn_kwargs.get("collision_props") is None:
-#                 spawn_kwargs["collision_props"] = sim_utils.CollisionPropertiesCfg()
-#             usd_file_cfg = sim_utils.UsdFileCfg(
-#                 usd_path="IGNORED",
-#                 **spawn_kwargs,
-#             )
+def terrain_from_env_cfg(
+    env_cfg: env_utils.EnvironmentConfig,
+    *,
+    size: Tuple[float, float] = (10.0, 10.0),
+    num_assets: int = 1,
+    prim_path: str = "{ENV_REGEX_NS}/terrain",
+    **kwargs,
+) -> Terrain:
+    match env_cfg.domain:
+        case env_utils.Domain.ORBIT:
+            return None
 
-#             match env_cfg.scenario:
-#                 case env_utils.Scenario.MOON:
-#                     spawn = LunarSurfaceCfg(
-#                         num_assets=num_assets, seed=env_cfg.seed, **spawn_kwargs
-#                     )
+    match env_cfg.assets.terrain.variant:
+        case env_utils.AssetVariant.PRIMITIVE:
+            asset = GroundPlane(
+                scale=(
+                    10 * math.sqrt(num_assets) * size[0],
+                    10 * math.sqrt(num_assets) * size[1],
+                )
+            )
+            asset.asset_cfg.prim_path = prim_path
+            return asset
 
-#                 # case env_utils.Scenario.MARS:
-#                 #     spawn = MartianSurfaceProcgenCfg(
-#                 #         num_assets=num_assets,
-#                 #         usd_file_cfg=usd_file_cfg,
-#                 #         seed=env_cfg.seed,
-#                 #         detail=env_cfg.detail,
-#                 #     )
-#                 case _:
-#                     return None
+        case env_utils.AssetVariant.PROCEDURAL:
+            match env_cfg.domain:
+                case env_utils.Domain.MOON:
+                    asset = MoonSurface(
+                        scale=(size[0], size[0], (size[0] + size[1]) / 20.0),
+                        **kwargs,
+                    )
 
-#             # Fix this setting
-#             # # Set height to 10% of the average planar size
-#             # scale = (*size, (size[0] + size[1]) / 20.0)
-#             # for node_cfg in spawn.geometry_nodes.values():
-#             #     if node_cfg.get("scale") is not None:
-#             #         node_cfg["scale"] = scale
+                case env_utils.Domain.MARS:
+                    asset = MarsSurface(
+                        scale=(size[0], size[0], (size[0] + size[1]) / 20.0),
+                        **kwargs,
+                    )
 
-#             # for key, value in procgen_kwargs.items():
-#             #     for node_cfg in spawn.geometry_nodes.values():
-#             #         if node_cfg.get(key) is not None:
-#             #             node_cfg[key] = value
-#             #         elif hasattr(spawn, key):
-#             #             setattr(spawn, key, value)
+            asset.asset_cfg.prim_path = prim_path
+            asset.asset_cfg.spawn.num_assets = num_assets
+            return asset
 
-#     if spawn is None:
-#         return None
-#     return AssetBaseCfg(
-#         prim_path=prim_path,
-#         spawn=spawn,
-#         **kwargs,
-#     )
+    raise NotImplementedError()

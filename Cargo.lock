@@ -3189,6 +3189,7 @@ dependencies = [
  "nix",
  "r2r",
  "serde",
+ "serde_json",
  "subprocess",
  "sysinfo",
  "tracing",

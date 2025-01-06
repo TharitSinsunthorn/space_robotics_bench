@@ -49,9 +49,9 @@ DOCKER_VOLUMES=(
     # Logs
     "${HOME}/.nvidia-omniverse/logs:/root/.nvidia-omniverse/logs:rw"
     "${HOME}/.nvidia-omniverse/logs/isaac-sim:/root/isaac-sim/kit/logs:rw"
-    ## Project
+    ## Simforge
     # Cache
-    "${HOME}/.cache/srb:/root/.cache/srb:rw"
+    "${HOME}/.cache/simforge:/root/.cache/simforge:rw"
 )
 if [[ "${WITH_DEV_VOLUME,,}" = true ]]; then
     DOCKER_VOLUMES+=(

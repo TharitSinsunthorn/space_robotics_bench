@@ -86,8 +86,6 @@ def agent_main(
         )
         env.reset()
 
-        print(f"||||||||||||||cfg: {env.cfg.env_cfg}")
-
         # Add wrapper for video recording
         if video:
             logdir = Path(create_logdir_path(kwargs["agent_subcommand"], task))
@@ -677,6 +675,7 @@ def parse_cli_args() -> argparse.Namespace:
         environment_group.add_argument(
             # TODO: Make --env first
             "--task",
+            "-e",
             "--env",
             "--demo",
             help="Name of the environment to select",
@@ -847,6 +846,7 @@ def parse_cli_args() -> argparse.Namespace:
 
     if "--" in sys.argv:
         sys.argv = [sys.argv[0], *sys.argv[(sys.argv.index("--") + 1) :]]
+    # TODO: Announce unknown arguments if they start with '-' and do not contain '=' or similar
     args, unknown_args = parser.parse_known_args()
     sys.argv = [sys.argv[0], *unknown_args]
 

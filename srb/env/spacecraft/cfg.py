@@ -151,6 +151,7 @@ class BaseSpacecraftRoboticsEnvCfg(BaseEnvCfg):
         self.scene.light = asset.sunlight_from_env_cfg(self.env_cfg)
         self.scene.sky = asset.sky_from_env_cfg(self.env_cfg)
         self.robot_cfg = asset.Cubesat()
+        self.robot_cfg.asset_cfg.spawn.num_assets = self.scene.num_envs
         self.scene.robot = self.robot_cfg.asset_cfg
 
         ## Actions

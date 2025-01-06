@@ -32,13 +32,13 @@ SINGULARITY_VOLUMES=(
     # Logs
     "${VOLUMES_ROOT}/.nvidia-omniverse/logs:/root/.nvidia-omniverse/logs:rw"
     "${VOLUMES_ROOT}/.nvidia-omniverse/logs/isaac-sim:/root/isaac-sim/kit/logs:rw"
+    ## Simforge
+    # Cache
+    "${VOLUMES_ROOT}/.cache/simforge:/root/.cache/simforge:rw"
     ## Project
     # Source
     "${REPOSITORY_DIR}:/root/ws:rw"
-    # Cache
-    "${VOLUMES_ROOT}/.cache/srb:/root/.cache/srb:rw"
-
-
+    ## Misc
     "${VOLUMES_ROOT}/home/users:/home/users:rw"
 )
 

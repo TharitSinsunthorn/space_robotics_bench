@@ -69,7 +69,7 @@ def object_of_interest_from_env_cfg(
                             color_utils.preview_surface_from_env_cfg(env_cfg)
                         )
 
-                    spawn = sim_utils.MultiAssetCfg(
+                    spawn = sim_utils.MultiAssetSpawnerCfg(
                         assets_cfg=[
                             PegProfileCfg(**spawn_kwargs),
                             PegProfileShortCfg(**spawn_kwargs),
@@ -91,19 +91,22 @@ def object_of_interest_from_env_cfg(
             match env_cfg.domain:
                 case env_utils.Domain.ORBIT:
                     spawn = CubesatDebris(
+                        num_assets=num_assets,
+                        seed=procgen_seed_offset,
                         **spawn_kwargs,
                     )
 
                 case env_utils.Domain.MOON:
                     spawn = LunarRockCfg(
                         num_assets=num_assets,
-                        # seed=env_cfg.seed + procgen_seed_offset,
+                        seed=procgen_seed_offset,
                         **spawn_kwargs,
                     )
 
                 case env_utils.Domain.MARS:
                     spawn = MarsRockCfg(
                         num_assets=num_assets,
+                        seed=procgen_seed_offset,
                         **spawn_kwargs,
                     )
                 case _:

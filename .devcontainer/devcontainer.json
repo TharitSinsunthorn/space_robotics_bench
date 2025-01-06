@@ -36,9 +36,9 @@
 		// Logs
 		"type=bind,source=${localEnv:HOME}/.nvidia-omniverse/logs,target=/root/.nvidia-omniverse/logs",
 		"type=bind,source=${localEnv:HOME}/.nvidia-omniverse/logs/isaac-sim,target=/root/isaac-sim/kit/logs",
-		/// Project
+		/// Simforge
 		// Cache
-		"type=bind,source=${localEnv:HOME}/.cache/srb,target=/root/.cache/srb"
+		"type=bind,source=${localEnv:HOME}/.cache/simforge,target=/root/.cache/simforge"
 	],
 	"containerEnv": {
 		// GUI (X11)

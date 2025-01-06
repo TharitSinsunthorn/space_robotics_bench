@@ -12,6 +12,7 @@ class ConstructionRover(StaticVehicle):
             usd_path=SRB_ASSETS_DIR_SRB_VEHICLE.joinpath("construction_rover")
             .joinpath("construction_rover.usdc")
             .as_posix(),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
         ),
     )
 

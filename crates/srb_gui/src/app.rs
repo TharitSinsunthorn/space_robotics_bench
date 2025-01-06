@@ -427,20 +427,20 @@ impl App {
                 crate::config::TaskConfig {
                     task: crate::config::Task::SampleCollection,
                     num_envs: 1,
-                    env_cfg: srb::envs::EnvironmentConfig {
-                        scenario: srb::envs::Scenario::Moon,
-                        assets: srb::envs::Assets {
-                            robot: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                    env_cfg: crate::config::EnvironmentConfig {
+                        scenario: crate::config::Scenario::Moon,
+                        assets: crate::config::Assets {
+                            robot: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            object: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Procedural,
+                            object: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Procedural,
                             },
-                            terrain: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Procedural,
+                            terrain: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Procedural,
                             },
-                            vehicle: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            vehicle: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
                         },
                         seed: 1,
@@ -457,20 +457,20 @@ impl App {
                 crate::config::TaskConfig {
                     task: crate::config::Task::SampleCollection,
                     num_envs: 1,
-                    env_cfg: srb::envs::EnvironmentConfig {
-                        scenario: srb::envs::Scenario::Mars,
-                        assets: srb::envs::Assets {
-                            robot: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                    env_cfg: crate::config::EnvironmentConfig {
+                        scenario: crate::config::Scenario::Mars,
+                        assets: crate::config::Assets {
+                            robot: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            object: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            object: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            terrain: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Procedural,
+                            terrain: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Procedural,
                             },
-                            vehicle: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            vehicle: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
                         },
                         seed: 3,
@@ -487,20 +487,20 @@ impl App {
                 crate::config::TaskConfig {
                     task: crate::config::Task::DebrisCapture,
                     num_envs: 1,
-                    env_cfg: srb::envs::EnvironmentConfig {
-                        scenario: srb::envs::Scenario::Orbit,
-                        assets: srb::envs::Assets {
-                            robot: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                    env_cfg: crate::config::EnvironmentConfig {
+                        scenario: crate::config::Scenario::Orbit,
+                        assets: crate::config::Assets {
+                            robot: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            object: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            object: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            terrain: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::None,
+                            terrain: crate::config::Asset {
+                                variant: crate::config::AssetVariant::None,
                             },
-                            vehicle: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            vehicle: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
                         },
                         seed: 2,
@@ -517,20 +517,20 @@ impl App {
                 crate::config::TaskConfig {
                     task: crate::config::Task::PegInHole,
                     num_envs: 1,
-                    env_cfg: srb::envs::EnvironmentConfig {
-                        scenario: srb::envs::Scenario::Moon,
-                        assets: srb::envs::Assets {
-                            robot: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                    env_cfg: crate::config::EnvironmentConfig {
+                        scenario: crate::config::Scenario::Moon,
+                        assets: crate::config::Assets {
+                            robot: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            object: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            object: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            terrain: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Procedural,
+                            terrain: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Procedural,
                             },
-                            vehicle: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            vehicle: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
                         },
                         seed: 7,
@@ -547,20 +547,20 @@ impl App {
                 crate::config::TaskConfig {
                     task: crate::config::Task::Perseverance,
                     num_envs: 1,
-                    env_cfg: srb::envs::EnvironmentConfig {
-                        scenario: srb::envs::Scenario::Mars,
-                        assets: srb::envs::Assets {
-                            robot: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                    env_cfg: crate::config::EnvironmentConfig {
+                        scenario: crate::config::Scenario::Mars,
+                        assets: crate::config::Assets {
+                            robot: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            object: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            object: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            terrain: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Procedural,
+                            terrain: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Procedural,
                             },
-                            vehicle: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            vehicle: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
                         },
                         seed: 4,
@@ -577,20 +577,20 @@ impl App {
                 crate::config::TaskConfig {
                     task: crate::config::Task::PegInHole,
                     num_envs: 1,
-                    env_cfg: srb::envs::EnvironmentConfig {
-                        scenario: srb::envs::Scenario::Orbit,
-                        assets: srb::envs::Assets {
-                            robot: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                    env_cfg: crate::config::EnvironmentConfig {
+                        scenario: crate::config::Scenario::Orbit,
+                        assets: crate::config::Assets {
+                            robot: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            object: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            object: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            terrain: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::None,
+                            terrain: crate::config::Asset {
+                                variant: crate::config::AssetVariant::None,
                             },
-                            vehicle: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            vehicle: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
                         },
                         seed: 9,
@@ -607,20 +607,20 @@ impl App {
                 crate::config::TaskConfig {
                     task: crate::config::Task::SolarPanelAssembly,
                     num_envs: 1,
-                    env_cfg: srb::envs::EnvironmentConfig {
-                        scenario: srb::envs::Scenario::Moon,
-                        assets: srb::envs::Assets {
-                            robot: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                    env_cfg: crate::config::EnvironmentConfig {
+                        scenario: crate::config::Scenario::Moon,
+                        assets: crate::config::Assets {
+                            robot: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            object: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            object: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            terrain: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Procedural,
+                            terrain: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Procedural,
                             },
-                            vehicle: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            vehicle: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
                         },
                         seed: 12,
@@ -637,20 +637,20 @@ impl App {
                 crate::config::TaskConfig {
                     task: crate::config::Task::Ingenuity,
                     num_envs: 1,
-                    env_cfg: srb::envs::EnvironmentConfig {
-                        scenario: srb::envs::Scenario::Mars,
-                        assets: srb::envs::Assets {
-                            robot: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                    env_cfg: crate::config::EnvironmentConfig {
+                        scenario: crate::config::Scenario::Mars,
+                        assets: crate::config::Assets {
+                            robot: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            object: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            object: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            terrain: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Procedural,
+                            terrain: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Procedural,
                             },
-                            vehicle: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            vehicle: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
                         },
                         seed: 7,
@@ -667,20 +667,20 @@ impl App {
                 crate::config::TaskConfig {
                     task: crate::config::Task::Gateway,
                     num_envs: 1,
-                    env_cfg: srb::envs::EnvironmentConfig {
-                        scenario: srb::envs::Scenario::Orbit,
-                        assets: srb::envs::Assets {
-                            robot: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                    env_cfg: crate::config::EnvironmentConfig {
+                        scenario: crate::config::Scenario::Orbit,
+                        assets: crate::config::Assets {
+                            robot: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            object: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            object: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
-                            terrain: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Procedural,
+                            terrain: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Procedural,
                             },
-                            vehicle: srb::envs::Asset {
-                                variant: srb::envs::AssetVariant::Dataset,
+                            vehicle: crate::config::Asset {
+                                variant: crate::config::AssetVariant::Dataset,
                             },
                         },
                         seed: 8,
@@ -859,8 +859,8 @@ impl App {
                     match self.task_config.task {
                         crate::config::Task::SampleCollection => {
                             let sample_type = match self.task_config.env_cfg.scenario {
-                                srb::envs::Scenario::Moon => "Lunar ",
-                                srb::envs::Scenario::Mars => "Martian ",
+                                crate::config::Scenario::Moon => "Lunar ",
+                                crate::config::Scenario::Mars => "Martian ",
                                 _ => "",
                             };
 
@@ -923,17 +923,17 @@ impl App {
                         if ui.add(
                             egui::Button::new(egui::RichText::new("Zero")
                             ).frame(true)).clicked() {
-                            self.gravity = srb::envs::Scenario::Orbit.gravity_magnitude();
+                            self.gravity = crate::config::Scenario::Orbit.gravity_magnitude();
                         }
                         if ui.add(
                             egui::Button::new(egui::RichText::new("Moon")
                             ).frame(true)).clicked() {
-                            self.gravity = srb::envs::Scenario::Moon.gravity_magnitude();
+                            self.gravity = crate::config::Scenario::Moon.gravity_magnitude();
                         }
                         if ui.add(
                             egui::Button::new(egui::RichText::new("Mars")
                             ).frame(true)).clicked() {
-                            self.gravity = srb::envs::Scenario::Mars.gravity_magnitude();
+                            self.gravity = crate::config::Scenario::Mars.gravity_magnitude();
                         }
                         if ui.add(
                             egui::Button::new(egui::RichText::new("Earth")
@@ -1145,28 +1145,28 @@ impl App {
                                 .width(235.0)
                                 .selected_text(
                                     egui::RichText::new(match self.task_config.env_cfg.scenario {
-                                        srb::envs::Scenario::Asteroid => "Asteroid",
-                                        srb::envs::Scenario::Earth => "Earth",
-                                        srb::envs::Scenario::Mars => "Mars",
-                                        srb::envs::Scenario::Moon => "Moon",
-                                        srb::envs::Scenario::Orbit => "Orbit",
+                                        crate::config::Scenario::Asteroid => "Asteroid",
+                                        crate::config::Scenario::Earth => "Earth",
+                                        crate::config::Scenario::Mars => "Mars",
+                                        crate::config::Scenario::Moon => "Moon",
+                                        crate::config::Scenario::Orbit => "Orbit",
                                     })
                                     .size(20.0),
                                 )
                                 .show_ui(ui, |ui| {
                                     ui.selectable_value(
                                         &mut self.task_config.env_cfg.scenario,
-                                        srb::envs::Scenario::Moon,
+                                        crate::config::Scenario::Moon,
                                         "Moon",
                                     );
                                     ui.selectable_value(
                                         &mut self.task_config.env_cfg.scenario,
-                                        srb::envs::Scenario::Mars,
+                                        crate::config::Scenario::Mars,
                                         "Mars",
                                     );
                                     ui.selectable_value(
                                         &mut self.task_config.env_cfg.scenario,
-                                        srb::envs::Scenario::Orbit,
+                                        crate::config::Scenario::Orbit,
                                         "Orbit",
                                     );
                                 });
@@ -1261,10 +1261,10 @@ impl App {
                                 .selected_text(
                                     egui::RichText::new(
                                         match self.task_config.env_cfg.assets.object.variant {
-                                            srb::envs::AssetVariant::None => "None",
-                                            srb::envs::AssetVariant::Primitive => "Primitive",
-                                            srb::envs::AssetVariant::Dataset => "Dataset",
-                                            srb::envs::AssetVariant::Procedural => "Procedural",
+                                            crate::config::AssetVariant::None => "None",
+                                            crate::config::AssetVariant::Primitive => "Primitive",
+                                            crate::config::AssetVariant::Dataset => "Dataset",
+                                            crate::config::AssetVariant::Procedural => "Procedural",
                                         },
                                     )
                                     .size(20.0),
@@ -1272,17 +1272,17 @@ impl App {
                                 .show_ui(ui, |ui| {
                                     ui.selectable_value(
                                         &mut self.task_config.env_cfg.assets.object.variant,
-                                        srb::envs::AssetVariant::Primitive,
+                                        crate::config::AssetVariant::Primitive,
                                         "Primitive",
                                     );
                                     ui.selectable_value(
                                         &mut self.task_config.env_cfg.assets.object.variant,
-                                        srb::envs::AssetVariant::Dataset,
+                                        crate::config::AssetVariant::Dataset,
                                         "Dataset",
                                     );
                                     ui.selectable_value(
                                         &mut self.task_config.env_cfg.assets.object.variant,
-                                        srb::envs::AssetVariant::Procedural,
+                                        crate::config::AssetVariant::Procedural,
                                         "Procedural",
                                     );
                                 });

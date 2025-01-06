@@ -4,8 +4,9 @@ import torch
 from omni.isaac.lab.envs import ViewerCfg
 from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
 from omni.isaac.lab.scene import InteractiveSceneCfg
-from omni.isaac.lab.sensors import ContactSensorCfg, RayCasterCfg, patterns
+from omni.isaac.lab.sensors import ContactSensorCfg
 from omni.isaac.lab.utils import configclass
+from simforge import BakeType
 
 import srb.core.sim as sim_utils
 from srb import asset
@@ -160,31 +161,21 @@ class BaseLocomotionEnvCfg(BaseEnvCfg):
         ## Scene
         self.scene.light = asset.sunlight_from_env_cfg(self.env_cfg)
         self.scene.sky = asset.sky_from_env_cfg(self.env_cfg)
-        self.robot_cfg = asset.legged_robot_from_env_cfg(self.env_cfg)
+        # self.robot_cfg = asset.legged_robot_from_env_cfg(self.env_cfg)
+        self.robot_cfg = asset.AnymalMulti()
         self.scene.robot = self.robot_cfg.asset_cfg
-        self.scene.terrain = asset.terrain_from_env_cfg(
+        self.terrain_cfg = asset.terrain_from_env_cfg(
             self.env_cfg,
             num_assets=1,
-            size=(48.0,) * 2,
+            size=(64.0, 64.0),
             prim_path="/World/terrain",
-            procgen_kwargs={
-                "density": 0.1,
-                "flat_area_size": 2.0,
-                "texture_resolution": 4096,
+            density=0.15,
+            flat_area_size=4.0,
+            texture_resolution={
+                BakeType.ALBEDO: 4 * 1024,
+                BakeType.NORMAL: 6 * 1024,
+                BakeType.ROUGHNESS: 2 * 1024,
             },
-        )
-        self.terrain_cfg = asset.MarsSurface(
-            scale=(
-                48.0,
-                48.0,
-                0.1 * self.scene.env_spacing,
-            ),
-            density=0.2,
-            # texture_resolution={
-            #     BakeType.ALBEDO: 4069,
-            #     BakeType.NORMAL: 6144,
-            #     BakeType.ROUGHNESS: 1024,
-            # },
         )
         self.scene.terrain = self.terrain_cfg.asset_cfg
 
@@ -198,11 +189,11 @@ class BaseLocomotionEnvCfg(BaseEnvCfg):
             history_length=3,
             track_air_time=True,
         )
-        self.scene.height_scanner = RayCasterCfg(
-            prim_path=f"{self.scene.robot.prim_path}/base",
-            offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 10.0)),
-            attach_yaw_only=True,
-            pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.5, 1.0]),
-            debug_vis=False,
-            mesh_prim_paths=[self.scene.terrain.prim_path],
-        )
+        # self.scene.height_scanner = RayCasterCfg(
+        #     prim_path=f"{self.scene.robot.prim_path}/base",
+        #     offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 10.0)),
+        #     attach_yaw_only=True,
+        #     pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.5, 1.0]),
+        #     debug_vis=False,
+        #     mesh_prim_paths=[self.scene.terrain.prim_path],
+        # )

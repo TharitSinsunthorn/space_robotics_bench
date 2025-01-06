@@ -109,6 +109,7 @@ class Asset(BaseModel):
         inputs = self.inputs
         if len(inputs) == 0:
             return
+
         if isinstance(self.asset_cfg.spawn, SimforgeAssetCfg):
             for asset in self.asset_cfg.spawn.assets:
                 match asset:

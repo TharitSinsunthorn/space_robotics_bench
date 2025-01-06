@@ -10,6 +10,7 @@ from omni.isaac.lab.sensors.frame_transformer.frame_transformer_cfg import (
     OffsetCfg,
 )
 from omni.isaac.lab.utils import configclass
+from simforge import BakeType
 
 import srb.core.envs as env_utils
 import srb.core.sim as sim_utils
@@ -108,7 +109,7 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
     )
 
     ## Scene
-    scene = InteractiveSceneCfg(num_envs=1, env_spacing=9.0, replicate_physics=False)
+    scene = InteractiveSceneCfg(num_envs=1, env_spacing=16.0, replicate_physics=False)
 
     ## Events
     events = BaseManipulationEnvEventCfg()
@@ -146,30 +147,23 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
         self.robot_cfg = asset.Franka()
         self.scene.robot = self.robot_cfg.asset_cfg
         self.vehicle_cfg = asset.vehicle_from_env_cfg(self.env_cfg)
-        # self.scene.terrain = assets.terrain_from_env_cfg(
-        #     self.env_cfg,
-        #     num_assets=self.scene.num_envs,
-        #     size=(self.scene.env_spacing - 1,) * 2,
-        #     procgen_kwargs={
-        #         "density": 0.04,
-        #         "flat_area_size": 2.0,
-        #         "texture_resolution": 2048,
-        #     },
-        # )
-        self.terrain_cfg = asset.MarsSurface(
-            scale=(
+        self.terrain_cfg = asset.terrain_from_env_cfg(
+            self.env_cfg,
+            num_assets=self.scene.num_envs,
+            size=(
                 self.scene.env_spacing - 1.0,
                 self.scene.env_spacing - 1.0,
-                0.1 * self.scene.env_spacing,
             ),
-            density=0.5,
-            # texture_resolution={
-            #     BakeType.ALBEDO: 4069,
-            #     BakeType.NORMAL: 6144,
-            #     BakeType.ROUGHNESS: 1024,
-            # },
+            density=0.1,
+            flat_area_size=2.0,
+            texture_resolution={
+                BakeType.ALBEDO: 2 * 1024,
+                BakeType.NORMAL: 4 * 1024,
+                BakeType.ROUGHNESS: 1 * 1024,
+            },
         )
-        self.scene.terrain = self.terrain_cfg.asset_cfg
+        if self.terrain_cfg:
+            self.scene.terrain = self.terrain_cfg.asset_cfg
         if self.vehicle_cfg:
             # Add vehicle to scene
             self.scene.vehicle = self.vehicle_cfg.asset_cfg

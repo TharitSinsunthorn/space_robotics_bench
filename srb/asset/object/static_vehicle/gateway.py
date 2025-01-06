@@ -11,7 +11,8 @@ class Gateway(StaticVehicle):
         spawn=sim_utils.UsdFileCfg(
             usd_path=SRB_ASSETS_DIR_SRB_VEHICLE.joinpath("gateway")
             .joinpath("gateway.usdc")
-            .as_posix()
+            .as_posix(),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
         ),
     )
 

@@ -79,7 +79,7 @@ class Task(BaseLocomotionEnv):
             robot_joint_pos=self._robot_joint_pos,
             robot_root_rotmat_w=self._robot_root_rotmat_w,
             robot_feet_incoming_force=self._robot_feet_incoming_force,
-            heightmap=self._heightmap,
+            # heightmap=self._heightmap,
             command=self._command,
         )
 
@@ -100,7 +100,7 @@ class Task(BaseLocomotionEnv):
         (
             self._remaining_time,
             self._robot_root_rotmat_w,
-            self._heightmap,
+            # self._heightmap,
             self._rewards,
             self._terminations,
             self._truncations,
@@ -120,8 +120,8 @@ class Task(BaseLocomotionEnv):
             contact_net_forces=self._contacts_robot.data.net_forces_w,
             first_contact=self._contacts_robot.compute_first_contact(self.step_dt),
             last_air_time=self._contacts_robot.data.last_air_time,
-            height_scanner_pos_w=self._height_scanner.data.pos_w,
-            height_scanner_ray_hits_w=self._height_scanner.data.ray_hits_w,
+            # height_scanner_pos_w=self._height_scanner.data.pos_w,
+            # height_scanner_ray_hits_w=self._height_scanner.data.ray_hits_w,
             command=self._command,
         )
 
@@ -149,13 +149,13 @@ def _compute_intermediate_state(
     contact_net_forces: torch.Tensor,
     first_contact: torch.Tensor,
     last_air_time: torch.Tensor,
-    height_scanner_pos_w: torch.Tensor,
-    height_scanner_ray_hits_w: torch.Tensor,
+    # height_scanner_pos_w: torch.Tensor,
+    # height_scanner_ray_hits_w: torch.Tensor,
     command: torch.Tensor,
 ) -> Tuple[
     torch.Tensor,
     torch.Tensor,
-    torch.Tensor,
+    # torch.Tensor,
     torch.Tensor,
     torch.Tensor,
     torch.Tensor,
@@ -167,12 +167,12 @@ def _compute_intermediate_state(
     # Robot '6D' rotation
     robot_root_rotmat_w = math_utils.matrix_from_quat(root_quat_w)
 
-    # Height scanner
-    heightmap = (
-        height_scanner_pos_w[:, 2].unsqueeze(1)
-        - height_scanner_ray_hits_w[..., 2]
-        - 0.5
-    ).clip(-1.0, 1.0)
+    # # Height scanner
+    # heightmap = (
+    #     height_scanner_pos_w[:, 2].unsqueeze(1)
+    #     - height_scanner_ray_hits_w[..., 2]
+    #     - 0.5
+    # ).clip(-1.0, 1.0)
 
     ## Rewards
     # Penalty: Action rate
@@ -295,7 +295,7 @@ def _compute_intermediate_state(
     return (
         remaining_time,
         robot_root_rotmat_w,
-        heightmap,
+        # heightmap,
         rewards,
         terminations,
         truncations,
@@ -309,7 +309,7 @@ def _construct_observations(
     robot_joint_pos: torch.Tensor,
     robot_root_rotmat_w: torch.Tensor,
     robot_feet_incoming_force: torch.Tensor,
-    heightmap: torch.Tensor,
+    # heightmap: torch.Tensor,
     command: torch.Tensor,
 ) -> Dict[str, torch.Tensor]:
     """
@@ -325,12 +325,12 @@ def _construct_observations(
     robot_feet_incoming_force_full = robot_feet_incoming_force.view(num_envs, -1)
 
     return {
-        "state": torch.cat(
-            [
-                heightmap,
-            ],
-            dim=-1,
-        ),
+        # "state": torch.cat(
+        #     [
+        #         # heightmap,
+        #     ],
+        #     dim=-1,
+        # ),
         "state_dyn": torch.cat([robot_feet_incoming_force_full], dim=-1),
         "proprio": torch.cat(
             [
