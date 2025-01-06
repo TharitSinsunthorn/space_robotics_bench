@@ -48,6 +48,7 @@ def terrain_from_env_cfg(
 
             asset.asset_cfg.prim_path = prim_path
             asset.asset_cfg.spawn.num_assets = num_assets
+            asset.asset_cfg.spawn.seed = env_cfg.seed
             return asset
 
     raise NotImplementedError()

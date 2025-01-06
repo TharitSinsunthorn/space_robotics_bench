@@ -8,11 +8,11 @@ const ENVIRON_PREFIX: &str = "SRB_";
 pub enum AssetVariant {
     #[serde(alias = "none")]
     None,
-    #[default]
     #[serde(alias = "primitive", alias = "PRIM", alias = "prim")]
     Primitive,
     #[serde(alias = "dataset", alias = "DB", alias = "db")]
     Dataset,
+    #[default]
     #[serde(
         alias = "procedural",
         alias = "PROC",
@@ -232,23 +232,13 @@ pub struct Assets {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Default)]
 pub struct EnvironmentConfig {
     pub scenario: Scenario,
     pub assets: Assets,
     pub seed: u64,
-    pub detail: f32,
 }
 
-impl Default for EnvironmentConfig {
-    fn default() -> Self {
-        Self {
-            scenario: Scenario::default(),
-            assets: Assets::default(),
-            seed: 0,
-            detail: 0.0,
-        }
-    }
-}
 
 #[derive(
     Deserialize,
@@ -272,6 +262,8 @@ pub enum Task {
     Perseverance,
     Ingenuity,
     Gateway,
+    Locomotion,
+    Cubesat,
 }
 
 #[derive(
@@ -303,113 +295,90 @@ impl Default for TaskConfig {
 
 impl TaskConfig {
     pub fn set_exec_env(mut self, mut exec: subprocess::Exec) -> subprocess::Exec {
-        // Arguments
-        if self.enable_ui {
-            exec = exec.args(&[
-                "--gui_integration",
-                "--ros2_integration",
-                "--task",
-                &format!("{}_visual", self.task.to_string().trim_matches('"')),
-            ]);
+        if self.task == Task::Locomotion {
+            exec = exec.args(&["agent", "rand"]);
+            if !self.enable_ui {
+                exec = exec.arg("--disable_ui");
+            }
         } else {
             exec = exec.args(&[
-                "--gui_integration",
-                "--task",
-                self.task.to_string().trim_matches('"'),
+                "agent",
+                "teleop",
+                "--teleop_device",
+                "keyboard",
+                "spacemouse",
+                "touch",
+                "ros2",
             ]);
-        }
-        self.num_envs = self.num_envs.max(1);
-        exec = exec.args(&["--num_envs", self.num_envs.to_string().as_str()]);
-        exec = exec.args(&["--teleop_device", "keyboard", "spacemouse", "touch", "ros2"]);
-        if !self.enable_ui {
-            exec = exec.arg("--disable_ui");
+            // Arguments
+            if self.enable_ui {
+                exec = exec.args(&[
+                    "--gui_integration",
+                    // "--ros2_integration",
+                ]);
+            } else {
+                exec = exec.args(&["--disable_ui", "--gui_integration"]);
+            }
         }
 
+        exec = exec.args(&["--task", self.task.to_string().trim_matches('"')]);
+
+        self.num_envs = self.num_envs.max(1);
+        exec = exec.arg(format!("env.scene.num_envs={}", self.num_envs));
+
         // Environment variables - Environment
-        exec = exec.env(
-            const_format::concatcp!(ENVIRON_PREFIX, "SEED"),
-            std::env::var(const_format::concatcp!(ENVIRON_PREFIX, "SEED"))
-                .unwrap_or(self.env_cfg.seed.to_string().trim_matches('"').to_owned()),
-        );
-        exec = exec.env(
-            const_format::concatcp!(ENVIRON_PREFIX, "SCENARIO"),
-            std::env::var(const_format::concatcp!(ENVIRON_PREFIX, "SCENARIO")).unwrap_or(
-                self.env_cfg
-                    .scenario
-                    .to_string()
-                    .trim_matches('"')
-                    .to_owned(),
-            ),
-        );
-        exec = exec.env(
-            const_format::concatcp!(ENVIRON_PREFIX, "DETAIL"),
-            std::env::var(const_format::concatcp!(ENVIRON_PREFIX, "DETAIL"))
-                .unwrap_or(self.env_cfg.detail.to_string().trim_matches('"').to_owned()),
-        );
-        exec = exec.env(
-            const_format::concatcp!(ENVIRON_PREFIX, "ASSETS_ROBOT_VARIANT"),
-            std::env::var(const_format::concatcp!(
-                ENVIRON_PREFIX,
-                "ASSETS_ROBOT_VARIANT"
-            ))
-            .unwrap_or(
-                self.env_cfg
-                    .assets
-                    .robot
-                    .variant
-                    .to_string()
-                    .trim_matches('"')
-                    .to_owned(),
-            ),
-        );
-        exec = exec.env(
-            const_format::concatcp!(ENVIRON_PREFIX, "ASSETS_OBJECT_VARIANT"),
-            std::env::var(const_format::concatcp!(
-                ENVIRON_PREFIX,
-                "ASSETS_OBJECT_VARIANT"
-            ))
-            .unwrap_or(
-                self.env_cfg
-                    .assets
-                    .object
-                    .variant
-                    .to_string()
-                    .trim_matches('"')
-                    .to_owned(),
-            ),
-        );
-        exec = exec.env(
-            const_format::concatcp!(ENVIRON_PREFIX, "ASSETS_TERRAIN_VARIANT"),
-            std::env::var(const_format::concatcp!(
-                ENVIRON_PREFIX,
-                "ASSETS_TERRAIN_VARIANT"
-            ))
-            .unwrap_or(
-                self.env_cfg
-                    .assets
-                    .terrain
-                    .variant
-                    .to_string()
-                    .trim_matches('"')
-                    .to_owned(),
-            ),
-        );
-        exec = exec.env(
-            const_format::concatcp!(ENVIRON_PREFIX, "ASSETS_VEHICLE_VARIANT"),
-            std::env::var(const_format::concatcp!(
-                ENVIRON_PREFIX,
-                "ASSETS_VEHICLE_VARIANT"
-            ))
-            .unwrap_or(
-                self.env_cfg
-                    .assets
-                    .vehicle
-                    .variant
-                    .to_string()
-                    .trim_matches('"')
-                    .to_owned(),
-            ),
-        );
+        exec = exec.arg(format!(
+            "env.env_cfg.seed={}",
+            self.env_cfg.seed.to_string().trim_matches('"').to_owned()
+        ));
+        exec = exec.arg(format!(
+            "env.env_cfg.domain={}",
+            self.env_cfg
+                .scenario
+                .to_string()
+                .trim_matches('"')
+                .to_owned()
+        ));
+        exec = exec.arg(format!(
+            "env.env_cfg.assets.robot.variant={}",
+            self.env_cfg
+                .assets
+                .robot
+                .variant
+                .to_string()
+                .trim_matches('"')
+                .to_owned()
+        ));
+        exec = exec.arg(format!(
+            "env.env_cfg.assets.object.variant={}",
+            self.env_cfg
+                .assets
+                .object
+                .variant
+                .to_string()
+                .trim_matches('"')
+                .to_owned()
+        ));
+        exec = exec.arg(format!(
+            "env.env_cfg.assets.terrain.variant={}",
+            self.env_cfg
+                .assets
+                .terrain
+                .variant
+                .to_string()
+                .trim_matches('"')
+                .to_owned()
+        ));
+        exec = exec.arg(format!(
+            "env.env_cfg.assets.vehicle.variant={}",
+            self.env_cfg
+                .assets
+                .vehicle
+                .variant
+                .to_string()
+                .trim_matches('"')
+                .to_owned()
+        ));
 
         // Environment variables - GUI
         exec = exec.env(

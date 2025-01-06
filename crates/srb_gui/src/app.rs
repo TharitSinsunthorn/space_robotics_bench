@@ -2,7 +2,6 @@ use std::io::{Read, Write};
 
 use eframe::epaint::Color32;
 use egui_commonmark::{commonmark_str, CommonMarkCache};
-use itertools::*;
 use r2r::{
     std_msgs::msg::{Bool as BoolMsg, Empty as EmptyMsg, Float64 as Float64Msg},
     QosProfile,
@@ -443,8 +442,7 @@ impl App {
                                 variant: crate::config::AssetVariant::Dataset,
                             },
                         },
-                        seed: 1,
-                        detail: 1.0,
+                        seed: 23,
                     },
                     enable_ui: false,
                 },
@@ -473,8 +471,7 @@ impl App {
                                 variant: crate::config::AssetVariant::Dataset,
                             },
                         },
-                        seed: 3,
-                        detail: 1.0,
+                        seed: 7,
                     },
                     enable_ui: false,
                 },
@@ -494,7 +491,7 @@ impl App {
                                 variant: crate::config::AssetVariant::Dataset,
                             },
                             object: crate::config::Asset {
-                                variant: crate::config::AssetVariant::Dataset,
+                                variant: crate::config::AssetVariant::Procedural,
                             },
                             terrain: crate::config::Asset {
                                 variant: crate::config::AssetVariant::None,
@@ -504,7 +501,6 @@ impl App {
                             },
                         },
                         seed: 2,
-                        detail: 1.0,
                     },
                     enable_ui: false,
                 },
@@ -533,8 +529,7 @@ impl App {
                                 variant: crate::config::AssetVariant::Dataset,
                             },
                         },
-                        seed: 7,
-                        detail: 1.0,
+                        seed: 10,
                     },
                     enable_ui: false,
                 },
@@ -564,7 +559,6 @@ impl App {
                             },
                         },
                         seed: 4,
-                        detail: 1.0,
                     },
                     enable_ui: false,
                 },
@@ -593,20 +587,19 @@ impl App {
                                 variant: crate::config::AssetVariant::Dataset,
                             },
                         },
-                        seed: 9,
-                        detail: 1.0,
+                        seed: 0,
                     },
                     enable_ui: false,
                 },
             ),
             (
                 egui::Theme::Dark,
-                "Solar Panel Assembly",
-                crate::utils::Difficulty::Challenging,
-                crate::macros::include_content_image!("_images/envs/solar_panel_assembly_moon.jpg"),
+                "Locomotion",
+                crate::utils::Difficulty::Demo,
+                crate::macros::include_content_image!("_images/envs/locomotion_moon.jpg"),
                 crate::config::TaskConfig {
-                    task: crate::config::Task::SolarPanelAssembly,
-                    num_envs: 1,
+                    task: crate::config::Task::Locomotion,
+                    num_envs: 64,
                     env_cfg: crate::config::EnvironmentConfig {
                         scenario: crate::config::Scenario::Moon,
                         assets: crate::config::Assets {
@@ -614,17 +607,16 @@ impl App {
                                 variant: crate::config::AssetVariant::Dataset,
                             },
                             object: crate::config::Asset {
-                                variant: crate::config::AssetVariant::Dataset,
+                                variant: crate::config::AssetVariant::None,
                             },
                             terrain: crate::config::Asset {
                                 variant: crate::config::AssetVariant::Procedural,
                             },
                             vehicle: crate::config::Asset {
-                                variant: crate::config::AssetVariant::Dataset,
+                                variant: crate::config::AssetVariant::None,
                             },
                         },
-                        seed: 12,
-                        detail: 1.0,
+                        seed: 0,
                     },
                     enable_ui: false,
                 },
@@ -654,7 +646,6 @@ impl App {
                             },
                         },
                         seed: 7,
-                        detail: 1.0,
                     },
                     enable_ui: false,
                 },
@@ -684,7 +675,6 @@ impl App {
                             },
                         },
                         seed: 8,
-                        detail: 1.0,
                     },
                     enable_ui: false,
                 },
@@ -896,6 +886,21 @@ impl App {
                         crate::config::Task::Gateway => {
                             ui.add(
                                 egui::Label::new(egui::RichText::new("\t— Explore the Gateway space station with the Canadarm3 robotic arm.").monospace()).selectable(false)
+                            );
+                        }
+                        crate::config::Task::Locomotion => {
+                            let domain = match self.task_config.env_cfg.scenario {
+                                crate::config::Scenario::Moon => "the Moon",
+                                crate::config::Scenario::Mars => "Mars",
+                                _ => "",
+                            };
+                            ui.add(
+                                egui::Label::new(egui::RichText::new(format!("\t— Observe legged robots learning to walk on {domain}.")).monospace()).selectable(false)
+                            );
+                        }
+                        crate::config::Task::Cubesat => {
+                            ui.add(
+                                egui::Label::new(egui::RichText::new("\t— Explore cubesats in the Moon's orbit.").monospace()).selectable(false)
                             );
                         }
                     }
@@ -1184,7 +1189,9 @@ impl App {
                                             | crate::config::Task::SolarPanelAssembly => "Task",
                                             crate::config::Task::Perseverance
                                             | crate::config::Task::Ingenuity
-                                            | crate::config::Task::Gateway => "Demo",
+                                            | crate::config::Task::Gateway
+                                            | crate::config::Task::Locomotion
+                                            | crate::config::Task::Cubesat => "Demo",
                                         }
                                     ))
                                     .size(20.0),
@@ -1206,6 +1213,8 @@ impl App {
                                         crate::config::Task::Perseverance => "Perseverance",
                                         crate::config::Task::Ingenuity => "Ingenuity",
                                         crate::config::Task::Gateway => "Gateway",
+                                        crate::config::Task::Locomotion => "Locomotion",
+                                        crate::config::Task::Cubesat => "Cubesat",
                                     })
                                     .size(20.0),
                                 )
@@ -1245,6 +1254,16 @@ impl App {
                                         &mut self.task_config.task,
                                         crate::config::Task::Gateway,
                                         "Gateway",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.task_config.task,
+                                        crate::config::Task::Locomotion,
+                                        "Locomotion",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.task_config.task,
+                                        crate::config::Task::Cubesat,
+                                        "Cubesat",
                                     );
                                 });
 
@@ -1314,25 +1333,11 @@ impl App {
                             );
                             ui.add(
                                 egui::Slider::new(&mut self.task_config.num_envs, 1..=16)
-                                    .clamping(egui::SliderClamping::Always)
+                                    .clamping(egui::SliderClamping::Never)
+                                    // .clamping(egui::SliderClamping::Always)
                                     .trailing_fill(true)
                                     .integer()
                                     .custom_formatter(|x, _| format!("{x}")),
-                            );
-
-                            ui.end_row();
-
-                            ui.add(
-                                egui::Label::new(
-                                    egui::RichText::new("\u{e839} Level of detail").size(20.0),
-                                )
-                                .selectable(false),
-                            );
-                            ui.add(
-                                egui::Slider::new(&mut self.task_config.env_cfg.detail, 0.01..=2.0)
-                                    .clamping(egui::SliderClamping::Always)
-                                    .trailing_fill(true)
-                                    .custom_formatter(|x, _| format!("{x:.1}")),
                             );
 
                             ui.end_row();
@@ -1434,7 +1439,7 @@ impl App {
     }
 
     fn start_subprocess(&mut self) {
-        const PYTHON_SCRIPT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../scripts/teleop.py");
+        const PYTHON_SCRIPT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../srb/__main__.py");
 
         self.stop_subprocess();
         if self.subprocess.is_some() {
@@ -1471,6 +1476,7 @@ impl App {
             .unwrap();
 
         const SUBPROCESS_NAME: &str = "python3";
+        const SUBPROCESS_NAME2: &str = "python.sh";
         const SLEEP_DURATION: std::time::Duration = std::time::Duration::from_millis(10);
 
         if let Some(p) = &mut self.subprocess {
@@ -1493,6 +1499,7 @@ impl App {
             ] {
                 loop {
                     let _ = Self::kill_all_processes_by_name(SUBPROCESS_NAME, signal);
+                    let _ = Self::kill_all_processes_by_name(SUBPROCESS_NAME2, signal);
 
                     if p.wait_timeout(SLEEP_DURATION).unwrap().is_some() {
                         info!("Subprocess stopped.");
@@ -1510,6 +1517,10 @@ impl App {
             // Directly kill the process if the subprocess might have been spawned by other means
             let _ = Self::kill_all_processes_by_name(
                 SUBPROCESS_NAME,
+                nix::sys::signal::Signal::SIGKILL,
+            );
+            let _ = Self::kill_all_processes_by_name(
+                SUBPROCESS_NAME2,
                 nix::sys::signal::Signal::SIGKILL,
             );
         }

@@ -10,3 +10,4 @@ from srb.utils.typing import EnumNameSerializer
 class EnvironmentConfig(BaseModel):
     domain: Annotated[Domain, EnumNameSerializer] = Domain.MOON
     assets: Assets = Assets()
+    seed: int = 0

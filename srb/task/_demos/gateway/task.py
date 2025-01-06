@@ -43,7 +43,7 @@ class TaskCfg(BaseManipulationEnvCfg):
 
         ## Scene
         self.scene.env_spacing = 42.0
-        self.robot_cfg = asset.canadarm3_large_cfg()
+        self.robot_cfg = asset.Canadarm3Large()
         self.scene.robot = self.robot_cfg.asset_cfg
 
         ## Actions

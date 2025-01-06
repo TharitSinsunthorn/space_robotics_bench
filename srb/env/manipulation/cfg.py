@@ -154,10 +154,10 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
                 self.scene.env_spacing - 1.0,
                 self.scene.env_spacing - 1.0,
             ),
-            density=0.1,
+            density=0.07,
             flat_area_size=2.0,
             texture_resolution={
-                BakeType.ALBEDO: 2 * 1024,
+                BakeType.ALBEDO: 4 * 1024,
                 BakeType.NORMAL: 4 * 1024,
                 BakeType.ROUGHNESS: 1 * 1024,
             },

@@ -116,14 +116,14 @@ class BaseAerialRoboticsEnvCfg(BaseEnvCfg):
 
     ## Viewer
     viewer = ViewerCfg(
-        lookat=(0.0, 0.0, 10.0),
-        eye=(-10.0, 0.0, 20.0),
+        lookat=(0.0, 0.0, 4.0),
+        eye=(-12.0, 0.0, 32.0),
         origin_type="env",
         env_index=0,
     )
 
     ## Scene
-    scene = InteractiveSceneCfg(num_envs=1, env_spacing=48.0, replicate_physics=False)
+    scene = InteractiveSceneCfg(num_envs=1, env_spacing=64.0, replicate_physics=False)
 
     ## Events
     events = BaseAerialRoboticsEnvEventCfg()

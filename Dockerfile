@@ -281,10 +281,10 @@ RUN if [[ "${DEV,,}" = true ]]; then \
 ## Copy the source code into the image
 COPY . "${SRB_PATH}"
 
-# ## Build Rust targets
-# # hadolint ignore=SC1091
-# RUN source /entrypoint.bash -- && \
-#     cargo build --release --workspace --all-targets
+## Build Rust targets
+# hadolint ignore=SC1091
+RUN source /entrypoint.bash -- && \
+    cargo build --release --workspace --all-targets
 
 ## Install project as editable Python module
 # hadolint ignore=SC1091

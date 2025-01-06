@@ -60,7 +60,7 @@ def sample_cfg(
                 case env_utils.Domain.MARS:
                     pose_range.update(
                         {
-                            "z": (0.03, 0.03),
+                            "z": (0.05, 0.05),
                             "roll": (torch.pi / 7, torch.pi / 7),
                             "pitch": (
                                 87.5 * torch.pi / 180,
@@ -70,9 +70,9 @@ def sample_cfg(
                         }
                     )
                 case _:
-                    pose_range["z"] = (0.05, 0.05)
+                    pose_range["z"] = (0.07, 0.07)
         case _:
-            pose_range["z"] = (0.04, 0.04)
+            pose_range["z"] = (0.06, 0.06)
 
     return SampleCfg(
         asset_cfg=asset.object_of_interest_from_env_cfg(
