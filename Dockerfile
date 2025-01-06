@@ -239,6 +239,7 @@ ARG DEV=true
 ARG OXIDASIM_PATH="/root/oxidasim"
 ARG OXIDASIM_REMOTE="https://github.com/AndrejOrsula/oxidasim.git"
 ARG OXIDASIM_BRANCH="main"
+# hadolint ignore=SC1091
 RUN if [[ "${DEV,,}" = true ]]; then \
     source /entrypoint.bash -- && \
     git clone "${OXIDASIM_REMOTE}" "${OXIDASIM_PATH}" --branch "${OXIDASIM_BRANCH}" && \
@@ -310,15 +311,18 @@ CMD ["bash"]
 ENV PYTHONDONTWRITEBYTECODE=1
 
 ## Make the default Python executable point to the Isaac Sim Python
+# hadolint ignore=SC2016
 RUN mv "${PYTHONEXE}" "${PYTHONEXE}.original" && \
     echo -e '#!/bin/bash\n${ISAAC_SIM_PYTHON} "${@}"' > "${PYTHONEXE}" && \
     chmod +x "${PYTHONEXE}"
 ENV PYTHONEXE="${PYTHONEXE}.original"
 
 ## Configure argcomplete
+# hadolint ignore=DL3008
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
     bash-completion && \
+    rm -rf /var/lib/apt/lists/* && \
     echo "source /etc/bash_completion" >> "/etc/bash.bashrc" && \
     register-python-argcomplete3 srb > "/etc/bash_completion.d/srb"
 
