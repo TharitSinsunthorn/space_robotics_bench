@@ -150,9 +150,9 @@ class BaseMobileRoboticsEnvCfg(BaseEnvCfg):
             density=0.2,
             flat_area_size=4.0,
             texture_resolution={
-                BakeType.ALBEDO: 6 * 1024,
-                BakeType.NORMAL: 4 * 1024,
-                BakeType.ROUGHNESS: 2 * 1024,
+                BakeType.ALBEDO: 4096,
+                BakeType.NORMAL: 2048,
+                BakeType.ROUGHNESS: 1024,
             },
         )
         self.scene.terrain = self.terrain_cfg.asset_cfg

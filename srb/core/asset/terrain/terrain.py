@@ -4,7 +4,7 @@ from typing import Sequence, Tuple, Type
 
 from pydantic import PositiveFloat
 
-from srb.core.asset.asset import Asset
+from srb.core.asset.asset import Asset, AssetRegistry
 from srb.core.asset.asset_type import AssetType
 
 
@@ -15,7 +15,7 @@ class Terrain(Asset, asset_entrypoint=AssetType.TERRAIN):
 
     @classmethod
     def asset_registry(cls) -> Sequence[Type[Terrain]]:
-        return super().asset_registry().get(AssetType.TERRAIN, [])  # type: ignore
+        return AssetRegistry.registry.get(AssetType.TERRAIN, [])  # type: ignore
 
 
 class Surface(Terrain, asset_metaclass=True):

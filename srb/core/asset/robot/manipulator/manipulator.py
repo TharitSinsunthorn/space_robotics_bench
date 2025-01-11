@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import ClassVar, Dict, Iterable, List, Mapping, Sequence, Tuple, Type
+from typing import ClassVar, Dict, Iterable, List, Sequence, Tuple, Type
 
 from srb.core.asset import ArticulationCfg
 from srb.core.asset.robot.manipulator.manipulator_type import ManipulatorType
-from srb.core.asset.robot.robot import Robot
+from srb.core.asset.robot.robot import Robot, RobotRegistry
 from srb.core.asset.robot.robot_type import RobotType
 from srb.utils.str import convert_to_snake_case
 
@@ -65,14 +65,12 @@ class Manipulator(Robot, robot_entrypoint=RobotType.MANIPULATOR):
         )
 
     @classmethod
-    def manipulator_registry(
-        cls,
-    ) -> Mapping[ManipulatorType, Sequence[Type[Manipulator]]]:
-        return ManipulatorRegistry.registry
+    def manipulator_registry(cls) -> Sequence[Type[Manipulator]]:
+        return list(ManipulatorRegistry.values_inner())
 
     @classmethod
     def robot_registry(cls) -> Sequence[Type[Manipulator]]:
-        return super().robot_registry().get(RobotType.MANIPULATOR, [])  # type: ignore
+        return RobotRegistry.registry.get(RobotType.MANIPULATOR, [])  # type: ignore
 
 
 class ManipulatorRegistry:
@@ -94,11 +92,11 @@ class ManipulatorRegistry:
 
     @classmethod
     def values_inner(cls) -> Iterable[Type[Manipulator]]:
-        return {
+        return (
             manipulator
             for manipulators in cls.registry.values()
             for manipulator in manipulators
-        }
+        )
 
     @classmethod
     def n_robots(cls) -> int:
@@ -115,3 +113,10 @@ class ManipulatorRegistry:
     @classmethod
     def registered_packages(cls) -> Iterable[str]:
         return {module.split(".", maxsplit=1)[0] for module in cls.registered_modules()}
+
+    @classmethod
+    def by_name(cls, name: str) -> Type[Manipulator] | None:
+        for manipulator in cls.values_inner():
+            if convert_to_snake_case(manipulator.__name__) == name:
+                return manipulator
+        return None

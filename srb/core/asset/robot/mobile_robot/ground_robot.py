@@ -4,14 +4,17 @@ from typing import Sequence, Type
 
 from srb.core.actions import LocomotionJointSpaceActionCfg, WheeledRoverActionGroupCfg
 from srb.core.asset import Frame
-from srb.core.asset.robot.mobile_robot.mobile_robot import MobileRobot
+from srb.core.asset.robot.mobile_robot.mobile_robot import (
+    MobileRobot,
+    MobileRobotRegistry,
+)
 from srb.core.asset.robot.mobile_robot.mobile_robot_type import MobileRobotType
 
 
 class GroundRobot(MobileRobot, mobile_robot_entrypoint=MobileRobotType.GROUND):
     @classmethod
     def mobile_robot_registry(cls) -> Sequence[Type[GroundRobot]]:
-        return super().mobile_robot_registry().get(MobileRobotType.GROUND, [])  # type: ignore
+        return MobileRobotRegistry.registry.get(MobileRobotType.GROUND, [])  # type: ignore
 
 
 class WheeledRobot(GroundRobot, mobile_robot_metaclass=True):

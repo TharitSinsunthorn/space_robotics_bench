@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import ClassVar, Dict, Iterable, List, Mapping, Sequence, Tuple, Type
+from typing import ClassVar, Dict, Iterable, List, Sequence, Tuple, Type
 
 from srb.core.asset import ArticulationCfg
 from srb.core.asset.robot.mobile_manipulator.mobile_manipulator_type import (
     MobileManipulatorType,
 )
-from srb.core.asset.robot.robot import Robot
+from srb.core.asset.robot.robot import Robot, RobotRegistry
 from srb.core.asset.robot.robot_type import RobotType
 from srb.utils.str import convert_to_snake_case
 
@@ -79,14 +79,12 @@ class MobileManipulator(Robot, robot_entrypoint=RobotType.MOBILE_MANIPULATOR):
         )
 
     @classmethod
-    def mobile_manipulator_registry(
-        cls,
-    ) -> Mapping[MobileManipulatorType, Sequence[Type[MobileManipulator]]]:
-        return MobileManipulatorRegistry.registry
+    def mobile_manipulator_registry(cls) -> Sequence[Type[MobileManipulator]]:
+        return list(MobileManipulatorRegistry.values_inner())
 
     @classmethod
     def robot_registry(cls) -> Sequence[Type[MobileManipulator]]:
-        return super().robot_registry().get(RobotType.MOBILE_MANIPULATOR, [])  # type: ignore
+        return RobotRegistry.registry.get(RobotType.MOBILE_MANIPULATOR, [])  # type: ignore
 
 
 class MobileManipulatorRegistry:
@@ -110,11 +108,11 @@ class MobileManipulatorRegistry:
 
     @classmethod
     def values_inner(cls) -> Iterable[Type[MobileManipulator]]:
-        return {
+        return (
             mobile_manipulator
             for mobile_manipulators in cls.registry.values()
             for mobile_manipulator in mobile_manipulators
-        }
+        )
 
     @classmethod
     def n_robots(cls) -> int:
@@ -133,3 +131,10 @@ class MobileManipulatorRegistry:
     @classmethod
     def registered_packages(cls) -> Iterable[str]:
         return {module.split(".", maxsplit=1)[0] for module in cls.registered_modules()}
+
+    @classmethod
+    def by_name(cls, name: str) -> Type[MobileManipulator] | None:
+        for mobile_manipulator in cls.values_inner():
+            if convert_to_snake_case(mobile_manipulator.__name__) == name:
+                return mobile_manipulator
+        return None

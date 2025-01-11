@@ -162,11 +162,11 @@ class BaseAerialRoboticsEnvCfg(BaseEnvCfg):
                 self.scene.env_spacing - 1.0,
                 self.scene.env_spacing - 1.0,
             ),
-            density=0.25,
+            density=0.5,
             texture_resolution={
-                BakeType.ALBEDO: 8 * 1024,
-                BakeType.NORMAL: 4 * 1024,
-                BakeType.ROUGHNESS: 2 * 1024,
+                BakeType.ALBEDO: 4096,
+                BakeType.NORMAL: 2048,
+                BakeType.ROUGHNESS: 1024,
             },
         )
         self.scene.terrain = self.terrain_cfg.asset_cfg

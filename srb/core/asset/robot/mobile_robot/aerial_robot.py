@@ -4,14 +4,17 @@ from typing import Sequence, Type
 
 from srb.core.actions import MultiCopterActionGroupCfg
 from srb.core.asset import Frame
-from srb.core.asset.robot.mobile_robot.mobile_robot import MobileRobot
+from srb.core.asset.robot.mobile_robot.mobile_robot import (
+    MobileRobot,
+    MobileRobotRegistry,
+)
 from srb.core.asset.robot.mobile_robot.mobile_robot_type import MobileRobotType
 
 
 class AerialRobot(MobileRobot, mobile_robot_entrypoint=MobileRobotType.AERIAL):
     @classmethod
     def mobile_robot_registry(cls) -> Sequence[Type[AerialRobot]]:
-        return super().mobile_robot_registry().get(MobileRobotType.AERIAL, [])  # type: ignore
+        return MobileRobotRegistry.registry.get(MobileRobotType.AERIAL, [])  # type: ignore
 
 
 class MultiCopter(AerialRobot, arbitrary_types_allowed=True):

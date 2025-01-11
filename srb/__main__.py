@@ -19,6 +19,8 @@ if TYPE_CHECKING:
 
     from srb.core.envs import BaseEnv
 
+# TODO: Clean-up args
+
 
 def main():
     def impl(
@@ -40,11 +42,10 @@ def main():
 
 ### Agent ###
 def agent_main(
-    task,
+    env_id: str,
     video,
     video_length,
     video_interval,
-    num_envs,
     device,
     disable_fabric,
     disable_ui: bool,
@@ -55,7 +56,7 @@ def agent_main(
         f'srb.{"headless." if kwargs["headless"] else ""}{"rendering." if kwargs["enable_cameras"] else ""}kit'
     )
     kwargs["enable_cameras"] = (
-        kwargs["enable_cameras"] or video or task.endswith("_visual")
+        kwargs["enable_cameras"] or video or env_id.endswith("_visual")
     )
 
     # Launch Isaac Sim
@@ -76,19 +77,19 @@ def agent_main(
         hide_ui()
 
     @hydra_task_config(
-        task_name=task,
+        task_name=env_id,
         agent_cfg_entry_point=f'{kwargs["algo"]}_cfg' if kwargs.get("algo") else None,
     )
     def hydra_main(env_cfg: dict | None = None, agent_cfg: dict | None = None):
         # Create the environment and initialize it
         env = gymnasium.make(
-            id=task, cfg=env_cfg, render_mode="rgb_array" if video else None
+            id=env_id, cfg=env_cfg, render_mode="rgb_array" if video else None
         )
         env.reset()
 
         # Add wrapper for video recording
         if video:
-            logdir = Path(create_logdir_path(kwargs["agent_subcommand"], task))
+            logdir = Path(create_logdir_path(kwargs["agent_subcommand"], env_id))
             video_kwargs = {
                 "video_folder": logdir.joinpath("videos"),
                 "step_trigger": lambda step: step % video_interval == 0,
@@ -673,11 +674,11 @@ def parse_cli_args() -> argparse.Namespace:
     ):
         environment_group = _agent_parser.add_argument_group("Environment")
         environment_group.add_argument(
-            # TODO: Make --env first
-            "--task",
             "-e",
             "--env",
+            "--task",
             "--demo",
+            dest="env_id",
             help="Name of the environment to select",
             type=str,
             action=AutoNamespaceTaskAction,
@@ -685,12 +686,6 @@ def parse_cli_args() -> argparse.Namespace:
         )
         environment_group.add_argument(
             "--seed", type=int, default=None, help="Seed used for the environment"
-        )
-        environment_group.add_argument(
-            "--num_envs",
-            type=int,
-            default=1,
-            help="Number of environments to simulate in parallel.",
         )
 
         compute_group = _agent_parser.add_argument_group("Compute")

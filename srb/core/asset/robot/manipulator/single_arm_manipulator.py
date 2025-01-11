@@ -4,7 +4,10 @@ from typing import Sequence, Type
 
 from srb.core.actions import ManipulatorTaskSpaceActionCfg
 from srb.core.asset.common import Frame
-from srb.core.asset.robot.manipulator.manipulator import Manipulator
+from srb.core.asset.robot.manipulator.manipulator import (
+    Manipulator,
+    ManipulatorRegistry,
+)
 from srb.core.asset.robot.manipulator.manipulator_type import ManipulatorType
 
 
@@ -29,4 +32,4 @@ class SingleArmManipulator(
 
     @classmethod
     def manipulator_registry(cls) -> Sequence[Type[SingleArmManipulator]]:
-        return super().manipulator_registry().get(ManipulatorType.SINGLE_ARM, [])  # type: ignore
+        return ManipulatorRegistry.registry.get(ManipulatorType.SINGLE_ARM, [])  # type: ignore

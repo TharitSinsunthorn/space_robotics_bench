@@ -84,8 +84,8 @@ class Asset(BaseModel):
         raise ValueError(f"Class '{self.__class__.__name__}' has unknown asset type")
 
     @classmethod
-    def asset_registry(cls) -> Mapping[AssetType, Sequence[Type[Asset]]]:
-        return AssetRegistry.registry
+    def asset_registry(cls) -> Sequence[Type[Asset]]:
+        return list(AssetRegistry.values_inner())
 
     @property
     def inputs(self) -> Mapping[str, Any]:
@@ -156,7 +156,7 @@ class AssetRegistry:
 
     @classmethod
     def values_inner(cls) -> Iterable[Type[Asset]]:
-        return {asset for assets in cls.registry.values() for asset in assets}
+        return (asset for assets in cls.registry.values() for asset in assets)
 
     @classmethod
     def n_assets(cls) -> int:
@@ -171,3 +171,10 @@ class AssetRegistry:
     @classmethod
     def registered_packages(cls) -> Iterable[str]:
         return {module.split(".", maxsplit=1)[0] for module in cls.registered_modules()}
+
+    @classmethod
+    def by_name(cls, name: str) -> Type[Asset] | None:
+        for asset in cls.values_inner():
+            if convert_to_snake_case(asset.__name__) == name:
+                return asset
+        return None

@@ -236,15 +236,15 @@ RUN --mount=type=bind,source=package.xml,target="${SRB_PATH}/package.xml" \
 ###############
 ARG DEV=true
 
-ARG OXIDASIM_PATH="/root/oxidasim"
-ARG OXIDASIM_REMOTE="https://github.com/AndrejOrsula/oxidasim.git"
-ARG OXIDASIM_BRANCH="main"
-# hadolint ignore=SC1091
-RUN if [[ "${DEV,,}" = true ]]; then \
-    source /entrypoint.bash -- && \
-    git clone "${OXIDASIM_REMOTE}" "${OXIDASIM_PATH}" --branch "${OXIDASIM_BRANCH}" && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${OXIDASIM_PATH}[all]" ; \
-    fi
+# ARG OXIDASIM_PATH="/root/oxidasim"
+# ARG OXIDASIM_REMOTE="https://github.com/AndrejOrsula/oxidasim.git"
+# ARG OXIDASIM_BRANCH="main"
+# # hadolint ignore=SC1091
+# RUN if [[ "${DEV,,}" = true ]]; then \
+#     source /entrypoint.bash -- && \
+#     git clone "${OXIDASIM_REMOTE}" "${OXIDASIM_PATH}" --branch "${OXIDASIM_BRANCH}" && \
+#     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${OXIDASIM_PATH}[all]" ; \
+#     fi
 
 ARG SIMFORGE_PATH="/root/simforge"
 ARG SIMFORGE_REMOTE="https://github.com/AndrejOrsula/simforge.git"
@@ -264,16 +264,16 @@ RUN if [[ "${DEV,,}" = true ]]; then \
     "${BLENDER_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_FOUNDRY_PATH}" ; \
     fi
 
-## Install DreamerV3 locally to enable mounting the source code into the container
-ARG DREAMERV3_PATH="/root/dreamerv3"
-ARG DREAMERV3_REMOTE="https://github.com/AndrejOrsula/dreamerv3.git"
-ARG DREAMERV3_BRANCH="dev"
-RUN if [[ "${DEV,,}" = true ]]; then \
-    git clone "${DREAMERV3_REMOTE}" "${DREAMERV3_PATH}" --branch "${DREAMERV3_BRANCH}" && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir -r "${DREAMERV3_PATH}/embodied/requirements.txt" && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir -r "${DREAMERV3_PATH}/dreamerv3/requirements.txt" -f "https://storage.googleapis.com/jax-releases/jax_cuda_releases.html" && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${DREAMERV3_PATH}" ; \
-    fi
+# ## Install DreamerV3 locally to enable mounting the source code into the container
+# ARG DREAMERV3_PATH="/root/dreamerv3"
+# ARG DREAMERV3_REMOTE="https://github.com/AndrejOrsula/dreamerv3.git"
+# ARG DREAMERV3_BRANCH="dev"
+# RUN if [[ "${DEV,,}" = true ]]; then \
+#     git clone "${DREAMERV3_REMOTE}" "${DREAMERV3_PATH}" --branch "${DREAMERV3_BRANCH}" && \
+#     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir -r "${DREAMERV3_PATH}/embodied/requirements.txt" && \
+#     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir -r "${DREAMERV3_PATH}/dreamerv3/requirements.txt" -f "https://storage.googleapis.com/jax-releases/jax_cuda_releases.html" && \
+#     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${DREAMERV3_PATH}" ; \
+#     fi
 
 ###############
 ### Build ###
@@ -282,15 +282,10 @@ RUN if [[ "${DEV,,}" = true ]]; then \
 ## Copy the source code into the image
 COPY . "${SRB_PATH}"
 
-## Build Rust targets
-# hadolint ignore=SC1091
-RUN source /entrypoint.bash -- && \
-    cargo build --release --workspace --all-targets
-
-## Install project as editable Python module
-# hadolint ignore=SC1091
-RUN source /entrypoint.bash -- && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --no-deps --editable "${SRB_PATH}[all]"
+# ## Build Rust targets
+# # hadolint ignore=SC1091
+# RUN source /entrypoint.bash -- && \
+#     cargo build --release --workspace --all-targets
 
 ## Install project as ROS package
 ARG ROS_WS="/opt/ros/${ROS_DISTRO}/ws"
@@ -299,6 +294,11 @@ RUN source /entrypoint.bash -- && \
     colcon build --merge-install --symlink-install --cmake-args -DPython3_EXECUTABLE="${ISAAC_SIM_PYTHON}" --paths "${SRB_PATH}" --build-base "${ROS_WS}/build" --install-base "${ROS_WS}/install" && \
     rm -rf ./log && \
     sed -i "s|source \"/opt/ros/${ROS_DISTRO}/setup.bash\" --|source \"${ROS_WS}/install/setup.bash\" --|" /entrypoint.bash
+
+## Install project as editable Python module
+# hadolint ignore=SC1091
+RUN source /entrypoint.bash -- && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --no-deps --editable "${SRB_PATH}[all]"
 
 ## Set the default command
 CMD ["bash"]
@@ -309,6 +309,9 @@ CMD ["bash"]
 
 ## Skip writing Python bytecode to the disk to avoid polluting mounted host volume with `__pycache__` directories
 ENV PYTHONDONTWRITEBYTECODE=1
+
+## Enable full error backtraces in Hydra
+ENV HYDRA_FULL_ERROR=1
 
 ## Make the default Python executable point to the Isaac Sim Python
 # hadolint ignore=SC2016

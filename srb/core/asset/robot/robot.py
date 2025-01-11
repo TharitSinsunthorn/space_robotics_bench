@@ -1,20 +1,9 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
-)
+from typing import Any, ClassVar, Dict, Iterable, List, Sequence, Set, Tuple, Type
 
-from srb.core.asset import ArticulationCfg, RigidObjectCfg
+from srb.core.asset import ArticulationCfg, AssetRegistry, RigidObjectCfg
 from srb.core.asset.asset import Asset
 from srb.core.asset.asset_type import AssetType
 from srb.core.asset.common import Frame
@@ -75,12 +64,12 @@ class Robot(Asset, asset_entrypoint=AssetType.ROBOT):
         raise ValueError(f"Class '{self.__class__.__name__}' has unknown robot type")
 
     @classmethod
-    def robot_registry(cls) -> Mapping[RobotType, Sequence[Type[Robot]]]:
-        return RobotRegistry.registry
+    def robot_registry(cls) -> Sequence[Type[Robot]]:
+        return list(RobotRegistry.values_inner())
 
     @classmethod
     def asset_registry(cls) -> Sequence[Type[Robot]]:
-        return super().asset_registry().get(AssetType.ROBOT, [])  # type: ignore
+        return AssetRegistry.registry.get(AssetType.ROBOT, [])  # type: ignore
 
 
 class RobotRegistry:
@@ -102,7 +91,7 @@ class RobotRegistry:
 
     @classmethod
     def values_inner(cls) -> Iterable[Type[Robot]]:
-        return {robot for robots in cls.registry.values() for robot in robots}
+        return (robot for robots in cls.registry.values() for robot in robots)
 
     @classmethod
     def n_robots(cls) -> int:
@@ -117,3 +106,10 @@ class RobotRegistry:
     @classmethod
     def registered_packages(cls) -> Iterable[str]:
         return {module.split(".", maxsplit=1)[0] for module in cls.registered_modules()}
+
+    @classmethod
+    def by_name(cls, name: str) -> Type[Robot] | None:
+        for robot in cls.values_inner():
+            if convert_to_snake_case(robot.__name__) == name:
+                return robot
+        return None

@@ -5,7 +5,7 @@ from omni.isaac.core.prims.xform_prim_view import XFormPrimView
 from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
 from omni.isaac.lab.sensors import ContactSensor, ContactSensorCfg
 from omni.isaac.lab.utils import configclass
-from pydantic import NonNegativeInt
+from pydantic import BaseModel, NonNegativeInt
 
 import srb.core.envs as env_utils
 import srb.utils.math as math_utils
@@ -49,6 +49,11 @@ class HoleCfg(Object):
     offset_pos_entrance: Tuple[float, float, float]
 
 
+class PegInHoleCfg(BaseModel, arbitrary_types_allowed=True):
+    peg: PegCfg
+    hole: HoleCfg
+
+
 def peg_and_hole_cfg(
     env_cfg: env_utils.EnvironmentConfig,
     *,
@@ -63,7 +68,7 @@ def peg_and_hole_cfg(
     procgen_kwargs_peg: Dict[str, Any] = {},
     procgen_kwargs_hole: Dict[str, Any] = {},
     **kwargs,
-) -> Tuple[PegCfg, HoleCfg]:
+) -> PegInHoleCfg:
     pose_range_peg = {
         "x": (-0.25 - 0.025, -0.25 + 0.0125),
         "y": (-0.05, 0.05),
@@ -91,22 +96,25 @@ def peg_and_hole_cfg(
         **kwargs,
     )
 
-    return PegCfg(
-        asset_cfg=peg_cfg,
-        offset_pos_ends=offset_pos_ends,
-        rot_symmetry_n=rot_symmetry_n,
-        state_randomizer=EventTermCfg(
-            func=mdp.reset_root_state_uniform,
-            mode="reset",
-            params={
-                "asset_cfg": asset_cfg_peg,
-                "pose_range": pose_range_peg,
-                "velocity_range": {},
-            },
+    return PegInHoleCfg(
+        peg=PegCfg(
+            asset_cfg=peg_cfg,
+            offset_pos_ends=offset_pos_ends,
+            rot_symmetry_n=rot_symmetry_n,
+            state_randomizer=EventTermCfg(
+                func=mdp.reset_root_state_uniform,
+                mode="reset",
+                params={
+                    "asset_cfg": asset_cfg_peg,
+                    "pose_range": pose_range_peg,
+                    "velocity_range": {},
+                },
+            ),
         ),
-    ), HoleCfg(
-        asset_cfg=hole_cfg,
-        offset_pos_entrance=offset_pos_entrance,
+        hole=HoleCfg(
+            asset_cfg=hole_cfg,
+            offset_pos_entrance=offset_pos_entrance,
+        ),
     )
 
 
@@ -130,7 +138,7 @@ class TaskCfg(BaseManipulationEnvCfg):
         super().__post_init__()
 
         ## Scene
-        self.object_cfg, self.target_cfg = peg_and_hole_cfg(
+        self.problem_cfg = peg_and_hole_cfg(
             self.env_cfg,
             num_assets=self.scene.num_envs,
             init_state=RigidObjectCfg.InitialStateCfg(pos=(0.5, 0.0, 0.02)),
@@ -138,8 +146,8 @@ class TaskCfg(BaseManipulationEnvCfg):
                 "activate_contact_sensors": True,
             },
         )
-        self.scene.object = self.object_cfg.asset_cfg
-        self.scene.target = self.target_cfg.asset_cfg
+        self.scene.object = self.problem_cfg.peg.asset_cfg
+        self.scene.target = self.problem_cfg.hole.asset_cfg
 
         ## Sensors
         self.scene.contacts_robot_hand_obj = ContactSensorCfg(
@@ -151,7 +159,7 @@ class TaskCfg(BaseManipulationEnvCfg):
         )
 
         ## Events
-        self.events.reset_rand_object_state = self.object_cfg.state_randomizer
+        self.events.reset_rand_object_state = self.problem_cfg.peg.state_randomizer
 
 
 ############
@@ -189,18 +197,22 @@ class Task(BaseManipulationEnv):
             self.num_envs, dtype=torch.float32, device=self.device
         )
         self._peg_offset_pos_ends = torch.tensor(
-            self.cfg.object_cfg.offset_pos_ends, dtype=torch.float32, device=self.device
+            self.cfg.problem_cfg.peg.offset_pos_ends,
+            dtype=torch.float32,
+            device=self.device,
         ).repeat(self.num_envs, 1, 1)
         self._peg_rot_symmetry_n = torch.tensor(
-            self.cfg.object_cfg.rot_symmetry_n, dtype=torch.int32, device=self.device
+            self.cfg.problem_cfg.peg.rot_symmetry_n,
+            dtype=torch.int32,
+            device=self.device,
         ).repeat(self.num_envs)
         self._hole_offset_pos_bottom = torch.tensor(
-            self.cfg.target_cfg.offset_pos_bottom,
+            self.cfg.problem_cfg.hole.offset_pos_bottom,
             dtype=torch.float32,
             device=self.device,
         ).repeat(self.num_envs, 1)
         self._hole_offset_pos_entrance = torch.tensor(
-            self.cfg.target_cfg.offset_pos_entrance,
+            self.cfg.problem_cfg.hole.offset_pos_entrance,
             dtype=torch.float32,
             device=self.device,
         ).repeat(self.num_envs, 1)

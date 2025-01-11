@@ -29,7 +29,7 @@ class TaskCfg(BaseManipulationEnvCfg):
     ## Environment
     episode_length_s: float = DELAYED_CFG
     num_problems_per_env: int = 6
-    problem_spacing = 0.15
+    problem_spacing: float = 0.15
 
     ## Task
     is_finite_horizon: bool = False
@@ -77,7 +77,7 @@ class TaskCfg(BaseManipulationEnvCfg):
             setattr(
                 self.scene,
                 f"object{i}",
-                problem_cfg[0].asset_cfg.replace(
+                problem_cfg.peg.asset_cfg.replace(
                     init_state=RigidObjectCfg.InitialStateCfg(
                         pos=(0.5, 0.0, 0.13),
                     )
@@ -86,7 +86,7 @@ class TaskCfg(BaseManipulationEnvCfg):
             setattr(
                 self.scene,
                 f"target{i}",
-                problem_cfg[1].asset_cfg,
+                problem_cfg.hole.asset_cfg,
             )
 
         ## Sensors
@@ -178,7 +178,7 @@ class Task(BaseManipulationEnv):
         )
         self._peg_offset_pos_ends = torch.tensor(
             [
-                self.cfg.problem_cfgs[i][0].offset_pos_ends
+                self.cfg.problem_cfgs[i].peg.offset_pos_ends
                 for i in range(self.cfg.num_problems_per_env)
             ],
             dtype=torch.float32,
@@ -187,7 +187,7 @@ class Task(BaseManipulationEnv):
 
         self._peg_rot_symmetry_n = torch.tensor(
             [
-                self.cfg.problem_cfgs[i][0].rot_symmetry_n
+                self.cfg.problem_cfgs[i].peg.rot_symmetry_n
                 for i in range(self.cfg.num_problems_per_env)
             ],
             dtype=torch.int32,
@@ -195,7 +195,7 @@ class Task(BaseManipulationEnv):
         ).repeat(self.num_envs, 1)
         self._hole_offset_pos_bottom = torch.tensor(
             [
-                self.cfg.problem_cfgs[i][1].offset_pos_bottom
+                self.cfg.problem_cfgs[i].hole.offset_pos_bottom
                 for i in range(self.cfg.num_problems_per_env)
             ],
             dtype=torch.float32,
@@ -203,7 +203,7 @@ class Task(BaseManipulationEnv):
         ).repeat(self.num_envs, 1, 1)
         self._hole_offset_pos_entrance = torch.tensor(
             [
-                self.cfg.problem_cfgs[i][1].offset_pos_entrance
+                self.cfg.problem_cfgs[i].hole.offset_pos_entrance
                 for i in range(self.cfg.num_problems_per_env)
             ],
             dtype=torch.float32,

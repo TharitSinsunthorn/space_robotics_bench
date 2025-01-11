@@ -15,7 +15,12 @@ def with_rich() -> bool:
         return False
 
     suppress = []
-    for mod in ("pydantic", "numpy", "torch"):
+    for mod in (
+        "numpy",
+        "omegaconf",
+        "pydantic",
+        "torch",
+    ):
         try:
             suppress.append(importlib.import_module(mod))
         except Exception:

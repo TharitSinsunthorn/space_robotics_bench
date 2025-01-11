@@ -31,8 +31,8 @@ def compute_grid_spacing(
             global_rot_offset = np.asarray(global_rot_offset)
 
     num_per_row = np.ceil(np.sqrt(num_instances))
-    num_rows = np.ceil(num_instances / num_per_row)
-    num_cols = np.ceil(num_instances / num_rows)
+    num_rows = np.ceil(num_instances / num_per_row).item()
+    num_cols = np.ceil(num_instances / num_rows).item()
 
     row_offset = 0.5 * spacing * (num_rows - 1)
     col_offset = 0.5 * spacing * (num_cols - 1)
@@ -48,7 +48,7 @@ def compute_grid_spacing(
 
         position = [x, y, 0]
         if global_pos_offset is not None:
-            translation = global_pos_offset + position
+            translation = (global_pos_offset + position).tolist()
         else:
             translation = position
         positions.append(translation)

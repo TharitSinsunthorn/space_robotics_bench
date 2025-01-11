@@ -19,13 +19,10 @@ from omni.isaac.lab.envs.utils.spaces import (
     replace_env_cfg_spaces_with_strings,
     replace_strings_with_env_cfg_spaces,
 )
-from omni.isaac.lab.utils import (
-    replace_slices_with_strings,
-    replace_strings_with_slices,
-)
 from pydantic import BaseModel
 
 from srb.utils import logging
+from srb.utils.dict import replace_slices_with_strings, replace_strings_with_slices
 from srb.utils.parsing import load_cfg_from_registry
 
 # TODO: Combine with cfg and parsing modules

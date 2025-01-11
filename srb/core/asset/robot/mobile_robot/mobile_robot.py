@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import ClassVar, Dict, Iterable, List, Mapping, Sequence, Tuple, Type
+from typing import ClassVar, Dict, Iterable, List, Sequence, Tuple, Type
 
 from srb.core.asset import ArticulationCfg, RigidObjectCfg
 from srb.core.asset.robot.mobile_robot.mobile_robot_type import MobileRobotType
-from srb.core.asset.robot.robot import Robot
+from srb.core.asset.robot.robot import Robot, RobotRegistry
 from srb.core.asset.robot.robot_type import RobotType
 from srb.utils.str import convert_to_snake_case
 
@@ -65,14 +65,12 @@ class MobileRobot(Robot, robot_entrypoint=RobotType.MOBILE_ROBOT):
         )
 
     @classmethod
-    def mobile_robot_registry(
-        cls,
-    ) -> Mapping[MobileRobotType, Sequence[Type[MobileRobot]]]:
-        return MobileRobotRegistry.registry
+    def mobile_robot_registry(cls) -> Sequence[Type[MobileRobot]]:
+        return list(MobileRobotRegistry.values_inner())
 
     @classmethod
     def robot_registry(cls) -> Sequence[Type[MobileRobot]]:
-        return super().robot_registry().get(RobotType.MOBILE_ROBOT, [])  # type: ignore
+        return RobotRegistry.registry.get(RobotType.MOBILE_ROBOT, [])  # type: ignore
 
 
 class MobileRobotRegistry:
@@ -94,11 +92,11 @@ class MobileRobotRegistry:
 
     @classmethod
     def values_inner(cls) -> Iterable[Type[MobileRobot]]:
-        return {
+        return (
             mobile_robot
             for mobile_robots in cls.registry.values()
             for mobile_robot in mobile_robots
-        }
+        )
 
     @classmethod
     def n_robots(cls) -> int:
@@ -115,3 +113,10 @@ class MobileRobotRegistry:
     @classmethod
     def registered_packages(cls) -> Iterable[str]:
         return {module.split(".", maxsplit=1)[0] for module in cls.registered_modules()}
+
+    @classmethod
+    def by_name(cls, name: str) -> Type[MobileRobot] | None:
+        for mobile_robot in cls.values_inner():
+            if convert_to_snake_case(mobile_robot.__name__) == name:
+                return mobile_robot
+        return None

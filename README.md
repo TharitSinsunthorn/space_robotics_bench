@@ -5,6 +5,7 @@
 </p>
 
 [![Discord](https://dcbadge.limes.pink/api/server/p9gZAPWa65?style=flat&theme=discord&compact=true)](https://discord.gg/p9gZAPWa65)
+[![Docs](https://img.shields.io/badge/docs-online-blue?logo=markdown)](https://AndrejOrsula.github.io/space_robotics_bench)
 [![Rust](https://github.com/AndrejOrsula/space_robotics_bench/actions/workflows/rust.yml/badge.svg)](https://github.com/AndrejOrsula/space_robotics_bench/actions/workflows/rust.yml)
 [![Python](https://github.com/AndrejOrsula/space_robotics_bench/actions/workflows/python.yml/badge.svg)](https://github.com/AndrejOrsula/space_robotics_bench/actions/workflows/python.yml)
 [![Docker](https://github.com/AndrejOrsula/space_robotics_bench/actions/workflows/docker.yml/badge.svg)](https://github.com/AndrejOrsula/space_robotics_bench/actions/workflows/docker.yml)

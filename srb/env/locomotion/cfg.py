@@ -167,14 +167,14 @@ class BaseLocomotionEnvCfg(BaseEnvCfg):
         self.terrain_cfg = asset.terrain_from_env_cfg(
             self.env_cfg,
             num_assets=1,
-            size=(64.0, 64.0),
+            size=(63.0, 63.0),
             prim_path="/World/terrain",
-            density=0.15,
+            density=0.2,
             flat_area_size=4.0,
             texture_resolution={
-                BakeType.ALBEDO: 4 * 1024,
-                BakeType.NORMAL: 6 * 1024,
-                BakeType.ROUGHNESS: 2 * 1024,
+                BakeType.ALBEDO: 4096,
+                BakeType.NORMAL: 2048,
+                BakeType.ROUGHNESS: 1024,
             },
         )
         self.scene.terrain = self.terrain_cfg.asset_cfg

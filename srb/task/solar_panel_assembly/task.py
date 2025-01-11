@@ -105,7 +105,7 @@ class TaskCfg(BaseManipulationEnvCfg):
             setattr(
                 self.scene,
                 f"object{i}",
-                problem_cfg[0].asset_cfg.replace(
+                problem_cfg.peg.asset_cfg.replace(
                     # init_state=RigidObjectCfg.InitialStateCfg(
                     #     pos=(0.55, 0.0, 0.015),
                     # )
@@ -114,7 +114,7 @@ class TaskCfg(BaseManipulationEnvCfg):
             setattr(
                 self.scene,
                 f"target{i}",
-                problem_cfg[1].asset_cfg,
+                problem_cfg.hole.asset_cfg,
             )
 
         self.panel_cfg = self._panel_cfg(
@@ -268,23 +268,23 @@ class Task(BaseManipulationEnv):
             device=self.device,
         )
         self._peg_offset_pos_ends = torch.tensor(
-            [self.cfg.problem_cfgs[i][0].offset_pos_ends for i in range(4)],
+            [self.cfg.problem_cfgs[i].peg.offset_pos_ends for i in range(4)],
             dtype=torch.float32,
             device=self.device,
         ).repeat(self.num_envs, 1, 1, 1)
 
         self._peg_rot_symmetry_n = torch.tensor(
-            [self.cfg.problem_cfgs[i][0].rot_symmetry_n for i in range(4)],
+            [self.cfg.problem_cfgs[i].peg.rot_symmetry_n for i in range(4)],
             dtype=torch.int32,
             device=self.device,
         ).repeat(self.num_envs, 1)
         self._hole_offset_pos_bottom = torch.tensor(
-            [self.cfg.problem_cfgs[i][1].offset_pos_bottom for i in range(4)],
+            [self.cfg.problem_cfgs[i].hole.offset_pos_bottom for i in range(4)],
             dtype=torch.float32,
             device=self.device,
         ).repeat(self.num_envs, 1, 1)
         self._hole_offset_pos_entrance = torch.tensor(
-            [self.cfg.problem_cfgs[i][1].offset_pos_entrance for i in range(4)],
+            [self.cfg.problem_cfgs[i].hole.offset_pos_entrance for i in range(4)],
             dtype=torch.float32,
             device=self.device,
         ).repeat(self.num_envs, 1, 1)

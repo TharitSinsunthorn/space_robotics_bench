@@ -5,6 +5,7 @@ import srb.core.sim as sim_utils
 from srb.core.asset import AssetBaseCfg, RigidObjectCfg
 from srb.utils import color as color_utils
 
+from .asteroid import Asteroid  # noqa: F401
 from .debris import CubesatDebris
 from .peg_in_hole_procgen import HoleProcgenCfg, PegProcgenCfg
 from .peg_in_hole_profile import HoleProfileCfg, PegProfileCfg, PegProfileShortCfg

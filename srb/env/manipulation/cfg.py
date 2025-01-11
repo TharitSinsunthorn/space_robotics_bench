@@ -109,7 +109,7 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
     )
 
     ## Scene
-    scene = InteractiveSceneCfg(num_envs=1, env_spacing=16.0, replicate_physics=False)
+    scene = InteractiveSceneCfg(num_envs=1, env_spacing=8.0, replicate_physics=False)
 
     ## Events
     events = BaseManipulationEnvEventCfg()
@@ -154,12 +154,12 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
                 self.scene.env_spacing - 1.0,
                 self.scene.env_spacing - 1.0,
             ),
-            density=0.07,
+            density=0.1,
             flat_area_size=2.0,
             texture_resolution={
-                BakeType.ALBEDO: 4 * 1024,
-                BakeType.NORMAL: 4 * 1024,
-                BakeType.ROUGHNESS: 1 * 1024,
+                BakeType.ALBEDO: 2048,
+                BakeType.NORMAL: 1024,
+                BakeType.ROUGHNESS: 512,
             },
         )
         if self.terrain_cfg:
