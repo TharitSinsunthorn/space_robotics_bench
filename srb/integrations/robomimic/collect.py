@@ -34,7 +34,7 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     )
     from srb.core.managers import SceneEntityCfg
     from srb.core.teleop_devices import CombinedInterface
-    from srb.core.wrappers.robomimic import RobomimicDataCollector
+    from srb.integrations.robomimic.wrapper import RobomimicDataCollector
     from srb.utils.parsing import create_logdir_path, parse_task_cfg
 
     if args.headless and "keyboard" in args.teleop_device:

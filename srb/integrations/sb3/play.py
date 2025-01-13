@@ -23,7 +23,7 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     from stable_baselines3.common.vec_env import VecNormalize
 
     import srb  # noqa: F401
-    from srb.core.wrappers.sb3 import Sb3VecEnvWrapper, process_sb3_cfg
+    from srb.integrations.sb3.wrapper import Sb3VecEnvWrapper, process_sb3_cfg
     from srb.utils.parsing import (
         get_checkpoint_path,
         load_cfg_from_registry,

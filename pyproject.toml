@@ -46,22 +46,29 @@ all = [
   "srb[algo]",
   ## Hardware
   "srb[hw]",
+  ## Logging
+  "srb[logging]",
   ## Utils
   "srb[cli]",
   "srb[dev]",
 ]
 ## Algorithms
-algo = ["srb[dreamerv3]", "srb[robomimic]", "srb[sb3]"]
-dreamerv3 = [
-  "dreamerv3@git+https://github.com/AndrejOrsula/dreamerv3.git@58bd8ff875077a859b68f9ad94d89129d4f8dd68",
+algo = ["srb[dreamer]", "srb[robomimic]", "srb[sb3]"]
+dreamer = [
+  "srb[wandb]",
+  # "dreamer@git+https://github.com/danijar/dreamerv3.git@55c8c67c956fbdace4bf8b594ea12e934a3ae4ba",
 ]
 robomimic = [
-  "robomimic@git+https://github.com/ARISE-Initiative/robomimic.git@29d6ca229dec3327f87b54cf1688a94177f92af6",
+  # "robomimic@git+https://github.com/ARISE-Initiative/robomimic.git@29d6ca229dec3327f87b54cf1688a94177f92af6",
 ]
 sb3 = ["stable-baselines3~=2.0", "sb3-contrib~=2.0"]
 ## Hardware
 hw = ["srb[spacemouse]"]
 spacemouse = ["pyspacemouse~=1.0"]
+## Logging
+logging = ["srb[wandb]", "srb[tensorboard]"]
+wandb = ["wandb~=0.19"]
+tensorboard = ["tensorboard~=2.0"]
 ## Utils
 cli = ["srb[rich]", "argcomplete~=1.0"]
 dev = ["srb[test]", "srb[tracing]", "devtools~=0.12"]

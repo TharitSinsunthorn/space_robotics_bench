@@ -4,8 +4,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" &>/dev/null && pwd)"
-REPOSITORY_DIR="$(dirname "$(dirname "${SCRIPT_DIR}")")"
-ASSETS_DIR="${REPOSITORY_DIR}/assets"
+REPOSITORY_DIR="$(dirname "${SCRIPT_DIR}")"
+ASSETS_DIR="${SCRIPT_DIR}"
 
 
 ## Update git submodules

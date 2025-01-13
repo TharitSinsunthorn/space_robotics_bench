@@ -104,6 +104,7 @@ def agent_main(
         if not kwargs["headless"] and kwargs["agent_subcommand"] not in [
             "teleop",
             "collect",
+            "train",
         ]:
             _cb_keyboard = CbKeyboard({"L": env.reset})
 
@@ -115,7 +116,7 @@ def agent_main(
                 "teleop",
                 "ros",
                 "train",
-                "play",
+                "eval",
                 "collect",
                 "learn",
             ],
@@ -131,9 +132,13 @@ def agent_main(
                 case "ros":
                     ros_agent(**kwargs)
                 case "train":
-                    raise NotImplementedError()
-                case "play":
-                    raise NotImplementedError()
+                    train_agent(
+                        env_id=env_id, agent_cfg=agent_cfg, env_cfg=env_cfg, **kwargs
+                    )
+                case "eval":
+                    eval_agent(
+                        env_id=env_id, agent_cfg=agent_cfg, env_cfg=env_cfg, **kwargs
+                    )
                 case "collect":
                     raise NotImplementedError()
                 case "learn":
@@ -160,7 +165,7 @@ def random_agent(
 ):
     import torch
 
-    # from srb.utils import logging
+    from srb.utils import logging
 
     with torch.inference_mode():
         while sim_app.is_running():
@@ -168,14 +173,14 @@ def random_agent(
 
             observation, reward, terminated, truncated, info = env.step(actions)
 
-            # logging.debug(
-            #     f"actions: {actions}\n"
-            #     f"observation: {observation}\n"
-            #     f"reward: {reward}\n"
-            #     f"terminated: {terminated}\n"
-            #     f"truncated: {truncated}\n"
-            #     f"info: {info}\n"
-            # )
+            logging.debug(
+                f"actions: {actions}\n"
+                f"observation: {observation}\n"
+                f"reward: {reward}\n"
+                f"terminated: {terminated}\n"
+                f"truncated: {truncated}\n"
+                f"info: {info}\n"
+            )
 
 
 def zero_agent(
@@ -185,7 +190,7 @@ def zero_agent(
 ):
     import torch
 
-    # from srb.utils import logging
+    from srb.utils import logging
 
     actions = torch.zeros(env.action_space.shape, device=env.device)  # type: ignore
 
@@ -193,14 +198,14 @@ def zero_agent(
         while sim_app.is_running():
             observation, reward, terminated, truncated, info = env.step(actions)
 
-            # logging.debug(
-            #     f"actions: {actions}\n"
-            #     f"observation: {observation}\n"
-            #     f"reward: {reward}\n"
-            #     f"terminated: {terminated}\n"
-            #     f"truncated: {truncated}\n"
-            #     f"info: {info}\n"
-            # )
+            logging.debug(
+                f"actions: {actions}\n"
+                f"observation: {observation}\n"
+                f"reward: {reward}\n"
+                f"terminated: {terminated}\n"
+                f"truncated: {truncated}\n"
+                f"info: {info}\n"
+            )
 
 
 def teleop_agent(
@@ -393,6 +398,28 @@ def ros_agent(
             ros2_interface.update()
 
             # Note: Each environment is automatically reset (independently) when terminated or truncated
+
+
+def train_agent(
+    algo: str,
+    **kwargs,
+):
+    match algo:
+        case "dreamer":
+            from srb.integrations.dreamer import dreamer_main
+
+            dreamer_main(workflow="train", **kwargs)
+
+
+def eval_agent(
+    algo: str,
+    **kwargs,
+):
+    match algo:
+        case "dreamer":
+            from srb.integrations.dreamer import dreamer_main
+
+            dreamer_main(workflow="eval", **kwargs)
 
 
 ### GUI ###
@@ -643,9 +670,9 @@ def parse_cli_args() -> argparse.Namespace:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         argument_default=argparse.SUPPRESS,
     )
-    play_agent_parser = agent_subparsers.add_parser(
-        "play",
-        help="Play agent",
+    eval_agent_parser = agent_subparsers.add_parser(
+        "eval",
+        help="eval agent",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         argument_default=argparse.SUPPRESS,
     )
@@ -668,7 +695,7 @@ def parse_cli_args() -> argparse.Namespace:
         teleop_agent_parser,
         ros_agent_parser,
         train_agent_parser,
-        play_agent_parser,
+        eval_agent_parser,
         collect_agent_parser,
         learn_agent_parser,
     ):
@@ -683,9 +710,6 @@ def parse_cli_args() -> argparse.Namespace:
             type=str,
             action=AutoNamespaceTaskAction,
             default="srb/sample_collection",
-        )
-        environment_group.add_argument(
-            "--seed", type=int, default=None, help="Seed used for the environment"
         )
 
         compute_group = _agent_parser.add_argument_group("Compute")
@@ -771,25 +795,29 @@ def parse_cli_args() -> argparse.Namespace:
 
     for _agent_parser in (
         train_agent_parser,
-        play_agent_parser,
+        eval_agent_parser,
     ):
         algorithm_group = _agent_parser.add_argument_group("Algorithm")
         algorithm_group.add_argument(
             "--algo",
             type=str,
-            default="ppo",  # TODO: Enum
-            help="Name of the algorithm\n(ppo, sac, ppo_lstm)",
+            help="Name of the algorithm",
+            choices=["dreamer"],  # TODO: Enum
+            # required=True,
+            default="dreamer",
         )
         algorithm_group.add_argument(
-            "--model_size",
+            "--model",
             type=str,
-            default="debug",  # TODO: Enum
-            help="Size of the model to train\n(debug, size12m, size25m, size50m, size100m, size200m, size400m)",
+            default="",
+            help="Path to the model",
         )
 
     train_group = train_agent_parser.add_argument_group("Train")
     train_group.add_argument(
         "--continue_training",
+        "--continue",
+        "--resume",
         action="store_true",
         default=False,
         help="Continue training the model from the checkpoint of the last run.",

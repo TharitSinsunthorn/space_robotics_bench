@@ -1,0 +1,226 @@
+import functools
+from typing import Any, Dict, List, Mapping
+
+import embodied
+import gymnasium
+import numpy
+import torch
+from elements import Space
+
+from srb.core.envs import BaseEnv
+
+
+class EmbodiedEnvWrapper(embodied.Env):
+    def __init__(
+        self,
+        env: BaseEnv,
+        obs_key: str = "image",
+        act_key: str = "action",
+    ):
+        self.env = env
+        self._obs_key = obs_key
+        self._act_key = act_key
+
+        # Extract spaces
+        self._obs_space = self.unwrapped.single_observation_space
+        self._action_space = self.unwrapped.single_action_space
+        self._is_obs_dict = hasattr(self._obs_space, "spaces")
+        self._is_act_dict = hasattr(self._action_space, "spaces")
+
+        # Extract useful information
+        self._num_envs = self.unwrapped.num_envs
+        self._device = self.unwrapped.device
+
+        # Init buffers
+        self._done = numpy.ones(self._num_envs, dtype=bool)
+        self._info = [None for _ in range(self._num_envs)]
+        self._ep_len_buf = torch.zeros(self._num_envs, device=self._device)
+        self._ep_rew_buf = torch.zeros(self._num_envs, device=self._device)
+
+    def __len__(self) -> int:
+        return self._num_envs
+
+    def __str__(self) -> str:
+        return f"<{type(self).__name__}{self.env}>"
+
+    def __repr__(self) -> str:
+        return str(self)
+
+    @classmethod
+    def class_name(cls) -> str:
+        return cls.__name__
+
+    @property
+    def unwrapped(self) -> BaseEnv:
+        return self.env.unwrapped  # type: ignore
+
+    def get_episode_rewards(self) -> List[float]:
+        return self._ep_rew_buf.cpu().tolist()
+
+    def get_episode_lengths(self) -> List[int]:
+        return self._ep_len_buf.cpu().tolist()
+
+    @property
+    def info(self) -> Mapping[str, Any]:
+        return self._info  # type: ignore
+
+    @functools.cached_property
+    def obs_space(self):
+        if self._is_obs_dict:
+            spaces = self._flatten(self.unwrapped.single_observation_space.spaces)
+        else:
+            spaces = {self._obs_key: self.unwrapped.single_observation_space}
+        spaces = {k: self._convert(v) for k, v in spaces.items()}
+        return {
+            **spaces,
+            "reward": Space(numpy.float32),
+            "is_first": Space(bool),
+            "is_last": Space(bool),
+            "is_terminal": Space(bool),
+        }
+
+    @functools.cached_property
+    def act_space(self):
+        if self._is_act_dict:
+            spaces = self._flatten(self._action_space.spaces)  # type: ignore
+        else:
+            spaces = {self._act_key: self._action_space}
+        spaces = {k: self._convert(v) for k, v in spaces.items()}
+        spaces["reset"] = Space(bool)
+        return spaces
+
+    def seed(self, seed: int | None = None) -> List[int | None]:
+        return [self.unwrapped.seed(seed)] * self.unwrapped.num_envs  # type: ignore
+
+    def reset(
+        self,
+    ) -> Mapping[str, numpy.ndarray]:
+        obs, self._info = self.env.reset()
+        self._done = numpy.zeros(self._num_envs, dtype=bool)
+        return self._obs(
+            obs=obs,  # type: ignore
+            reward=numpy.zeros(self._num_envs, dtype=numpy.float32),
+            is_first=numpy.ones(self._num_envs, dtype=bool),
+            is_last=numpy.zeros(self._num_envs, dtype=bool),
+            is_terminal=numpy.zeros(self._num_envs, dtype=bool),
+        )
+
+    def step(self, action: Mapping[str, torch.Tensor]) -> Mapping[str, numpy.ndarray]:
+        if action["reset"].all() or self._done.all():
+            return self.reset()
+
+        if self._is_act_dict:
+            act = self._unflatten(action)  # type: ignore
+        else:
+            act = action[self._act_key]  # type: ignore
+            if not isinstance(act, torch.Tensor):
+                act = torch.from_numpy(act).to(device=self._device)
+            else:
+                act = act.to(device=self._device)
+
+        obs, reward, terminated, truncated, self._info = self.env.step(act)  # type: ignore
+
+        self._ep_rew_buf += reward
+        self._ep_len_buf += 1
+
+        self._done = (terminated | truncated).detach().cpu()
+        reset_ids = (self._done > 0).nonzero()
+
+        reward = reward.detach().cpu()
+        terminated = terminated.detach().cpu()
+        truncated = truncated.detach().cpu()
+
+        self._ep_rew_buf[reset_ids] = 0
+        self._ep_len_buf[reset_ids] = 0
+
+        return self._obs(
+            obs=obs,  # type: ignore
+            reward=reward,
+            is_first=numpy.zeros(self._num_envs, dtype=bool),
+            is_last=self._done,
+            is_terminal=terminated,
+        )
+
+    def render(self) -> numpy.ndarray:
+        image = self.env.render()
+        assert image is not None
+        return image
+
+    def close(self):
+        try:
+            self.env.close()
+        except Exception:
+            pass
+
+    def get_attr(self, attr_name, indices=None) -> Any:
+        if indices is None:
+            indices = slice(None)
+            num_indices = self._num_envs
+        else:
+            num_indices = len(indices)
+        attr_val = getattr(self.env, attr_name)
+        if not isinstance(attr_val, torch.Tensor):
+            return [attr_val] * num_indices
+        else:
+            return attr_val[indices].detach().cpu()
+
+    def set_attr(self, attr_name, value, indices=None):
+        raise NotImplementedError("Setting attributes is not supported.")
+
+    def env_method(
+        self, method_name: str, *method_args, indices=None, **method_kwargs
+    ) -> Any:
+        if method_name == "render":
+            return self.env.render()
+        else:
+            env_method = getattr(self.env, method_name)
+            return env_method(*method_args, indices=indices, **method_kwargs)
+
+    def _obs(
+        self,
+        obs: numpy.ndarray | torch.Tensor | dict[str, numpy.ndarray | torch.Tensor],
+        reward: numpy.ndarray | torch.Tensor,
+        is_first: numpy.ndarray | torch.Tensor,
+        is_last: numpy.ndarray | torch.Tensor,
+        is_terminal: numpy.ndarray | torch.Tensor,
+    ) -> Mapping[str, numpy.ndarray | torch.Tensor]:
+        if not self._is_obs_dict:
+            obs = {self._obs_key: obs}  # type: ignore
+        obs = self._flatten(obs)
+        obs = {k: v.detach().cpu() for k, v in obs.items()}  # type: ignore
+        obs.update(
+            reward=reward,
+            is_first=is_first,
+            is_last=is_last,
+            is_terminal=is_terminal,
+        )
+        return obs
+
+    def _flatten(self, nest, prefix=None) -> Dict[str, Any]:
+        result = {}
+        for key, value in nest.items():
+            key = prefix + "/" + key if prefix else key
+            if isinstance(value, gymnasium.spaces.Dict):
+                value = value.spaces
+            if isinstance(value, Dict):
+                result.update(self._flatten(value, key))
+            else:
+                result[key] = value
+        return result
+
+    def _unflatten(self, flat) -> Dict[str, Any]:
+        result = {}
+        for key, value in flat.items():
+            parts = key.split("/")
+            node = result
+            for part in parts[:-1]:
+                if part not in node:
+                    node[part] = {}
+                node = node[part]
+            node[parts[-1]] = value
+        return result
+
+    def _convert(self, space) -> Space:
+        if hasattr(space, "n"):
+            return Space(numpy.int32, (), 0, space.n)
+        return Space(space.dtype, space.shape, space.low, space.high)

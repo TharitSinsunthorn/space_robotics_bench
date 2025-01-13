@@ -2,7 +2,7 @@ import os
 from typing import Mapping
 
 SUPPORTED_FRAMEWORKS = {
-    "dreamerv3": {"multi_algo": False},
+    "dreamer": {"multi_algo": False},
     "sb3": {"multi_algo": True},
     "robomimic": {"multi_algo": True},
 }

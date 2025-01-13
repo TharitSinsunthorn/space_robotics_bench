@@ -264,16 +264,16 @@ RUN if [[ "${DEV,,}" = true ]]; then \
     "${BLENDER_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_FOUNDRY_PATH}" ; \
     fi
 
-# ## Install DreamerV3 locally to enable mounting the source code into the container
-# ARG DREAMERV3_PATH="/root/dreamerv3"
-# ARG DREAMERV3_REMOTE="https://github.com/AndrejOrsula/dreamerv3.git"
-# ARG DREAMERV3_BRANCH="dev"
-# RUN if [[ "${DEV,,}" = true ]]; then \
-#     git clone "${DREAMERV3_REMOTE}" "${DREAMERV3_PATH}" --branch "${DREAMERV3_BRANCH}" && \
-#     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir -r "${DREAMERV3_PATH}/embodied/requirements.txt" && \
-#     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir -r "${DREAMERV3_PATH}/dreamerv3/requirements.txt" -f "https://storage.googleapis.com/jax-releases/jax_cuda_releases.html" && \
-#     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${DREAMERV3_PATH}" ; \
-#     fi
+## Install DreamerV3 locally to enable mounting the source code into the container
+ARG DREAMERV3_PATH="/root/dreamerv3"
+ARG DREAMERV3_REMOTE="https://github.com/danijar/dreamerv3.git"
+ARG DREAMERV3_BRANCH="main"
+ARG DREAMERV3_COMMIT_SHA="55c8c67c956fbdace4bf8b594ea12e934a3ae4ba" # 2025-01-13
+RUN if [[ "${DEV,,}" = true ]]; then \
+    git clone "${DREAMERV3_REMOTE}" "${DREAMERV3_PATH}" --branch "${DREAMERV3_BRANCH}" && \
+    git -C "${DREAMERV3_PATH}" reset --hard "${DREAMERV3_COMMIT_SHA}" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${DREAMERV3_PATH}" ; \
+    fi
 
 ###############
 ### Build ###
