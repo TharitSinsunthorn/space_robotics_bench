@@ -72,7 +72,6 @@ class TaskCfg(BaseSpacecraftRoboticsEnvCfg):
         super().__post_init__()
 
         ## Scene
-        # TODO: Fix this - causes issue for hydra
         self.object_cfgs = [
             asteroid_cfg(
                 self.env_cfg,

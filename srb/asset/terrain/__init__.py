@@ -4,7 +4,7 @@ from typing import Tuple
 import srb.core.envs as env_utils
 from srb.core.asset import Terrain
 
-# TODO: Downgrade assets to be spawners instead of asset_base
+# TODO: Downgrade assets to be spawners instead of asset_base/rigid object/...
 from .ground_plane import GroundPlane
 from .planetary_surface import MarsSurface, MoonSurface
 
@@ -25,8 +25,8 @@ def terrain_from_env_cfg(
         case env_utils.AssetVariant.PRIMITIVE:
             asset = GroundPlane(
                 scale=(
-                    10 * math.sqrt(num_assets) * size[0],
-                    10 * math.sqrt(num_assets) * size[1],
+                    size[0] * math.sqrt(num_assets),
+                    size[1] * math.sqrt(num_assets),
                 )
             )
             asset.asset_cfg.prim_path = prim_path

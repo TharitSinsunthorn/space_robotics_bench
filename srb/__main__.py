@@ -53,7 +53,7 @@ def agent_main(
 ):
     # Preprocess kwargs
     kwargs["experience"] = SRB_APPS_DIR.joinpath(
-        f'srb.{"headless." if kwargs["headless"] else ""}{"rendering." if kwargs["enable_cameras"] else ""}kit'
+        f'srb.{"headless." if kwargs["headless"] else ""}{"rendering." if video or kwargs["enable_cameras"] else ""}kit'
     )
     kwargs["enable_cameras"] = (
         kwargs["enable_cameras"] or video or env_id.endswith("_visual")
@@ -86,6 +86,8 @@ def agent_main(
             id=env_id, cfg=env_cfg, render_mode="rgb_array" if video else None
         )
         env.reset()
+
+        # TODO: Handle logdir creation and management here instead of individual agent integrations
 
         # Add wrapper for video recording
         if video:

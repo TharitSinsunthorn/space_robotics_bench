@@ -1,224 +1,67 @@
-seed: 42
-jax.prealloc: True
+### Training ###
+seed: 0
+run:
+  steps: 1000000000
+  train_ratio: 32.0
+replay:
+  size: 1000000
+  online: True
+  # fracs: { uniform: 1.0, priority: 0.0, recency: 0.0 }
+  chunksize: 1024
+jax:
+  platform: cuda
+  compute_dtype: bfloat16
+  prealloc: True
+  jit: True
 
-## Input
-(enc|dec).spaces: "state.*|proprio.*|image.*"
-# (enc|dec).spaces: "proprio.*|image.*"
-run.log_keys_video:
-  [
-    image_scene,
-    image_scene_rgb,
-    image_scene_depth,
-    image_base,
-    image_base_rgb,
-    image_base_depth,
-    image_wrist,
-    image_wrist_rgb,
-    image_wrist_depth,
-  ]
-run.log_video_fps: 25
-
-## Run
-run.steps: 100000000
-run.train_ratio: 128
-
-## Replay
-replay.size: 40000 # 32 GB
-# replay.size: 100000 # 64 GB
-# replay.size: 250000 # 128 GB
-run.train_fill: 16384
-replay.chunksize: 4096
-# replay.fracs: { uniform: 0.5, priority: 0.5 }
-
-## Network
-(enc|dec).simple.minres: 4 # 64x64 px
-# Note: Continuity predictor can be small for environments with no special termination conditions
-conhead.units: 1
-
-## Events
-run.timer: False
+### Logging ###
+logger:
+  outputs: [
+      jsonl,
+      # tensorboard,
+      wandb,
+      # scope,
+    ]
+  filter: "score|length|fps|ratio|train/loss/|train/rand/"
+  timer: True
+  fps: 15
 run.log_every: 300
-run.eval_every: 1200
-run.save_every: 1800
+run.report_every: 600
+run.save_every: 1200
+run.usage:
+  { psutil: False, nvsmi: False, gputil: False, malloc: False, gc: False }
+run.debug: False
+jax.debug: False
 
-method: dreamerv3
-##################
-### Model size ###
-##################
-# size12m: &size12m
-#   dyn.rssm: {deter: 2048, hidden: 256, classes: 16}
-#   .*\.depth: 16
-#   .*\.units: 256
+### Model ###
+##   1M
+# .*\.rssm: { deter: 512, hidden: 64, classes: 4 }
+# .*\.depth: 4
+# .*\.units: 64
+##  12M
+# .*\.rssm: { deter: 2048, hidden: 256, classes: 16 }
+# .*\.depth: 16
+# .*\.units: 256
+##  25M
+.*\.rssm: { deter: 3072, hidden: 384, classes: 24 }
+.*\.depth: 24
+.*\.units: 384
+##  50M
+# .*\.rssm: { deter: 4096, hidden: 512, classes: 32 }
+# .*\.depth: 32
+# .*\.units: 512
+## 100M
+# .*\.rssm: { deter: 6144, hidden: 768, classes: 48 }
+# .*\.depth: 48
+# .*\.units: 768
+## 200M
+# .*\.rssm: { deter: 8192, hidden: 1024, classes: 64 }
+# .*\.depth: 64
+# .*\.units: 1024
+## 400M
+# .*\.rssm: { deter: 12288, hidden: 1536, classes: 96 }
+# .*\.depth: 96
+# .*\.units: 1536
 
-# size25m: &size25m
-#   dyn.rssm: {deter: 3072, hidden: 384, classes: 24}
-#   .*\.depth: 24
-#   .*\.units: 384
-
-# size50m: &size50m
-#   dyn.rssm: {deter: 4096, hidden: 512, classes: 32}
-#   .*\.depth: 32
-#   .*\.units: 512
-
-# size100m: &size100m
-#   dyn.rssm: {deter: 6144, hidden: 768, classes: 48}
-#   .*\.depth: 48
-#   .*\.units: 768
-
-# size200m: &size200m
-#   dyn.rssm: {deter: 8192, hidden: 1024, classes: 64}
-#   .*\.depth: 64
-#   .*\.units: 1024
-
-# size400m: &size400m
-#   dyn.rssm: {deter: 12288, hidden: 1536, classes: 96}
-#   .*\.depth: 96
-#   .*\.units: 1536
-
-###############
-### Default ###
-###############
-# seed: 0
-# method: name
-# task: dummy_disc
-# logdir: /dev/null
-# eval_dir: ''
-# filter: 'score|length|fps|ratio|train/.*_loss$|train/rand/.*/mean'
-# tensorboard_videos: True
-
-# replay:
-#   size: 5e6
-#   online: True
-#   fracs: {uniform: 1.0, priority: 0.0, recency: 0.0}
-#   prio: {exponent: 0.8, maxfrac: 0.5, initial: inf, zero_on_sample: True}
-#   priosignal: model
-#   recexp: 1.0
-#   chunksize: 1024
-#   save_wait: False
-
-# jax:
-#   platform: gpu
-#   jit: True
-#   compute_dtype: bfloat16
-#   param_dtype: float32
-#   prealloc: True
-#   checks: False
-#   logical_cpus: 0
-#   debug: False
-#   policy_devices: [0]
-#   train_devices: [0]
-#   sync_every: 1
-#   profiler: False
-#   transfer_guard: True
-#   assert_num_devices: -1
-#   fetch_policy_carry: False
-#   nvidia_flags: False
-#   xla_dump: False
-
-# run:
-#   script: train
-#   steps: 1e10
-#   duration: 0
-#   num_envs: 16
-#   num_envs_eval: 4
-#   expl_until: 0
-#   log_every: 120
-#   save_every: 900
-#   eval_every: 180
-#   eval_initial: True
-#   eval_eps: 1
-#   train_ratio: 32.0
-#   train_fill: 0
-#   eval_fill: 0
-#   log_zeros: True
-#   log_keys_video: [image]
-#   log_keys_sum: '^$'
-#   log_keys_avg: '^$'
-#   log_keys_max: '^$'
-#   log_video_fps: 20
-#   log_video_streams: 4
-#   log_episode_timeout: 60
-#   from_checkpoint: ''
-#   actor_addr: 'tcp://localhost:{auto}'
-#   replay_addr: 'tcp://localhost:{auto}'
-#   logger_addr: 'tcp://localhost:{auto}'
-#   actor_batch: 8
-#   actor_threads: 4
-#   env_replica: -1
-#   ipv6: False
-#   usage: {psutil: True, nvsmi: True, gputil: False, malloc: False, gc: False}
-#   timer: True
-#   driver_parallel: True
-#   agent_process: False
-#   remote_replay: False
-
-# wrapper: {length: 0, reset: True, discretize: 0, checks: True}
-# env:
-#   atari: {size: [64, 64], repeat: 4, sticky: True, gray: True, actions: all, lives: unused, noops: 0, autostart: False, pooling: 2, aggregate: max, resize: pillow}
-#   crafter: {size: [64, 64], logs: False, use_logdir: False}
-#   atari100k: {size: [64, 64], repeat: 4, sticky: False, gray: False, actions: all, lives: unused, noops: 0, autostart: False, resize: pillow, length: 100000}
-#   dmlab: {size: [64, 64], repeat: 4, episodic: True, actions: popart, use_seed: False}
-#   minecraft: {size: [64, 64], break_speed: 100.0, logs: False}
-#   dmc: {size: [64, 64], repeat: 2, image: True, camera: -1}
-#   procgen: {size: [64, 64]}
-#   loconav: {size: [64, 64], repeat: 2, camera: -1}
-
-# # Agent
-# report: True
-# report_gradnorms: False
-# batch_size: 16
-# batch_length: 65
-# batch_length_eval: 33
-# replay_length: 0
-# replay_length_eval: 0
-# replay_context: 1
-# random_agent: False
-# loss_scales: {dec_cnn: 1.0, dec_mlp: 1.0, reward: 1.0, cont: 1.0, dyn: 1.0, rep: 0.1, actor: 1.0, critic: 1.0, replay_critic: 0.3}
-# opt: {scaler: rms, lr: 4e-5, eps: 1e-20, momentum: True, wd: 0.0, warmup: 1000, globclip: 0.0, agc: 0.3, beta1: 0.9, beta2: 0.999, details: False, pmin: 1e-3, anneal: 0, schedule: constant}
-# separate_lrs: False
-# lrs: {dec: 1e-4, enc: 1e-4, dyn: 1e-4, rew: 1e-4, con: 1e-4, actor: 3e-5, critic: 3e-5}
-# ac_grads: none
-# reset_context: 0.0
-# replay_critic_loss: True
-# replay_critic_grad: True
-# replay_critic_bootstrap: imag
-# reward_grad: True
-# report_openl_context: 8
-
-# # World Model
-# dyn:
-#   typ: rssm
-#   rssm: {deter: 8192, hidden: 1024, stoch: 32, classes: 64, act: silu, norm: rms, unimix: 0.01, outscale: 1.0, winit: normal, imglayers: 2, obslayers: 1, dynlayers: 1, absolute: False, cell: blockgru, blocks: 8, block_fans: False, block_norm: False}
-# enc:
-#   spaces: '.*'
-#   typ: simple
-#   simple: {depth: 64, mults: [1, 2, 3, 4, 4], layers: 3, units: 1024, act: silu, norm: rms, winit: normal, symlog: True, outer: True, kernel: 5, minres: 4}
-# dec:
-#   spaces: '.*'
-#   typ: simple
-#   simple: {inputs: [deter, stoch], vecdist: symlog_mse, depth: 64, mults: [1, 2, 3, 4, 4], layers: 3, units: 1024, act: silu, norm: rms, outscale: 1.0, winit: normal, outer: True, kernel: 5, minres: 4, block_space: 8, block_fans: False, block_norm: False, hidden_stoch: True, space_hidden: 0}
-# rewhead: {layers: 1, units: 1024, act: silu, norm: rms, dist: symexp_twohot, outscale: 0.0, inputs: [deter, stoch], winit: normal, bins: 255, block_fans: False, block_norm: False}
-# conhead: {layers: 1, units: 1024, act: silu, norm: rms, dist: binary, outscale: 1.0, inputs: [deter, stoch], winit: normal, block_fans: False, block_norm: False}
-# contdisc: True
-# rssm_loss: {free: 1.0}
-
-# # Actor Critic
-# actor: {layers: 3, units: 1024, act: silu, norm: rms, minstd: 0.1, maxstd: 1.0, outscale: 0.01, unimix: 0.01, inputs: [deter, stoch], winit: normal, block_fans: False, block_norm: False}
-# critic: {layers: 3, units: 1024, act: silu, norm: rms, dist: symexp_twohot, outscale: 0.0, inputs: [deter, stoch], winit: normal, bins: 255, block_fans: False, block_norm: False}
-# actor_dist_disc: onehot
-# actor_dist_cont: normal
-# imag_start: all
-# imag_repeat: 1
-# imag_length: 15
-# imag_unroll: False
-# horizon: 333
-# return_lambda: 0.95
-# return_lambda_replay: 0.95
-# slow_critic_update: 1
-# slow_critic_fraction: 0.02
-# retnorm: {impl: perc, rate: 0.01, limit: 1.0, perclo: 5.0, perchi: 95.0}
-# valnorm: {impl: off, rate: 0.01, limit: 1e-8}
-# advnorm: {impl: off, rate: 0.01, limit: 1e-8}
-# actent: 3e-4
-# slowreg: 1.0
-# slowtar: False
+### Architecture ###
+agent.conhead.units: 1

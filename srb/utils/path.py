@@ -1,7 +1,5 @@
 from pathlib import Path
 
-# TODO: Move to utils
-
 # Path to repository root directory
 SRB_DIR = Path(__file__).resolve().parent.parent.parent
 
