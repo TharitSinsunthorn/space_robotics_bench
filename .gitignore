@@ -21,9 +21,10 @@ target/
 **/core.*
 
 ## Logs
-logs/
 *.log
+logs/
 outputs/
+wandb/
 
 ## Apptainer
 **/*.sif

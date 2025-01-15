@@ -9,10 +9,7 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, Literal, Sequence
 
-import gymnasium
 from omni.isaac.lab.app import AppLauncher
-
-from srb.utils.path import SRB_APPS_DIR, SRB_DIR
 
 if TYPE_CHECKING:
     from omni.isaac.kit import SimulationApp
@@ -34,8 +31,6 @@ def main():
                 launch_gui(**kwargs)
             case "ls":
                 list_registered(**kwargs)
-            case _:
-                raise ValueError(f'Unknown subcommand: "{subcommand}"')
 
     impl(**vars(parse_cli_args()))
 
@@ -46,11 +41,11 @@ def agent_main(
     video,
     video_length,
     video_interval,
-    device,
-    disable_fabric,
     disable_ui: bool,
     **kwargs,
 ):
+    from srb.utils.path import SRB_APPS_DIR
+
     # Preprocess kwargs
     kwargs["experience"] = SRB_APPS_DIR.joinpath(
         f'srb.{"headless." if kwargs["headless"] else ""}{"rendering." if video or kwargs["enable_cameras"] else ""}kit'
@@ -81,6 +76,8 @@ def agent_main(
         agent_cfg_entry_point=f'{kwargs["algo"]}_cfg' if kwargs.get("algo") else None,
     )
     def hydra_main(env_cfg: dict | None = None, agent_cfg: dict | None = None):
+        import gymnasium
+
         # Create the environment and initialize it
         env = gymnasium.make(
             id=env_id, cfg=env_cfg, render_mode="rgb_array" if video else None
@@ -146,8 +143,6 @@ def agent_main(
                 case "learn":
                     # NOTE: Learning from demonstration does not require the environment
                     raise NotImplementedError()
-                case _:
-                    raise ValueError(f'Unknown agent subcommand: "{agent_subcommand}"')
 
         agent_impl(env=env, sim_app=launcher.app, **kwargs)
 
@@ -175,7 +170,7 @@ def random_agent(
 
             observation, reward, terminated, truncated, info = env.step(actions)
 
-            logging.debug(
+            logging.trace(
                 f"actions: {actions}\n"
                 f"observation: {observation}\n"
                 f"reward: {reward}\n"
@@ -251,19 +246,20 @@ def teleop_agent(
     if hasattr(env.cfg, "enable_truncation"):
         env.cfg.enable_truncation = False
 
-    # ROS 2 node
+    # Create ROS 2 node
     rclpy.init(args=None)
     ros_node = Node("srb")  # type: ignore
 
-    ## Teleop interface
+    ## Create teleop interface
     teleop_interface = CombinedInterface(
         devices=teleop_device,
         node=ros_node,
         pos_sensitivity=pos_sensitivity,
         rot_sensitivity=rot_sensitivity,
-        action_cfg=env.cfg.actions,
+        action_cfg=env.cfg.actions,  # type: ignore
     )
 
+    ## Set up reset callback
     def cb_reset():
         global should_reset
         should_reset = True
@@ -272,17 +268,19 @@ def teleop_agent(
     should_reset = False
     teleop_interface.add_callback("L", cb_reset)
 
+    ## Initialize the teleop interface via reset
     teleop_interface.reset()
 
+    ## Print teleop interface
     if find_spec("rich"):
         from rich import print
     print(teleop_interface)
 
-    ## ROS 2 interface
+    ## Create ROS 2 interface
     if ros2_integration:
         ros2_interface = ROS2(env, node=ros_node)
 
-    ## GUI interface
+    ## Create GUI interface
     if gui_integration:
         gui_interface = GuiInterface(env, node=ros_node)
 
@@ -295,13 +293,19 @@ def teleop_agent(
         twist = torch.tensor(twist, dtype=torch.float32, device=env.device).repeat(
             env.num_envs, 1
         )
-        if isinstance(env.cfg.actions, ManipulatorTaskSpaceActionCfg):
+        if isinstance(
+            env.cfg.actions,  # type: ignore
+            ManipulatorTaskSpaceActionCfg,
+        ):
             if not disable_control_scheme_inversion:
                 twist[:, :2] *= -1.0
             gripper_action = torch.zeros(twist.shape[0], 1, device=twist.device)
             gripper_action[:] = -1.0 if gripper_cmd else 1.0
             return torch.concat([twist, gripper_action], dim=1)
-        elif isinstance(env.cfg.actions, MultiCopterActionGroupCfg):
+        elif isinstance(
+            env.cfg.actions,  # type: ignore
+            MultiCopterActionGroupCfg,
+        ):
             return torch.concat(
                 [
                     twist[:, :3],
@@ -310,15 +314,21 @@ def teleop_agent(
                 dim=1,
             )
 
-        elif isinstance(env.cfg.actions, WheeledRoverActionGroupCfg):
+        elif isinstance(
+            env.cfg.actions,  # type: ignore
+            WheeledRoverActionGroupCfg,
+        ):
             return twist[:, :2]
 
-        elif isinstance(env.cfg.actions, SpacecraftActionGroupCfg):
+        elif isinstance(
+            env.cfg.actions,  # type: ignore
+            SpacecraftActionGroupCfg,
+        ):
             return twist[:, :6]
         else:
             raise NotImplementedError()
 
-    # ROS 2 executor
+    # Spin up ROS 2 executor
     executor = MultiThreadedExecutor(num_threads=2)
     executor.add_node(ros_node)
     thread = threading.Thread(target=executor.spin)
@@ -334,14 +344,15 @@ def teleop_agent(
             # Step the environment
             observation, reward, terminated, truncated, info = env.step(actions)
 
-            # Note: Each environment is automatically reset (independently) when terminated or truncated
-
-            # Provide force feedback for teleop devices
-            if isinstance(env.cfg.actions, ManipulatorTaskSpaceActionCfg):
+            ## Provide force feedback for teleop devices
+            if isinstance(
+                env.cfg.actions,  # type: ignore
+                ManipulatorTaskSpaceActionCfg,
+            ):
                 FT_FEEDBACK_SCALE = torch.tensor([0.16, 0.16, 0.16, 0.0, 0.0, 0.0])
                 ft_feedback_asset_cfg = SceneEntityCfg(
                     "robot",
-                    body_names=env.cfg.robot_cfg.regex_links_hand,
+                    body_names=env.cfg.robot_cfg.regex_links_hand,  # type: ignore
                 )
                 ft_feedback_asset_cfg.resolve(env.scene)
                 ft_feedback = (
@@ -351,17 +362,24 @@ def teleop_agent(
                         asset_cfg=ft_feedback_asset_cfg,
                     )[0, ...].cpu()
                 )
-                teleop_interface.set_ft_feedback(ft_feedback)
+                teleop_interface.set_ft_feedback(ft_feedback)  # type: ignore
 
-            ## ROS 2 interface
+            ## Update ROS 2 interface
             if ros2_integration:
-                ros2_interface.publish(observation, reward, terminated, truncated, info)
+                ros2_interface.publish(
+                    observation,  # type: ignore
+                    reward,
+                    terminated,
+                    truncated,
+                    info,
+                )
                 ros2_interface.update()
 
-            ## GUI interface
+            ## Update GUI interface
             if gui_integration:
                 gui_interface.update()
 
+            ## Process reset request
             if should_reset:
                 should_reset = False
                 teleop_interface.reset()
@@ -394,12 +412,16 @@ def ros_agent(
             observation, reward, terminated, truncated, info = env.step(actions)
 
             # Publish to ROS 2
-            ros2_interface.publish(observation, reward, terminated, truncated, info)
+            ros2_interface.publish(
+                observation,  # type: ignore
+                reward,
+                terminated,
+                truncated,
+                info,
+            )
 
             # Process requests from ROS 2
             ros2_interface.update()
-
-            # Note: Each environment is automatically reset (independently) when terminated or truncated
 
 
 def train_agent(
@@ -429,6 +451,7 @@ def launch_gui(release: bool):
     import subprocess
 
     from srb.utils import logging
+    from srb.utils.path import SRB_DIR
 
     try:
         args = [
@@ -453,6 +476,8 @@ def launch_gui(release: bool):
 
 ### List ###
 def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
+    from srb.utils.path import SRB_APPS_DIR
+
     if not find_spec("rich"):
         raise ImportError(
             'The "rich" package is required to list registered entities of the Space Robotics Bench'
@@ -555,6 +580,8 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
 
     # Print table for environments
     if RegisteredEntity.ENV in category:
+        import gymnasium
+
         import srb.task as srb_tasks
 
         table = Table(title="Environments of the Space Robotics Bench")
@@ -622,7 +649,6 @@ def parse_cli_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Space Robotics Bench",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
     )
     subparsers = parser.add_subparsers(
         title="Subcommands",
@@ -635,7 +661,6 @@ def parse_cli_args() -> argparse.Namespace:
         "agent",
         help="Agent subcommands",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
     )
     agent_subparsers = agent_parser.add_subparsers(
         title="Agent subcommands",
@@ -646,49 +671,41 @@ def parse_cli_args() -> argparse.Namespace:
         "zero",
         help="Zero agent",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
     )
     rand_agent_parser = agent_subparsers.add_parser(
         "rand",
         help="Random agent",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
     )
     teleop_agent_parser = agent_subparsers.add_parser(
         "teleop",
         help="Teleoperate agent",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
     )
     ros_agent_parser = agent_subparsers.add_parser(
         "ros",
         help="ROS 2 or Space ROS agent",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
     )
     train_agent_parser = agent_subparsers.add_parser(
         "train",
         help="Train agent",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
     )
     eval_agent_parser = agent_subparsers.add_parser(
         "eval",
         help="eval agent",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
     )
     collect_agent_parser = agent_subparsers.add_parser(
         "collect",
         help="Collect demonstrations",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
     )
     learn_agent_parser = agent_subparsers.add_parser(
         "learn",
         help="Learn from demonstrations",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
     )
 
     for _agent_parser in (
@@ -712,14 +729,6 @@ def parse_cli_args() -> argparse.Namespace:
             type=str,
             action=AutoNamespaceTaskAction,
             default="srb/sample_collection",
-        )
-
-        compute_group = _agent_parser.add_argument_group("Compute")
-        compute_group.add_argument(
-            "--disable_fabric",
-            action="store_true",
-            default=False,
-            help="Disable fabric and use USD I/O operations.",
         )
 
         video_recording_group = _agent_parser.add_argument_group("Video")
@@ -798,6 +807,8 @@ def parse_cli_args() -> argparse.Namespace:
     for _agent_parser in (
         train_agent_parser,
         eval_agent_parser,
+        teleop_agent_parser,
+        collect_agent_parser,
     ):
         algorithm_group = _agent_parser.add_argument_group("Algorithm")
         algorithm_group.add_argument(
@@ -805,8 +816,10 @@ def parse_cli_args() -> argparse.Namespace:
             type=str,
             help="Name of the algorithm",
             choices=["dreamer"],  # TODO: Enum
-            # required=True,
-            default="dreamer",
+            required=_agent_parser is train_agent_parser,
+            default="dreamer"
+            if _agent_parser in (train_agent_parser, eval_agent_parser)
+            else None,
         )
         algorithm_group.add_argument(
             "--model",
@@ -830,7 +843,6 @@ def parse_cli_args() -> argparse.Namespace:
         "gui",
         help="Launch GUI",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
     )
     gui_parser.add_argument(
         "-r",
@@ -846,7 +858,6 @@ def parse_cli_args() -> argparse.Namespace:
         help="List registered assets and environments"
         + (' (MISSING: "rich" Python package)' if find_spec("rich") else ""),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        argument_default=argparse.SUPPRESS,
     )
     list_parser.add_argument(
         "category",

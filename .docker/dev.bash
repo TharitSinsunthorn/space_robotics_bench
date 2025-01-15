@@ -19,8 +19,11 @@ DOCKER_DEV_VOLUMES=(
 )
 # Development environment variables to set inside the container
 DOCKER_DEV_ENVIRON=(
-    SRB_UPDATE_EXTENSION_MODULE="${SRB_UPDATE_EXTENSION_MODULE:-true}"
-    SRB_WITH_TRACEBACK="${SRB_WITH_TRACEBACK:-true}"
+    LOG_LEVEL="${LOG_LEVEL:-debug}"
+    RICH_TRACEBACK="${RICH_TRACEBACK:-true}"
+    # RICH_TRACEBACK_LOCALS="${RICH_TRACEBACK_LOCALS:-true}"
+    LOGFIRE_ENABLE="${LOGFIRE_ENABLE:-true}"
+    # LOGFIRE_SEND_TO_LOGFIRE="${LOGFIRE_SEND_TO_LOGFIRE:-true}"
 )
 
 ## Run the container with development volumes

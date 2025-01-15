@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import List
+from typing import Sequence
 
 import numpy as np
 from omni.isaac.lab.devices import DeviceBase
@@ -27,7 +27,7 @@ from rclpy.node import Node  # noqa: E402
 class CombinedInterface(DeviceBase):
     def __init__(
         self,
-        devices: List[str],
+        devices: Sequence[str],
         node: Node | None = None,
         pos_sensitivity: float = 1.0,
         rot_sensitivity: float = 1.0,
