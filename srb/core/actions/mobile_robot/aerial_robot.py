@@ -6,6 +6,7 @@ import torch
 from omni.isaac.lab.managers import ActionTerm, ActionTermCfg
 from omni.isaac.lab.utils import configclass
 
+from srb.core.actions.action_group import ActionGroup
 from srb.core.asset import Articulation
 from srb.core.envs import BaseEnv
 from srb.utils.math import euler_xyz_from_quat, quat_from_euler_xyz
@@ -118,5 +119,13 @@ class MultiCopterActionCfg(ActionTermCfg):
 
 
 @configclass
-class MultiCopterActionGroupCfg:
+class MultiCopterActionGroupCfg(ActionGroup):
     flight: MultiCopterActionCfg = MISSING
+
+    def map_teleop_actions(self, twist: torch.Tensor, event: bool) -> torch.Tensor:
+        return torch.concat(
+            (
+                twist[:3],
+                twist[5].unsqueeze(0),
+            ),
+        )

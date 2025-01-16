@@ -5,6 +5,7 @@ import torch
 from omni.isaac.lab.managers import ActionTerm, ActionTermCfg
 from omni.isaac.lab.utils import configclass
 
+from srb.core.actions.action_group import ActionGroup
 from srb.core.asset import Articulation
 from srb.core.envs import BaseEnv
 
@@ -49,5 +50,8 @@ class SpacecraftActionCfg(ActionTermCfg):
 
 
 @configclass
-class SpacecraftActionGroupCfg:
+class SpacecraftActionGroupCfg(ActionGroup):
     flight: SpacecraftActionCfg = MISSING
+
+    def map_teleop_actions(self, twist: torch.Tensor, event: bool) -> torch.Tensor:
+        return twist

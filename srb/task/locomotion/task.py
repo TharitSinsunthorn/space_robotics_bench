@@ -1,14 +1,24 @@
 from typing import Dict, List, Sequence, Tuple
 
 import torch
+from omni.isaac.lab.managers import EventTermCfg
 from omni.isaac.lab.utils import configclass
 
 import srb.utils.math as math_utils
+from srb.core.envs import BaseEnv
 from srb.env import BaseLocomotionEnv, BaseLocomotionEnvCfg, BaseLocomotionEnvEventCfg
 
 ##############
 ### Config ###
 ##############
+
+
+def change_locomotion_command(env: BaseEnv, env_ids: torch.Tensor | None):
+    if env_ids is None:
+        env_ids = torch.arange(env.cfg.scene.num_envs, device=env.device)
+    env._command[env_ids] = math_utils.sample_uniform(  # type: ignore
+        -1.0, 1.0, (len(env_ids), 3), device=env.device
+    )
 
 
 @configclass
@@ -22,7 +32,13 @@ class TaskCfg(BaseLocomotionEnvCfg):
     ## Events
     @configclass
     class EventCfg(BaseLocomotionEnvEventCfg):
-        pass
+        command = EventTermCfg(
+            func=change_locomotion_command,
+            mode="interval",
+            is_global_time=True,
+            interval_range_s=(0.5, 5.0),  # time_s = num_steps * (decimation * dt)
+            params={},
+        )
 
     events = EventCfg()
 
@@ -57,9 +73,12 @@ class Task(BaseLocomotionEnv):
     def _reset_idx(self, env_ids: Sequence[int]):
         super()._reset_idx(env_ids)
 
-        self._command[env_ids] = math_utils.sample_uniform(
-            -1.0, 1.0, (len(env_ids), 3), device=self.device
-        )
+        # self._command[env_ids] = math_utils.sample_uniform(
+        #     -1.0, 1.0, (len(env_ids), 3), device=self.device
+        # )
+        # self._command[env_ids] = torch.tensor(
+        #     [[1.0, 0.0, 0.0] for _ in range(len(env_ids))], device=self.device
+        # ).reshape(len(env_ids), 3)
 
     def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
         # Note: This assumes that `_get_dones()` is called before `_get_rewards()` and `_get_observations()` in `step()`
@@ -196,7 +215,7 @@ def _compute_intermediate_state(
     )
 
     # Reward: Command tracking (linear)
-    WEIGHT_CMD_LIN_VEL_XY = 1.0
+    WEIGHT_CMD_LIN_VEL_XY = 2.5
     EXP_STD_CMD_LIN_VEL_XY = 0.25
     reward_cmd_lin_vel_xy = WEIGHT_CMD_LIN_VEL_XY * torch.exp(
         -torch.sum(torch.square(command[:, :2] - root_lin_vel[:, :2]), dim=1)
@@ -204,7 +223,7 @@ def _compute_intermediate_state(
     )
 
     # Reward: Command tracking (angular)
-    WEIGHT_CMD_ANG_VEL_Z = 0.5
+    WEIGHT_CMD_ANG_VEL_Z = 1.0
     EXP_STD_CMD_ANG_VEL_Z = 0.25
     reward_cmd_ang_vel_z = WEIGHT_CMD_ANG_VEL_Z * torch.exp(
         -torch.square(command[:, 2] - root_ang_vel[:, 2]) / EXP_STD_CMD_ANG_VEL_Z

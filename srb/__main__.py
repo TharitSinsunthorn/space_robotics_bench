@@ -7,7 +7,7 @@ import sys
 from enum import Enum, auto
 from importlib.util import find_spec
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence, Tuple
 
 from omni.isaac.lab.app import AppLauncher
 
@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     from omni.isaac.kit import SimulationApp
 
     from srb.core.envs import BaseEnv
+    from srb.core.interfaces import ROS2, GuiInterface
+    from srb.core.teleop_devices import CombinedInterface
 
 # TODO: Clean-up args
 
@@ -121,6 +123,14 @@ def agent_main(
             ],
             **kwargs,
         ):
+            kwargs.update(
+                {
+                    "env_id": env_id,
+                    "agent_cfg": agent_cfg,
+                    "env_cfg": env_cfg,
+                }
+            )
+
             match agent_subcommand:
                 case "zero":
                     zero_agent(**kwargs)
@@ -131,13 +141,9 @@ def agent_main(
                 case "ros":
                     ros_agent(**kwargs)
                 case "train":
-                    train_agent(
-                        env_id=env_id, agent_cfg=agent_cfg, env_cfg=env_cfg, **kwargs
-                    )
+                    train_agent(**kwargs)
                 case "eval":
-                    eval_agent(
-                        env_id=env_id, agent_cfg=agent_cfg, env_cfg=env_cfg, **kwargs
-                    )
+                    eval_agent(**kwargs)
                 case "collect":
                     raise NotImplementedError()
                 case "learn":
@@ -214,33 +220,31 @@ def teleop_agent(
     rot_sensitivity: float,
     ros2_integration: bool,
     gui_integration: bool,
-    disable_control_scheme_inversion: bool,
+    algo: str,
     **kwargs,
 ):
-    import threading
-
-    import numpy as np
-    import torch
-    from rclpy.executors import MultiThreadedExecutor
-
-    from srb.core import mdp
-    from srb.core.actions import (
-        ManipulatorTaskSpaceActionCfg,
-        MultiCopterActionGroupCfg,
-        SpacecraftActionGroupCfg,
-        WheeledRoverActionGroupCfg,
-    )
-    from srb.core.interfaces import ROS2, GuiInterface
-    from srb.core.managers import SceneEntityCfg
-    from srb.core.teleop_devices import CombinedInterface
     from srb.utils.ros import enable_ros2_bridge
 
     enable_ros2_bridge()
+
+    import threading
+
     import rclpy
+    from rclpy.executors import MultiThreadedExecutor
     from rclpy.node import Node
 
+    from srb.core.actions import ActionGroup
+    from srb.core.interfaces import ROS2, GuiInterface
+    from srb.core.teleop_devices import CombinedInterface
+
+    if find_spec("rich"):
+        from rich import print
+
+    # Ensure that a feasible teleoperation device is selected
     if headless and len(teleop_device) == 1 and "keyboard" in teleop_device:
-        raise ValueError("Native teleoperation is only supported in GUI mode.")
+        raise ValueError(
+            'Teleoperation with the keyboard is only supported in GUI mode. Consider disabling the "--headless" mode or using a different "--teleop_device".'
+        )
 
     # Disable truncation
     if hasattr(env.cfg, "enable_truncation"):
@@ -256,7 +260,7 @@ def teleop_agent(
         node=ros_node,
         pos_sensitivity=pos_sensitivity,
         rot_sensitivity=rot_sensitivity,
-        action_cfg=env.cfg.actions,  # type: ignore
+        action_cfg=env.cfg.robot_cfg.action_cfg,  # type: ignore
     )
 
     ## Set up reset callback
@@ -270,85 +274,97 @@ def teleop_agent(
 
     ## Initialize the teleop interface via reset
     teleop_interface.reset()
-
-    ## Print teleop interface
-    if find_spec("rich"):
-        from rich import print
     print(teleop_interface)
 
     ## Create ROS 2 interface
-    if ros2_integration:
-        ros2_interface = ROS2(env, node=ros_node)
+    ros2_interface = ROS2(env, node=ros_node) if ros2_integration else None
 
     ## Create GUI interface
-    if gui_integration:
-        gui_interface = GuiInterface(env, node=ros_node)
+    gui_interface = GuiInterface(env, node=ros_node) if gui_integration else None
 
     ## Initialize the environment
-    observation, info = env.reset()
+    env.reset()
 
-    def process_actions(
-        twist: np.ndarray | torch.Tensor, gripper_cmd: bool
-    ) -> torch.Tensor:
-        twist = torch.tensor(twist, dtype=torch.float32, device=env.device).repeat(
-            env.num_envs, 1
-        )
-        if isinstance(
-            env.cfg.actions,  # type: ignore
-            ManipulatorTaskSpaceActionCfg,
-        ):
-            if not disable_control_scheme_inversion:
-                twist[:, :2] *= -1.0
-            gripper_action = torch.zeros(twist.shape[0], 1, device=twist.device)
-            gripper_action[:] = -1.0 if gripper_cmd else 1.0
-            return torch.concat([twist, gripper_action], dim=1)
-        elif isinstance(
-            env.cfg.actions,  # type: ignore
-            MultiCopterActionGroupCfg,
-        ):
-            return torch.concat(
-                [
-                    twist[:, :3],
-                    twist[:, 5].unsqueeze(1),
-                ],
-                dim=1,
-            )
-
-        elif isinstance(
-            env.cfg.actions,  # type: ignore
-            WheeledRoverActionGroupCfg,
-        ):
-            return twist[:, :2]
-
-        elif isinstance(
-            env.cfg.actions,  # type: ignore
-            SpacecraftActionGroupCfg,
-        ):
-            return twist[:, :6]
-        else:
-            raise NotImplementedError()
-
-    # Spin up ROS 2 executor
+    ## Spin up ROS 2 executor
     executor = MultiThreadedExecutor(num_threads=2)
     executor.add_node(ros_node)
     thread = threading.Thread(target=executor.spin)
     thread.daemon = True
     thread.start()
 
+    ## Determine how to teleoperate the agent and dispatch the appropriate implementation
+    env_supports_direct_teleop = (
+        hasattr(env.cfg.robot_cfg.action_cfg.__class__, "map_teleop_actions")  # type: ignore
+        and env.cfg.robot_cfg.action_cfg.__class__.map_teleop_actions  # type: ignore
+        is not ActionGroup.map_teleop_actions
+    )
+
+    if env_supports_direct_teleop:
+        _teleop_agent_direct(
+            env=env,
+            sim_app=sim_app,
+            teleop_interface=teleop_interface,
+            ros2_interface=ros2_interface,
+            gui_interface=gui_interface,
+            **kwargs,
+        )
+    elif True:  # TODO: Add condition to check if the environment supports teleoperation via policy
+        if algo:
+            _teleop_agent_via_policy(
+                env=env,
+                sim_app=sim_app,
+                teleop_interface=teleop_interface,
+                ros2_interface=ros2_interface,
+                gui_interface=gui_interface,
+                algo=algo,
+                **kwargs,
+            )
+        else:
+            raise ValueError(
+                f'Environment "{env}" can only be teleoperated via policy. Please provide a policy via "--algo" and an optional "--model" argument.'
+            )
+    else:
+        raise ValueError(f'Environment "{env}" does not support teleoperation.')
+
+
+def _teleop_agent_direct(
+    env: "BaseEnv",
+    sim_app: "SimulationApp",
+    teleop_interface: "CombinedInterface",
+    ros2_interface: "ROS2 | None",
+    gui_interface: "GuiInterface | None",
+    disable_control_scheme_inversion: bool,
+    **kwargs,
+):
+    import torch
+
+    from srb.core import mdp
+    from srb.core.actions import ManipulatorTaskSpaceActionCfg
+    from srb.core.managers import SceneEntityCfg
+
+    is_manip_task = isinstance(
+        env.cfg.robot_cfg.action_cfg,  # type: ignore
+        ManipulatorTaskSpaceActionCfg,
+    )
+
     ## Run the environment
     with torch.inference_mode():
         while sim_app.is_running():
-            # Get actions from the teleoperation interface
-            actions = process_actions(*teleop_interface.advance())
+            ## Get actions from the teleoperation interface and process them
+            twist, event = teleop_interface.advance()
+            if is_manip_task and not disable_control_scheme_inversion:
+                twist[:2] *= -1.0
+            actions = env.cfg.robot_cfg.action_cfg.map_teleop_actions(  # type: ignore
+                torch.from_numpy(twist).to(device=env.device, dtype=torch.float32),
+                event,
+            ).repeat(env.num_envs, 1)
 
-            # Step the environment
+            ## Step the environment
             observation, reward, terminated, truncated, info = env.step(actions)
 
-            ## Provide force feedback for teleop devices
-            if isinstance(
-                env.cfg.actions,  # type: ignore
-                ManipulatorTaskSpaceActionCfg,
-            ):
+            ## Provide force feedback for manipulation tasks
+            if is_manip_task:
+                # TODO: Generalize force feedback for all tasks
                 FT_FEEDBACK_SCALE = torch.tensor([0.16, 0.16, 0.16, 0.0, 0.0, 0.0])
                 ft_feedback_asset_cfg = SceneEntityCfg(
                     "robot",
@@ -365,7 +381,7 @@ def teleop_agent(
                 teleop_interface.set_ft_feedback(ft_feedback)  # type: ignore
 
             ## Update ROS 2 interface
-            if ros2_integration:
+            if ros2_interface:
                 ros2_interface.publish(
                     observation,  # type: ignore
                     reward,
@@ -376,14 +392,144 @@ def teleop_agent(
                 ros2_interface.update()
 
             ## Update GUI interface
-            if gui_integration:
+            if gui_interface:
                 gui_interface.update()
 
             ## Process reset request
+            global should_reset
             if should_reset:
                 should_reset = False
                 teleop_interface.reset()
                 observation, info = env.reset()
+
+
+def _teleop_agent_via_policy(
+    env: "BaseEnv",
+    sim_app: "SimulationApp",
+    teleop_interface: "CombinedInterface",
+    ros2_interface: "ROS2 | None",
+    gui_interface: "GuiInterface | None",
+    disable_control_scheme_inversion: bool,
+    **kwargs,
+):
+    import torch
+    from gymnasium.core import (
+        ActType,
+        ObservationWrapper,
+        ObsType,
+        SupportsFloat,
+        WrapperObsType,
+    )
+
+    from srb.core import mdp
+    from srb.core.actions import ManipulatorTaskSpaceActionCfg
+    from srb.core.managers import SceneEntityCfg
+
+    # Disable command randomization
+    if hasattr(env.cfg.events, "command"):
+        env.cfg.events.command = None  # type: ignore
+
+    is_manip_task = isinstance(
+        env.cfg.robot_cfg.action_cfg,  # type: ignore
+        ManipulatorTaskSpaceActionCfg,
+    )
+
+    class InjectTeleopWrapper(ObservationWrapper):
+        def observation(self, observation: ObsType) -> WrapperObsType:  # type: ignore
+            ## Get actions from the teleoperation interface and process them
+            twist, event = teleop_interface.advance()
+            if is_manip_task and not disable_control_scheme_inversion:
+                twist[:2] *= -1.0
+
+            cmd_len = observation["command"].shape[-1]  # type: ignore
+
+            ## Map teleoperation actions to commands
+            match cmd_len:
+                case _ if cmd_len < 7:
+                    observation["command"][:] = torch.from_numpy(twist[:cmd_len]).to(  # type: ignore
+                        device=env.device, dtype=torch.float32
+                    )
+                case 7:
+                    observation["command"][:] = torch.concat(  # type: ignore
+                        (
+                            torch.from_numpy(twist).to(
+                                device=env.device, dtype=torch.float32
+                            ),
+                            torch.Tensor((-1.0 if event else 1.0,)).to(
+                                device=twist.device  # type: ignore
+                            ),
+                        )
+                    )
+                case _:
+                    raise ValueError(
+                        f"Unsupported command length for teleoperation: {cmd_len}"
+                    )
+
+            return observation  # type: ignore
+
+        def step(
+            self,
+            action: ActType,  # type: ignore
+        ) -> Tuple[WrapperObsType, SupportsFloat, bool, bool, Mapping[str, Any]]:  # type: ignore
+            # Exit if the simulation is not running
+            if not sim_app.is_running():
+                exit()
+
+            observation, reward, terminated, truncated, info = super().step(action)
+
+            ## Provide force feedback for manipulation tasks
+            if is_manip_task:
+                # TODO: Generalize force feedback for all tasks
+                FT_FEEDBACK_SCALE = torch.tensor([0.16, 0.16, 0.16, 0.0, 0.0, 0.0])
+                ft_feedback_asset_cfg = SceneEntityCfg(
+                    "robot",
+                    body_names=env.cfg.robot_cfg.regex_links_hand,  # type: ignore
+                )
+                ft_feedback_asset_cfg.resolve(env.scene)
+                ft_feedback = (
+                    FT_FEEDBACK_SCALE
+                    * mdp.body_incoming_wrench_mean(
+                        env=env,
+                        asset_cfg=ft_feedback_asset_cfg,
+                    )[0, ...].cpu()
+                )
+                teleop_interface.set_ft_feedback(ft_feedback)  # type: ignore
+
+            ## Update ROS 2 interface
+            if ros2_interface:
+                ros2_interface.publish(
+                    observation,  # type: ignore
+                    reward,  # type: ignore
+                    terminated,  # type: ignore
+                    truncated,  # type: ignore
+                    info,
+                )
+                ros2_interface.update()
+
+            ## Update GUI interface
+            if gui_interface:
+                gui_interface.update()
+
+            ## Process reset request
+            global should_reset
+            if should_reset:
+                should_reset = False
+                teleop_interface.reset()
+                observation, info = env.reset()
+
+            return (
+                observation,  # type: ignore
+                reward,
+                terminated,
+                truncated,
+                info,
+            )
+
+    # Wrap the environment with the teleoperation interface
+    env = InjectTeleopWrapper(env)  # type: ignore
+
+    ## Evaluate the agent with the wrapped environment
+    eval_agent(env=env, sim_app=sim_app, **kwargs)
 
 
 def ros_agent(
@@ -770,6 +916,7 @@ def parse_cli_args() -> argparse.Namespace:
             "--teleop_device",
             type=str,
             nargs="+",
+            choices=["keyboard", "gamepad", "joystick", "mouse", "ros2"],
             default=["keyboard"],  # TODO: Convert to enum
             help="Device for interacting with environment",
         )
@@ -804,11 +951,23 @@ def parse_cli_args() -> argparse.Namespace:
             help="Flag to enable GUI integration",
         )
 
+        policy_group = _agent_parser.add_argument_group("Teleop Policy")
+        policy_group.add_argument(
+            "--algo",
+            type=str,
+            help="Name of the algorithm that should drives the policy for control from teleopration",
+            choices=["dreamer"],  # TODO: Enum
+            # required=False,
+        )
+        policy_group.add_argument(
+            "--model",
+            type=str,
+            help="Path to the model",
+        )
+
     for _agent_parser in (
         train_agent_parser,
         eval_agent_parser,
-        teleop_agent_parser,
-        collect_agent_parser,
     ):
         algorithm_group = _agent_parser.add_argument_group("Algorithm")
         algorithm_group.add_argument(
@@ -816,15 +975,12 @@ def parse_cli_args() -> argparse.Namespace:
             type=str,
             help="Name of the algorithm",
             choices=["dreamer"],  # TODO: Enum
-            required=_agent_parser is train_agent_parser,
-            default="dreamer"
-            if _agent_parser in (train_agent_parser, eval_agent_parser)
-            else None,
+            # required=True,
+            default="dreamer",
         )
         algorithm_group.add_argument(
             "--model",
             type=str,
-            default="",
             help="Path to the model",
         )
 
