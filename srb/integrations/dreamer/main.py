@@ -8,20 +8,23 @@ import portal
 import ruamel.yaml as yaml
 from dreamerv3 import agent as dreamer_agent
 from dreamerv3 import main as dreamer_main
+from omni.isaac.kit import SimulationApp
 
 from srb.core.envs import BaseEnv
-from srb.integrations.dreamer.eval_only import eval_only
+from srb.integrations.dreamer.eval import eval_only
 from srb.integrations.dreamer.train import train
 from srb.integrations.dreamer.wrapper import EmbodiedEnvWrapper
 from srb.utils.parsing import create_logdir_path, get_last_run_logdir_path
 
 ALGO_NAME = "dreamer"
 UPSTREAM_CONFIG_PATH = Path(dreamer_agent.__file__).parent.joinpath("configs.yaml")
+SAVE_REPLAY: bool = False
 
 
-def main(
+def run(
     workflow: Literal["train", "eval"],
     env: BaseEnv,
+    sim_app: SimulationApp,
     env_id: str,
     env_cfg: dict,
     agent_cfg: dict,
@@ -55,6 +58,11 @@ def main(
                 )
                 logdir = from_checkpoint.joinpath("eval")
 
+    # Setup logdir
+    logdir = elements.Path(logdir)
+    logdir.mkdir()
+    print("Agent logdir:", logdir)
+
     # Load the config
     configs: Dict[str, Any] = yaml.YAML(typ="safe").load(
         UPSTREAM_CONFIG_PATH.read_text()
@@ -70,11 +78,6 @@ def main(
             "run.eval_envs": env_cfg.scene.num_envs,  # type: ignore
         }
     )
-
-    # Setup logdir
-    logdir = elements.Path(logdir)
-    logdir.mkdir()
-    print("Agent logdir:", logdir)
 
     # Save the config
     config.save(logdir / "config.yaml")
@@ -146,11 +149,14 @@ def main(
         case "train":
             train(
                 bind(make_agent, config),
-                bind(dreamer_main.make_replay, config, "replay"),
+                bind(
+                    dreamer_main.make_replay, config, "replay" if SAVE_REPLAY else None
+                ),
                 make_env,
                 bind(dreamer_main.make_stream, config),
                 bind(dreamer_main.make_logger, config),
                 args,
+                sim_app=sim_app,
             )
         case "eval":
             eval_only(
@@ -158,4 +164,5 @@ def main(
                 make_env,
                 bind(dreamer_main.make_logger, config),
                 args,
+                sim_app=sim_app,
             )

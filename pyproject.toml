@@ -53,15 +53,21 @@ all = [
   "srb[dev]",
 ]
 ## Algorithms
-algo = ["srb[dreamer]", "srb[robomimic]", "srb[sb3]"]
+algo = ["srb[dreamer]", "srb[sb3]", "srb[skrl]", "srb[robomimic]"]
 dreamer = [
   "srb[wandb]",
   # "dreamer@git+https://github.com/danijar/dreamerv3.git@55c8c67c956fbdace4bf8b594ea12e934a3ae4ba",
 ]
+sb3 = [
+  # "stable-baselines3~=2.0", "sb3-contrib~=2.0"
+]
+skrl = [
+  "skrl@git+https://github.com/Toni-SM/skrl.git@cb21eba58fec9c441b8574029c4de8e6b5d7bdcf",
+  # "skrl~=1.4",
+]
 robomimic = [
   # "robomimic@git+https://github.com/ARISE-Initiative/robomimic.git@29d6ca229dec3327f87b54cf1688a94177f92af6",
 ]
-sb3 = ["stable-baselines3~=2.0", "sb3-contrib~=2.0"]
 ## Hardware
 hw = ["srb[spacemouse]"]
 spacemouse = ["pyspacemouse~=1.0"]

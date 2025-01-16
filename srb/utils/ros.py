@@ -11,10 +11,11 @@ def enable_ros2_bridge():
         return
 
     ld_library_path = environ.get("LD_LIBRARY_PATH", None)
-    ld_library_path = f":{ld_library_path}" if ld_library_path else ""
-    # TODO: Fix this (path unknown - currently works only with ros already source)
+    ld_library_path = (
+        f":{ld_library_path}".replace("::", ":") if ld_library_path else ""
+    )
     environ["LD_LIBRARY_PATH"] = (
-        f"{omni.kit.paths.get_omni_path()}/exts/omni.isaac.ros2_bridge/humble/lib{ld_library_path}"  # type: ignore
+        f'{environ.get("ISAAC_PATH")}/exts/omni.isaac.ros2_bridge/humble/lib{ld_library_path}'  # type: ignore
     )
 
     # Get the extension manager and list of available extensions

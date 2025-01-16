@@ -2,11 +2,18 @@ from collections import defaultdict
 
 import elements
 import numpy as np
+from omni.isaac.kit import SimulationApp
 
 from srb.integrations.dreamer.driver import DriverParallelEnv
 
 
-def eval_only(make_agent, make_env, make_logger, args):
+def eval_only(
+    make_agent,
+    make_env,
+    make_logger,
+    args,
+    sim_app: SimulationApp,
+):
     assert args.from_checkpoint
 
     agent = make_agent()
@@ -68,6 +75,10 @@ def eval_only(make_agent, make_env, make_logger, args):
     policy = lambda *args: agent.policy(*args, mode="eval")  # noqa: E731
     driver.reset(agent.init_policy)
     while step < args.steps:
+        ########### Sim extra (optional) ############
+        if not sim_app.is_running():
+            break
+        ########### Sim extra (optional) ############
         driver(policy, steps=10)
         if should_log(step):
             logger.add(agg.result())

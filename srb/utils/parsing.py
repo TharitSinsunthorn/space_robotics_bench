@@ -2,6 +2,7 @@ import datetime
 import importlib
 import inspect
 import os
+from pathlib import Path
 from typing import Any, Dict
 
 import gymnasium as gym
@@ -161,7 +162,7 @@ def get_last_run_logdir_path(
     algo_name: str,
     task_name: str,
     prefix: str = "logs/",
-) -> str:
+) -> str | None:
     logdir_root = os.path.abspath(os.path.join(prefix, algo_name, task_name))
     logdirs = [
         os.path.join(logdir_root, d)
@@ -177,3 +178,22 @@ def get_last_run_logdir_path(
             last_logdir = d
             break
     return last_logdir
+
+
+def get_last_file(
+    path: str,
+) -> Path:
+    logdirs = [
+        os.path.join(path, d)
+        for d in os.listdir(path)
+        if os.path.isfile(os.path.join(path, d))
+    ]
+    logdirs.sort(key=os.path.getmtime, reverse=True)
+    if len(logdirs) == 0:
+        raise FileNotFoundError(f"No logdirs found in: {path}")
+    last_logdir = None
+    for d in logdirs:
+        if not d.endswith("eval"):
+            last_logdir = d
+            break
+    return Path(last_logdir)

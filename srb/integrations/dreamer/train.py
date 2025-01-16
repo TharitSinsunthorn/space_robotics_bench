@@ -4,11 +4,20 @@ from functools import partial as bind
 import elements
 import embodied
 import numpy as np
+from omni.isaac.kit import SimulationApp
 
 from srb.integrations.dreamer.driver import DriverParallelEnv
 
 
-def train(make_agent, make_replay, make_env, make_stream, make_logger, args):
+def train(
+    make_agent,
+    make_replay,
+    make_env,
+    make_stream,
+    make_logger,
+    args,
+    sim_app: SimulationApp,
+):
     agent = make_agent()
     replay = make_replay()
     logger = make_logger()
@@ -91,19 +100,23 @@ def train(make_agent, make_replay, make_env, make_stream, make_logger, args):
     cp.agent = agent
     cp.replay = replay
     if args.from_checkpoint:
-        ########### fix below ############
+        ########### Fix below ############
         # elements.checkpoint.load(
         #     args.from_checkpoint,
         #     dict(agent=bind(agent.load, regex=args.from_checkpoint_regex)),
         # )
         elements.checkpoint.load(args.from_checkpoint, dict(agent=bind(agent.load)))
-        ########### fix below ############
+        ########### Fix below ############
     cp.load_or_save()
 
     print("Start training loop")
     policy = lambda *args: agent.policy(*args, mode="train")  # noqa: E731
     driver.reset(agent.init_policy)
     while step < args.steps:
+        ########### Sim extra (optional) ############
+        if not sim_app.is_running():
+            break
+        ########### Sim extra (optional) ############
         driver(policy, steps=10)
 
         if should_report(step) and len(replay):

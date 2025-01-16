@@ -574,22 +574,34 @@ def train_agent(
     algo: str,
     **kwargs,
 ):
+    WORKFLOW: str = "train"
+
     match algo:
         case "dreamer":
-            from srb.integrations.dreamer import dreamer_main
+            from srb.integrations.dreamer import main as dreamer
 
-            dreamer_main(workflow="train", **kwargs)
+            dreamer.run(workflow=WORKFLOW, **kwargs)
+        case _skrl if algo.startswith("skrl"):
+            from srb.integrations.skrl import main as skrl
+
+            skrl.run(workflow=WORKFLOW, **kwargs)
 
 
 def eval_agent(
     algo: str,
     **kwargs,
 ):
+    WORKFLOW: str = "eval"
+
     match algo:
         case "dreamer":
-            from srb.integrations.dreamer import dreamer_main
+            from srb.integrations.dreamer import main as dreamer
 
-            dreamer_main(workflow="eval", **kwargs)
+            dreamer.run(workflow=WORKFLOW, **kwargs)
+        case _skrl if algo.startswith("skrl"):
+            from srb.integrations.skrl import main as skrl
+
+            skrl.run(workflow=WORKFLOW, **kwargs)
 
 
 ### GUI ###
@@ -956,7 +968,7 @@ def parse_cli_args() -> argparse.Namespace:
             "--algo",
             type=str,
             help="Name of the algorithm that should drives the policy for control from teleopration",
-            choices=["dreamer"],  # TODO: Enum
+            choices=["dreamer", "skrl_ppo"],  # TODO: Enum
             # required=False,
         )
         policy_group.add_argument(
@@ -974,7 +986,7 @@ def parse_cli_args() -> argparse.Namespace:
             "--algo",
             type=str,
             help="Name of the algorithm",
-            choices=["dreamer"],  # TODO: Enum
+            choices=["dreamer", "skrl_ppo"],  # TODO: Enum
             # required=True,
             default="dreamer",
         )
