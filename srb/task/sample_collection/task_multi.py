@@ -1,25 +1,17 @@
-from dataclasses import MISSING as DELAYED_CFG
 from typing import Dict, List, Sequence, Tuple
 
 import torch
 from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
-from omni.isaac.lab.sensors import ContactSensor, ContactSensorCfg
+from omni.isaac.lab.sensors import ContactSensor
 from omni.isaac.lab.utils import configclass
 
 import srb.core.envs as env_utils
-import srb.core.sim as sim_utils
 import srb.utils.math as math_utils
 from srb.core.asset import RigidObject, RigidObjectCfg
-from srb.core.markers import VisualizationMarkers, VisualizationMarkersCfg
-from srb.core.sim.spawners import SphereCfg
-from srb.env import (
-    BaseManipulationEnv,
-    BaseManipulationEnvCfg,
-    BaseManipulationEnvEventCfg,
-    mdp,
-)
+from srb.core.markers import VisualizationMarkers
+from srb.env import BaseManipulationEnv, mdp
 
-from ..sample_collection.task import sample_cfg
+from .task import TaskCfg, sample_cfg
 
 ##############
 ### Config ###
@@ -27,45 +19,18 @@ from ..sample_collection.task import sample_cfg
 
 
 @configclass
-class TaskCfg(BaseManipulationEnvCfg):
+class MultiTaskCfg(TaskCfg):
     ## Environment
-    episode_length_s: float = DELAYED_CFG
     num_problems_per_env: int = 8
-
-    ## Task
-    is_finite_horizon: bool = False
-
-    ## Goal
-    target_pos = (-0.6, 0.0, 0.0)
-    target_quat = (1.0, 0.0, 0.0, 0.0)
-    target_marker_cfg = VisualizationMarkersCfg(
-        prim_path="/Visuals/target",
-        markers={
-            "target": SphereCfg(
-                visible=False,
-                radius=0.025,
-                visual_material=sim_utils.PreviewSurfaceCfg(
-                    diffuse_color=(1.0, 0.0, 0.0)
-                ),
-            )
-        },
-    )
-
-    ## Events
-    @configclass
-    class EventCfg(BaseManipulationEnvEventCfg):
-        pass
-
-    events = EventCfg()
 
     def __post_init__(self):
         super().__post_init__()
 
         ## Environment
-        self.episode_length_s = self.num_problems_per_env * 7.5
+        self.episode_length_s *= self.num_problems_per_env
 
         ## Scene
-        self.object_cfgs = [
+        self.object_cfg = [
             sample_cfg(
                 self.env_cfg,
                 prim_path=f"{{ENV_REGEX_NS}}/sample{i}",
@@ -79,28 +44,21 @@ class TaskCfg(BaseManipulationEnvCfg):
             )
             for i in range(self.num_problems_per_env)
         ]
-        for i, object_cfg in enumerate(self.object_cfgs):
-            setattr(self.scene, f"object{i}", object_cfg.asset_cfg)
-        if self.vehicle_cfg:
-            self.target_pos = self.vehicle_cfg.frame_cargo_bay.offset.translation
+        self.scene.object = None
+        for i, cfg in enumerate(self.object_cfg):
+            setattr(self.scene, f"object{i}", cfg.asset_cfg)
 
         ## Sensors
-        self.scene.contacts_robot_hand_obj = ContactSensorCfg(
-            prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.regex_links_hand}",
-            update_period=0.0,
-            # Note: This causes error 'Filter pattern did not match the correct number of entries'
-            #       However, it seems to function properly anyway...
-            filter_prim_paths_expr=[
-                asset.prim_path
-                for asset in [
-                    getattr(self.scene, f"object{i}")
-                    for i in range(self.num_problems_per_env)
-                ]
-            ],
-        )
+        self.scene.contacts_robot_hand_obj.filter_prim_paths_expr = [
+            asset.prim_path
+            for asset in [
+                getattr(self.scene, f"object{i}")
+                for i in range(self.num_problems_per_env)
+            ]
+        ]
 
         ## Events
-        self.events.reset_rand_object_state_multi = EventTermCfg(
+        self.events.reset_rand_object_state = EventTermCfg(
             func=mdp.reset_root_state_uniform_poisson_disk_2d,
             mode="reset",
             params={
@@ -108,8 +66,8 @@ class TaskCfg(BaseManipulationEnvCfg):
                     SceneEntityCfg(f"object{i}")
                     for i in range(self.num_problems_per_env)
                 ],
-                "pose_range": self.object_cfgs[0].state_randomizer.params["pose_range"],
-                "velocity_range": self.object_cfgs[0].state_randomizer.params[
+                "pose_range": self.object_cfg[0].state_randomizer.params["pose_range"],
+                "velocity_range": self.object_cfg[0].state_randomizer.params[
                     "velocity_range"
                 ],
                 "radius": (
@@ -127,8 +85,8 @@ class TaskCfg(BaseManipulationEnvCfg):
 ############
 
 
-class Task(BaseManipulationEnv):
-    cfg: TaskCfg
+class MultiTask(BaseManipulationEnv):
+    cfg: MultiTaskCfg
 
     def __init__(self, cfg: TaskCfg, **kwargs):
         super().__init__(cfg, **kwargs)
@@ -137,7 +95,7 @@ class Task(BaseManipulationEnv):
         self._contacts_robot_hand_obj: ContactSensor = self.scene[
             "contacts_robot_hand_obj"
         ]
-        self._objects: List[RigidObject] = [
+        self._object: List[RigidObject] = [
             self.scene[f"object{i}"] for i in range(self.cfg.num_problems_per_env)
         ]
 
@@ -151,7 +109,7 @@ class Task(BaseManipulationEnv):
         self._max_episode_length = self.max_episode_length
         self._obj_com_offset = torch.stack(
             [
-                self._objects[i].data._root_physx_view.get_coms().to(self.device)
+                self._object[i].data._root_physx_view.get_coms().to(self.device)
                 for i in range(self.cfg.num_problems_per_env)
             ],
             dim=1,
@@ -187,7 +145,7 @@ class Task(BaseManipulationEnv):
         # Update the initial height of the objects
         self._initial_obj_height_w[env_ids] = torch.stack(
             [
-                self._objects[i].data.root_pos_w[env_ids, 2]
+                self._object[i].data.root_pos_w[env_ids, 2]
                 for i in range(self.cfg.num_problems_per_env)
             ],
             dim=1,
@@ -261,14 +219,14 @@ class Task(BaseManipulationEnv):
             robot_hand_obj_contact_force_matrix=self._contacts_robot_hand_obj.data.force_matrix_w,
             obj_pos_w=torch.stack(
                 [
-                    self._objects[i].data.root_pos_w
+                    self._object[i].data.root_pos_w
                     for i in range(self.cfg.num_problems_per_env)
                 ],
                 dim=1,
             ),
             obj_quat_w=torch.stack(
                 [
-                    self._objects[i].data.root_quat_w
+                    self._object[i].data.root_quat_w
                     for i in range(self.cfg.num_problems_per_env)
                 ],
                 dim=1,
