@@ -14,11 +14,18 @@ debug/
 target/
 **/*.rs.bk
 
+## MdBook
+docs/book/
+docs/index.html
+
+## Docker History
+.docker/.history/
+
 ## Shared Objects
 **/*.so
 
-## Dump files
-**/core.*
+## Apptainer
+**/*.sif
 
 ## Logs
 *.log
@@ -26,5 +33,5 @@ logs/
 outputs/
 wandb/
 
-## Apptainer
-**/*.sif
+## Dump files
+**/core.*

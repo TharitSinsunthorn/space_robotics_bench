@@ -1,23 +1,17 @@
-from dataclasses import MISSING as DELAYED_CFG
 from typing import Dict, List, Sequence, Tuple
 
 import torch
 from omni.isaac.core.prims.xform_prim_view import XFormPrimView
 from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
-from omni.isaac.lab.sensors import ContactSensor, ContactSensorCfg
+from omni.isaac.lab.sensors import ContactSensor
 from omni.isaac.lab.utils import configclass
 
 import srb.utils.math as math_utils
 import srb.utils.sampling as spacing_utils
 from srb.core.asset import RigidObject, RigidObjectCfg
-from srb.env import (
-    BaseManipulationEnv,
-    BaseManipulationEnvCfg,
-    BaseManipulationEnvEventCfg,
-    mdp,
-)
+from srb.env import BaseManipulationEnv, mdp
 
-from ..peg_in_hole.task import peg_and_hole_cfg
+from .task import TaskCfg, peg_and_hole_cfg
 
 ##############
 ### Config ###
@@ -25,27 +19,16 @@ from ..peg_in_hole.task import peg_and_hole_cfg
 
 
 @configclass
-class TaskCfg(BaseManipulationEnvCfg):
+class MultiTaskCfg(TaskCfg):
     ## Environment
-    episode_length_s: float = DELAYED_CFG
     num_problems_per_env: int = 6
     problem_spacing: float = 0.15
-
-    ## Task
-    is_finite_horizon: bool = False
-
-    ## Events
-    @configclass
-    class EventCfg(BaseManipulationEnvEventCfg):
-        pass
-
-    events = EventCfg()
 
     def __post_init__(self):
         super().__post_init__()
 
         ## Environment
-        self.episode_length_s = self.num_problems_per_env * 10.0
+        self.episode_length_s *= self.num_problems_per_env
 
         ## Scene
         (num_rows, num_cols), (grid_spacing_pos, grid_spacing_rot) = (
@@ -55,7 +38,7 @@ class TaskCfg(BaseManipulationEnvCfg):
                 global_pos_offset=(0.5, 0.0, 0.1),
             )
         )
-        self.problem_cfgs = [
+        self.problem_cfg = [
             peg_and_hole_cfg(
                 self.env_cfg,
                 prim_path_peg=f"{{ENV_REGEX_NS}}/peg{i}",
@@ -73,11 +56,13 @@ class TaskCfg(BaseManipulationEnvCfg):
             )
             for i in range(self.num_problems_per_env)
         ]
-        for i, problem_cfg in enumerate(self.problem_cfgs):
+        self.scene.object = None
+        self.scene.target = None
+        for i, cfg in enumerate(self.problem_cfg):
             setattr(
                 self.scene,
                 f"object{i}",
-                problem_cfg.peg.asset_cfg.replace(
+                cfg.peg.asset_cfg.replace(
                     init_state=RigidObjectCfg.InitialStateCfg(
                         pos=(0.5, 0.0, 0.13),
                     )
@@ -86,26 +71,20 @@ class TaskCfg(BaseManipulationEnvCfg):
             setattr(
                 self.scene,
                 f"target{i}",
-                problem_cfg.hole.asset_cfg,
+                cfg.hole.asset_cfg,
             )
 
         ## Sensors
-        self.scene.contacts_robot_hand_obj = ContactSensorCfg(
-            prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.regex_links_hand}",
-            update_period=0.0,
-            # Note: This causes error 'Filter pattern did not match the correct number of entries'
-            #       However, it seems to function properly anyway...
-            filter_prim_paths_expr=[
-                asset.prim_path
-                for asset in [
-                    getattr(self.scene, f"object{i}")
-                    for i in range(self.num_problems_per_env)
-                ]
-            ],
-        )
+        self.scene.contacts_robot_hand_obj.filter_prim_paths_expr = [
+            asset.prim_path
+            for asset in [
+                getattr(self.scene, f"object{i}")
+                for i in range(self.num_problems_per_env)
+            ]
+        ]
 
         ## Events
-        self.events.reset_rand_object_state_multi = EventTermCfg(
+        self.events.reset_rand_object_state = EventTermCfg(
             func=mdp.reset_root_state_uniform_poisson_disk_2d,
             mode="reset",
             params={
@@ -137,10 +116,10 @@ class TaskCfg(BaseManipulationEnvCfg):
 ############
 
 
-class Task(BaseManipulationEnv):
-    cfg: TaskCfg
+class MultiTask(BaseManipulationEnv):
+    cfg: MultiTaskCfg
 
-    def __init__(self, cfg: TaskCfg, **kwargs):
+    def __init__(self, cfg: MultiTaskCfg, **kwargs):
         super().__init__(cfg, **kwargs)
 
         # Get handles to scene assets
@@ -178,7 +157,7 @@ class Task(BaseManipulationEnv):
         )
         self._peg_offset_pos_ends = torch.tensor(
             [
-                self.cfg.problem_cfgs[i].peg.offset_pos_ends
+                self.cfg.problem_cfg[i].peg.offset_pos_ends
                 for i in range(self.cfg.num_problems_per_env)
             ],
             dtype=torch.float32,
@@ -187,7 +166,7 @@ class Task(BaseManipulationEnv):
 
         self._peg_rot_symmetry_n = torch.tensor(
             [
-                self.cfg.problem_cfgs[i].peg.rot_symmetry_n
+                self.cfg.problem_cfg[i].peg.rot_symmetry_n
                 for i in range(self.cfg.num_problems_per_env)
             ],
             dtype=torch.int32,
@@ -195,7 +174,7 @@ class Task(BaseManipulationEnv):
         ).repeat(self.num_envs, 1)
         self._hole_offset_pos_bottom = torch.tensor(
             [
-                self.cfg.problem_cfgs[i].hole.offset_pos_bottom
+                self.cfg.problem_cfg[i].hole.offset_pos_bottom
                 for i in range(self.cfg.num_problems_per_env)
             ],
             dtype=torch.float32,
@@ -203,7 +182,7 @@ class Task(BaseManipulationEnv):
         ).repeat(self.num_envs, 1, 1)
         self._hole_offset_pos_entrance = torch.tensor(
             [
-                self.cfg.problem_cfgs[i].hole.offset_pos_entrance
+                self.cfg.problem_cfg[i].hole.offset_pos_entrance
                 for i in range(self.cfg.num_problems_per_env)
             ],
             dtype=torch.float32,

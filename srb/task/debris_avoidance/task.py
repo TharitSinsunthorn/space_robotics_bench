@@ -36,6 +36,7 @@ def asteroid_cfg(
         asset_cfg=RigidObjectCfg(
             prim_path=prim_path,
             spawn=Asteroid(
+                scale=(10, 10, 10),
                 num_assets=num_assets,
                 seed=env_cfg.seed + procgen_seed_offset,
                 collision_props=sim_utils.CollisionPropertiesCfg(),

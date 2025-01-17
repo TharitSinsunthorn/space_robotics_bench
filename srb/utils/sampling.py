@@ -18,7 +18,10 @@ def compute_grid_spacing(
     spacing: float,
     global_pos_offset: np.ndarray | torch.Tensor | Iterable | None = None,
     global_rot_offset: np.ndarray | torch.Tensor | Iterable | None = None,
-) -> Tuple[Tuple[int, int], Tuple[List[float], List[float]]]:
+) -> Tuple[
+    Tuple[int, int],
+    Tuple[List[Tuple[float, float, float]], List[Tuple[float, float, float, float]]],
+]:
     if global_pos_offset is not None:
         if isinstance(global_pos_offset, torch.Tensor):
             global_pos_offset = global_pos_offset.detach().cpu().numpy()
@@ -48,7 +51,7 @@ def compute_grid_spacing(
 
         position = [x, y, 0]
         if global_pos_offset is not None:
-            translation = (global_pos_offset + position).tolist()
+            translation = tuple((global_pos_offset + position).tolist())
         else:
             translation = position
         positions.append(translation)
@@ -63,12 +66,12 @@ def compute_grid_spacing(
                 * orientation
             )
         orientations.append(
-            [
+            (
                 orientation.GetReal(),
                 orientation.GetImaginary()[0],
                 orientation.GetImaginary()[1],
                 orientation.GetImaginary()[2],
-            ]
+            )
         )
 
     return ((num_rows, num_cols), (positions, orientations))

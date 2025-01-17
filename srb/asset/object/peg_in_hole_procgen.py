@@ -12,6 +12,7 @@ class PegProcgenCfg(SimforgeAssetCfg):
     assets: Sequence[Asset] = [sf_geometry.PegGeo()]
 
 
+# TODO: Triangulate geometry
 @configclass
 class HoleProcgenCfg(SimforgeAssetCfg):
     assets: Sequence[Asset] = [sf_geometry.HoleGeo()]

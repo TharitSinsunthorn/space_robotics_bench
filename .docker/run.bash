@@ -28,6 +28,8 @@ DOCKER_RUN_OPTS="${DOCKER_RUN_OPTS:-
 WITH_GPU="${WITH_GPU:-true}"
 # Flag to enable GUI (X11)
 WITH_GUI="${WITH_GUI:-true}"
+# Flag to enable mounting the command history as a volume
+WITH_HISTORY="${WITH_HISTORY:-true}"
 # Flag to enable mounting the source code as a volume
 WITH_DEV_VOLUME="${WITH_DEV_VOLUME:-true}"
 # Volumes to mount inside the container
@@ -53,17 +55,27 @@ DOCKER_VOLUMES=(
     # Cache
     "${HOME}/.cache/simforge:/root/.cache/simforge:rw"
 )
-if [[ "${WITH_DEV_VOLUME,,}" = true ]]; then
-    DOCKER_VOLUMES+=(
-        "${REPOSITORY_DIR}:/root/ws:rw"
-    )
-fi
 # Environment variables to set inside the container
 DOCKER_ENVIRON=(
     ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-"0"}"
     ROS_LOCALHOST_ONLY="${ROS_LOCALHOST_ONLY:-"1"}"
     RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-"rmw_cyclonedds_cpp"}"
 )
+
+if [[ "${WITH_HISTORY,,}" = true ]]; then
+    DOCKER_VOLUMES+=(
+        "${SCRIPT_DIR}/.history:/.history:rw"
+    )
+    DOCKER_ENVIRON+=(
+        HISTFILE="/.history/.bash_history"
+        PYTHON_HISTORY="/.history/.python_history"
+    )
+fi
+if [[ "${WITH_DEV_VOLUME,,}" = true ]]; then
+    DOCKER_VOLUMES+=(
+        "${REPOSITORY_DIR}:/root/ws:rw"
+    )
+fi
 
 ## DDS config
 if [[ "${RMW_IMPLEMENTATION:-"rmw_cyclonedds_cpp"}" = "rmw_cyclonedds_cpp" ]]; then

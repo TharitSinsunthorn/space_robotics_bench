@@ -88,7 +88,7 @@ class MultiTaskCfg(TaskCfg):
 class MultiTask(BaseManipulationEnv):
     cfg: MultiTaskCfg
 
-    def __init__(self, cfg: TaskCfg, **kwargs):
+    def __init__(self, cfg: MultiTaskCfg, **kwargs):
         super().__init__(cfg, **kwargs)
 
         ## Get handles to scene assets
