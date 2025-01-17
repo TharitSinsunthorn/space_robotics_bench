@@ -5,25 +5,26 @@ from collections.abc import Callable
 import numpy as np
 
 from srb.core.teleop_devices import DeviceBase
-from srb.utils.ros import enable_ros2_bridge
+from srb.utils.ros2 import enable_ros2_bridge
 
 enable_ros2_bridge()
+
 import rclpy  # noqa: E402
 from geometry_msgs.msg import Twist  # noqa: E402
 from rclpy.node import Node  # noqa: E402
 from std_msgs.msg import Bool, Float64  # noqa: E402
 
 
-class Se3ROS2(DeviceBase, Node):
+class ROS2TeleopInterface(DeviceBase, Node):
     def __init__(
         self,
         node: Node | None = None,
         pos_sensitivity: float = 1.0,
         rot_sensitivity: float = 1.0,
     ):
-        if node is None:
+        if not node:
             rclpy.init(args=None)
-            self._node = Node("srb_teleop_ros2")  # type: ignore
+            self._node = Node("srb")  # type: ignore
         else:
             self._node = node
 
@@ -51,7 +52,7 @@ class Se3ROS2(DeviceBase, Node):
         self._delta_rot = np.zeros(3)  # (roll, pitch, yaw)
 
         # Run a thread for listening to device
-        if node is None:
+        if not node:
             self._thread = threading.Thread(target=rclpy.spin, args=(self._node,))
             self._thread.daemon = True
             self._thread.start()

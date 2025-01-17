@@ -12,6 +12,8 @@ from _cli_utils import add_default_cli_args, argparse, launch_app, shutdown_app
 
 FRAMEWORK_NAME = "robomimic"
 
+# TODO: Refactor
+
 
 def main(launcher: AppLauncher, args: argparse.Namespace):
     ## Note: Importing modules here due to delayed Omniverse Kit extension loading
@@ -33,7 +35,7 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
         WheeledRoverActionGroupCfg,
     )
     from srb.core.managers import SceneEntityCfg
-    from srb.core.teleop_devices import CombinedInterface
+    from srb.core.teleop_devices import CombinedTeleopInterface
     from srb.integrations.robomimic.wrapper import RobomimicDataCollector
     from srb.utils.parsing import create_logdir_path, parse_task_cfg
 
@@ -60,7 +62,7 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     )
 
     ## Create controller
-    teleop_interface = CombinedInterface(
+    teleop_interface = CombinedTeleopInterface(
         devices=args.teleop_device,
         pos_sensitivity=args.pos_sensitivity,
         rot_sensitivity=args.rot_sensitivity,

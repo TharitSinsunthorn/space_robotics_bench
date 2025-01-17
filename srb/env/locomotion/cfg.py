@@ -14,6 +14,8 @@ from srb.core import mdp
 from srb.core.envs import BaseEnvCfg
 from srb.core.sim import SimulationCfg
 
+# TODO: Fix the RNN error with contiguous memory
+
 
 @configclass
 class BaseLocomotionEnvEventCfg:

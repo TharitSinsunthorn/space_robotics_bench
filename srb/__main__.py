@@ -15,8 +15,9 @@ if TYPE_CHECKING:
     from omni.isaac.kit import SimulationApp
 
     from srb.core.envs import BaseEnv
-    from srb.core.interfaces import ROS2, GuiInterface
-    from srb.core.teleop_devices import CombinedInterface
+    from srb.core.interfaces.gui import GuiInterface
+    from srb.core.interfaces.ros2 import ROS2
+    from srb.core.teleop_devices import CombinedTeleopInterface
 
 # TODO: Clean-up args
 
@@ -60,7 +61,7 @@ def agent_main(
     launcher = AppLauncher(launcher_args=kwargs)
 
     import srb.task as _  # noqa: F401
-    from srb.core.teleop_devices import CbKeyboard
+    from srb.core.teleop_devices import EventKeyboardTeleopInterface
     from srb.utils import logging
     from srb.utils.hydra import hydra_task_config
     from srb.utils.isaacsim import hide_ui
@@ -107,7 +108,7 @@ def agent_main(
             "collect",
             "train",
         ]:
-            _cb_keyboard = CbKeyboard({"L": env.reset})
+            _cb_keyboard = EventKeyboardTeleopInterface({"L": env.reset})
 
         # Run the implementation
         def agent_impl(
@@ -201,7 +202,7 @@ def zero_agent(
         while sim_app.is_running():
             observation, reward, terminated, truncated, info = env.step(actions)
 
-            logging.debug(
+            logging.trace(
                 f"actions: {actions}\n"
                 f"observation: {observation}\n"
                 f"reward: {reward}\n"
@@ -223,19 +224,14 @@ def teleop_agent(
     algo: str,
     **kwargs,
 ):
-    from srb.utils.ros import enable_ros2_bridge
+    from srb.utils.ros2 import enable_ros2_bridge
 
     enable_ros2_bridge()
 
     import threading
 
-    import rclpy
-    from rclpy.executors import MultiThreadedExecutor
-    from rclpy.node import Node
-
     from srb.core.actions import ActionGroup
-    from srb.core.interfaces import ROS2, GuiInterface
-    from srb.core.teleop_devices import CombinedInterface
+    from srb.core.teleop_devices import CombinedTeleopInterface
 
     if find_spec("rich"):
         from rich import print
@@ -251,11 +247,18 @@ def teleop_agent(
         env.cfg.enable_truncation = False
 
     # Create ROS 2 node
-    rclpy.init(args=None)
-    ros_node = Node("srb")  # type: ignore
+    if ros2_integration or gui_integration:
+        import rclpy
+        from rclpy.executors import MultiThreadedExecutor
+        from rclpy.node import Node
+
+        rclpy.init(args=None)
+        ros_node = Node("srb")  # type: ignore
+    else:
+        ros_node = None
 
     ## Create teleop interface
-    teleop_interface = CombinedInterface(
+    teleop_interface = CombinedTeleopInterface(
         devices=teleop_device,
         node=ros_node,
         pos_sensitivity=pos_sensitivity,
@@ -277,20 +280,31 @@ def teleop_agent(
     print(teleop_interface)
 
     ## Create ROS 2 interface
-    ros2_interface = ROS2(env, node=ros_node) if ros2_integration else None
+    if ros2_integration:
+        from srb.core.interfaces.ros2 import ROS2
+
+        ros2_interface = ROS2(env, node=ros_node)
+    else:
+        ros2_interface = None
 
     ## Create GUI interface
-    gui_interface = GuiInterface(env, node=ros_node) if gui_integration else None
+    if gui_integration:
+        from srb.core.interfaces.gui import GuiInterface
+
+        gui_interface = GuiInterface(env, node=ros_node)
+    else:
+        gui_interface = None
 
     ## Initialize the environment
     env.reset()
 
     ## Spin up ROS 2 executor
-    executor = MultiThreadedExecutor(num_threads=2)
-    executor.add_node(ros_node)
-    thread = threading.Thread(target=executor.spin)
-    thread.daemon = True
-    thread.start()
+    if ros_node:
+        executor = MultiThreadedExecutor(num_threads=2)
+        executor.add_node(ros_node)
+        thread = threading.Thread(target=executor.spin)
+        thread.daemon = True
+        thread.start()
 
     ## Determine how to teleoperate the agent and dispatch the appropriate implementation
     env_supports_direct_teleop = (
@@ -330,7 +344,7 @@ def teleop_agent(
 def _teleop_agent_direct(
     env: "BaseEnv",
     sim_app: "SimulationApp",
-    teleop_interface: "CombinedInterface",
+    teleop_interface: "CombinedTeleopInterface",
     ros2_interface: "ROS2 | None",
     gui_interface: "GuiInterface | None",
     disable_control_scheme_inversion: bool,
@@ -406,7 +420,7 @@ def _teleop_agent_direct(
 def _teleop_agent_via_policy(
     env: "BaseEnv",
     sim_app: "SimulationApp",
-    teleop_interface: "CombinedInterface",
+    teleop_interface: "CombinedTeleopInterface",
     ros2_interface: "ROS2 | None",
     gui_interface: "GuiInterface | None",
     disable_control_scheme_inversion: bool,
@@ -539,7 +553,7 @@ def ros_agent(
 ):
     import torch
 
-    from srb.core.interfaces import ROS2
+    from srb.core.interfaces.ros2 import ROS2
 
     # Disable truncation
     if hasattr(env.cfg, "enable_truncation"):

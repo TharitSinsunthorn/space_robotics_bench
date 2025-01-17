@@ -2,13 +2,17 @@ import threading
 from queue import Queue
 
 import numpy as np
-import rclpy
 from pxr import Gf
-from rclpy.node import Node
-from std_msgs.msg import Bool, Empty, Float64
 
 from srb.core.envs import BaseEnv
 from srb.env import BaseAerialRoboticsEnv, BaseManipulationEnv, BaseMobileRoboticsEnv
+from srb.utils.ros2 import enable_ros2_bridge
+
+enable_ros2_bridge()
+
+import rclpy  # noqa: E402
+from rclpy.node import Node  # noqa: E402
+from std_msgs.msg import Bool, Empty, Float64  # noqa: E402
 
 
 class GuiInterface:
@@ -23,9 +27,9 @@ class GuiInterface:
         self._env = env
 
         ## Initialize node
-        if node is None:
+        if not node:
             rclpy.init(args=None)
-            self._node = Node("srb")
+            self._node = Node("srb")  # type: ignore
         else:
             self._node = node
 
@@ -44,7 +48,7 @@ class GuiInterface:
         )
 
         # Run a thread for listening to device
-        if node is None:
+        if not node:
             self._thread = threading.Thread(target=rclpy.spin, args=(self._node,))
             self._thread.daemon = True
             self._thread.start()

@@ -1,5 +1,6 @@
+import threading
 from collections.abc import Callable
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
 from omni.isaac.lab.devices import DeviceBase
@@ -10,25 +11,25 @@ from srb.core.actions import (
     SpacecraftActionGroupCfg,
     WheeledRoverActionGroupCfg,
 )
-from srb.core.teleop_devices import (
-    Se3Gamepad,
-    Se3Keyboard,
-    Se3ROS2,
-    Se3SpaceMouse,
-    Se3Touch,
-)
-from srb.utils.ros import enable_ros2_bridge
+from srb.core.teleop_devices import Se3Gamepad
+from srb.core.teleop_devices.keyboard import KeyboardTeleopInterface
+from srb.core.teleop_devices.spacemouse import SpacemouseTeleopInterface
+from srb.utils.ros2 import enable_ros2_bridge
 
 enable_ros2_bridge()
-import rclpy  # noqa: E402
-from rclpy.node import Node  # noqa: E402
+
+if TYPE_CHECKING:
+    from rclpy.node import Node
+
+# TODO: Rename touch to haptic
+# TODO: Use enum for devices
 
 
-class CombinedInterface(DeviceBase):
+class CombinedTeleopInterface(DeviceBase):
     def __init__(
         self,
         devices: Sequence[str],
-        node: Node | None = None,
+        node: "Node | None" = None,
         pos_sensitivity: float = 1.0,
         rot_sensitivity: float = 1.0,
         action_cfg: ManipulatorTaskSpaceActionCfg
@@ -36,54 +37,63 @@ class CombinedInterface(DeviceBase):
         | WheeledRoverActionGroupCfg
         | None = None,
     ):
-        if node is None:
+        if not node and ("ros2" in devices or "touch" in devices):
+            import rclpy
+            from rclpy.node import Node
+
             rclpy.init(args=None)
-            self._node = Node("srb_teleop_combined")  # type: ignore
+            self._node = Node("srb")  # type: ignore
         else:
             self._node = node
 
         self._action_cfg = action_cfg
         self.interfaces = []
+        self.ft_feedback_interfaces = []
         for device in devices:
-            if device.lower() == "keyboard":
-                self.interfaces.append(
-                    Se3Keyboard(
-                        pos_sensitivity=0.05 * pos_sensitivity,
-                        rot_sensitivity=10.0 * rot_sensitivity,
+            match device.lower():
+                case "keyboard":
+                    self.interfaces.append(
+                        KeyboardTeleopInterface(
+                            pos_sensitivity=0.05 * pos_sensitivity,
+                            rot_sensitivity=10.0 * rot_sensitivity,
+                        )
                     )
-                )
-            elif device.lower() == "ros2":
-                self.interfaces.append(
-                    Se3ROS2(
-                        node=self._node,
-                        pos_sensitivity=1.0 * pos_sensitivity,
-                        rot_sensitivity=1.0 * rot_sensitivity,
+                case "spacemouse":
+                    self.interfaces.append(
+                        SpacemouseTeleopInterface(
+                            pos_sensitivity=0.1 * pos_sensitivity,
+                            rot_sensitivity=0.05 * rot_sensitivity,
+                        )
                     )
-                )
-            elif device.lower() == "touch":
-                self.interfaces.append(
-                    Se3Touch(
+                case "gamepad":
+                    self.interfaces.append(
+                        Se3Gamepad(
+                            pos_sensitivity=0.1 * pos_sensitivity,
+                            rot_sensitivity=0.1 * rot_sensitivity,
+                        )
+                    )
+                case "ros2":
+                    from srb.core.teleop_devices.ros2 import ROS2TeleopInterface
+
+                    self.interfaces.append(
+                        ROS2TeleopInterface(
+                            node=self._node,
+                            pos_sensitivity=1.0 * pos_sensitivity,
+                            rot_sensitivity=1.0 * rot_sensitivity,
+                        )
+                    )
+                case "touch":
+                    from srb.core.teleop_devices.haptic import HapticROS2TeleopInterface
+
+                    interface = HapticROS2TeleopInterface(
                         node=self._node,
                         pos_sensitivity=1.0 * pos_sensitivity,
                         rot_sensitivity=0.15 * rot_sensitivity,
                     )
-                )
-            elif device.lower() == "spacemouse":
-                self.interfaces.append(
-                    Se3SpaceMouse(
-                        pos_sensitivity=0.1 * pos_sensitivity,
-                        rot_sensitivity=0.05 * rot_sensitivity,
-                    )
-                )
-            elif device.lower() == "gamepad":
-                self.interfaces.append(
-                    Se3Gamepad(
-                        pos_sensitivity=0.1 * pos_sensitivity,
-                        rot_sensitivity=0.1 * rot_sensitivity,
-                    )
-                )
-            else:
-                raise ValueError(f"Invalid device interface '{device}'.")
+                    self.interfaces.append(interface)
+                    self.ft_feedback_interfaces.append(interface)
+                case _:
+                    raise ValueError(f"Invalid device interface '{device}'.")
 
             self.gain = 1.0
 
@@ -99,16 +109,27 @@ class CombinedInterface(DeviceBase):
 
             self.add_callback("P", cb_gain_increase)
 
+        # Run a thread for listening to device
+        if not node and self._node is not None:
+            self._thread = threading.Thread(target=rclpy.spin, args=(self._node,))
+            self._thread.daemon = True
+            self._thread.start()
+
     def __del__(self):
         for interface in self.interfaces:
             interface.__del__()
 
     def __str__(self) -> str:
+        from srb.core.teleop_devices.keyboard import KeyboardTeleopInterface
+
         msg = "Combined Interface\n"
         msg += f"Devices: {', '.join([interface.__class__.__name__ for interface in self.interfaces])}\n"
 
         for interface in self.interfaces:
-            if isinstance(interface, Se3Keyboard) and self._action_cfg is not None:
+            if (
+                isinstance(interface, KeyboardTeleopInterface)
+                and self._action_cfg is not None
+            ):
                 msg += self._keyboard_control_scheme(self._action_cfg)
                 continue
             msg += "\n"
@@ -129,9 +150,13 @@ class CombinedInterface(DeviceBase):
 
     def add_callback(self, key: str, func: Callable):
         for interface in self.interfaces:
-            if isinstance(interface, Se3Keyboard):
+            if isinstance(interface, KeyboardTeleopInterface):
                 interface.add_callback(key=key, func=func)
-            if isinstance(interface, Se3SpaceMouse) and key in ["L", "R", "LR"]:
+            if isinstance(interface, SpacemouseTeleopInterface) and key in [
+                "L",
+                "R",
+                "LR",
+            ]:
                 interface.add_callback(key=key, func=func)
 
     def advance(self) -> tuple[np.ndarray, bool]:
@@ -150,9 +175,8 @@ class CombinedInterface(DeviceBase):
         return twist, self._close_gripper
 
     def set_ft_feedback(self, ft_feedback: np.ndarray):
-        for interface in self.interfaces:
-            if isinstance(interface, Se3Touch):
-                interface.set_ft_feedback(ft_feedback)
+        for interface in self.ft_feedback_interfaces:
+            interface.set_ft_feedback(ft_feedback)
 
     @staticmethod
     def _keyboard_control_scheme(

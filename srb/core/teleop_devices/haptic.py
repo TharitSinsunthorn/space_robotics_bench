@@ -5,25 +5,26 @@ from collections.abc import Callable
 import numpy as np
 
 from srb.core.teleop_devices import DeviceBase
-from srb.utils.ros import enable_ros2_bridge
+from srb.utils.ros2 import enable_ros2_bridge
 
 enable_ros2_bridge()
+
 import rclpy  # noqa: E402
 from geometry_msgs.msg import Twist, Vector3  # noqa: E402
 from rclpy.node import Node  # noqa: E402
 from std_msgs.msg import Bool, Float64  # noqa: E402
 
 
-class Se3Touch(DeviceBase):
+class HapticROS2TeleopInterface(DeviceBase):
     def __init__(
         self,
         node: Node | None = None,
         pos_sensitivity: float = 1.0,
         rot_sensitivity: float = 1.0,
     ):
-        if node is None:
+        if not node:
             rclpy.init(args=None)
-            self._node = Node("se3_teleop_touch")  # type: ignore
+            self._node = Node("srb")  # type: ignore
         else:
             self._node = node
 
@@ -76,7 +77,7 @@ class Se3Touch(DeviceBase):
         self._delta_rot = np.zeros(3)  # (roll, pitch, yaw)
 
         # Run a thread for listening to device
-        if node is None:
+        if not node:
             self._thread = threading.Thread(target=rclpy.spin, args=(self._node,))
             self._thread.daemon = True
             self._thread.start()
@@ -120,7 +121,7 @@ class Se3Touch(DeviceBase):
             self._thread.join()
 
     def __str__(self) -> str:
-        msg = f'Haptic "Touch" Interface ({self.__class__.__name__})\n'
+        msg = f"Haptic ROS 2 Interface  ({self.__class__.__name__})\n"
         msg += f"Listenining on ROS_DOMAIN_ID: {os.environ.get('ROS_DOMAIN_ID', 0)}\n"
         msg += "Hold to enable motion: Dark grey button\n"
         msg += "Press to toggle the gripper: Light grey button\n"

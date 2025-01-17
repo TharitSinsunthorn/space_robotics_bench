@@ -11,7 +11,7 @@ from scipy.spatial.transform import Rotation
 from srb.core.teleop_devices import DeviceBase
 
 
-class Se3SpaceMouse(DeviceBase):
+class SpacemouseTeleopInterface(DeviceBase):
     def __init__(
         self,
         pos_sensitivity: float = 0.4,
@@ -62,7 +62,6 @@ class Se3SpaceMouse(DeviceBase):
         return msg
 
     def reset(self):
-        # Default flags
         self._close_gripper = False
         self._delta_pos = np.zeros(3)
         self._delta_rot = np.zeros(3)

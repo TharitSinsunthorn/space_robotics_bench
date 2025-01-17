@@ -20,6 +20,7 @@ DOCKER_DEV_VOLUMES=(
 # Development environment variables to set inside the container
 DOCKER_DEV_ENVIRON=(
     LOG_LEVEL="${LOG_LEVEL:-debug}"
+    HYDRA_FULL_ERROR="${HYDRA_FULL_ERROR:-1}"
     RICH_TRACEBACK="${RICH_TRACEBACK:-true}"
     # RICH_TRACEBACK_LOCALS="${RICH_TRACEBACK_LOCALS:-true}"
     LOGFIRE_ENABLE="${LOGFIRE_ENABLE:-true}"

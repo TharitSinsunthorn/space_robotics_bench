@@ -5,7 +5,6 @@ from queue import Queue
 from typing import Any, Dict, Tuple
 
 import numpy as np
-import rclpy
 import torch
 
 from srb.core.actions import (
@@ -15,10 +14,12 @@ from srb.core.actions import (
 )
 from srb.core.envs import BaseEnv
 from srb.env import BaseAerialRoboticsEnv, BaseManipulationEnv, BaseMobileRoboticsEnv
-from srb.utils.ros import enable_ros2_bridge
+from srb.utils.ros2 import enable_ros2_bridge
 from srb.utils.str import convert_to_snake_case
 
 enable_ros2_bridge()
+
+import rclpy  # noqa: E402
 from builtin_interfaces.msg import Time  # noqa: E402
 from geometry_msgs.msg import (  # noqa: E402
     Quaternion,
@@ -70,7 +71,7 @@ class ROS2:
         self._is_multi_env = force_multienv or self._env.unwrapped.num_envs > 1
 
         ## Initialize node
-        if node is None:
+        if not node:
             rclpy.init(args=None)
             self._node = Node("srb")  # type: ignore
         else:
@@ -104,7 +105,7 @@ class ROS2:
         self._setup_misc()
 
         # Run a thread for listening to device
-        if node is None:
+        if not node:
             self._thread = threading.Thread(target=rclpy.spin, args=(self._node,))
             self._thread.daemon = True
             self._thread.start()
