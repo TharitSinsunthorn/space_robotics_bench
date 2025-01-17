@@ -22,6 +22,19 @@ class SkrlEnvWrapper(IsaacLabWrapper):
         self._obs_keys = obs_keys
         self._state_keys = state_keys
 
+        self._clip_actions_min = torch.tensor(
+            self.action_space.low, device=self.device, dtype=torch.float32
+        )
+        self._clip_actions_max = torch.tensor(
+            self.action_space.high, device=self.device, dtype=torch.float32
+        )
+
+    @cached_property
+    def action_space(self) -> gymnasium.Space:
+        return gymnasium.spaces.Box(
+            low=-1.0, high=1.0, shape=super().action_space.shape
+        )
+
     @cached_property
     def observation_space(self) -> gymnasium.Space:
         if hasattr(self._unwrapped, "single_observation_space"):
@@ -59,14 +72,9 @@ class SkrlEnvWrapper(IsaacLabWrapper):
     def step(
         self, actions: torch.Tensor
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, Any]:
-        """Perform a step in the environment
-
-        :param actions: The actions to perform
-        :type actions: torch.Tensor
-
-        :return: Observation, reward, terminated, truncated, info
-        :rtype: tuple of torch.Tensor and any other info
-        """
+        actions = torch.clamp(
+            actions, min=self._clip_actions_min, max=self._clip_actions_max
+        )
         actions = unflatten_tensorized_space(self.action_space, actions)
         observations, reward, terminated, truncated, self._info = self._env.step(
             actions
@@ -85,11 +93,6 @@ class SkrlEnvWrapper(IsaacLabWrapper):
         )
 
     def reset(self) -> Tuple[torch.Tensor, Any]:
-        """Reset the environment
-
-        :return: Observation, info
-        :rtype: torch.Tensor and any other info
-        """
         if self._reset_once:
             observations, self._info = self._env.reset()
             self._observations = flatten_tensorized_space(

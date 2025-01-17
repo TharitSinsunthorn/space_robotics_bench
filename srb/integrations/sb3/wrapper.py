@@ -139,7 +139,7 @@ class Sb3VecEnvWrapper(VecEnv):
         if isinstance(action_space, gym.spaces.Box) and not action_space.is_bounded(
             "both"
         ):
-            action_space = gym.spaces.Box(low=-100, high=100, shape=action_space.shape)
+            action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=action_space.shape)
 
         # initialize vec-env
         VecEnv.__init__(self, self.num_envs, observation_space, action_space)

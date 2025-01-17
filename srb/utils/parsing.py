@@ -58,6 +58,7 @@ def load_cfg_from_registry(
         raise ValueError(
             f"Could not find configuration for the environment: '{task_name}'."
             f" Please check that the gym registry has the entry point: '{entry_point_key}'."
+            f" Found: {gym.spec(task_name).kwargs}."
         )
     # Parse the default config file
     if isinstance(cfg_entry_point, str) and cfg_entry_point.endswith(".yaml"):

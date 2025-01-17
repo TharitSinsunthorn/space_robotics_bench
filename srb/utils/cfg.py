@@ -37,18 +37,14 @@ def _identify_config(root: str, file) -> str | None:
     basename = os.path.basename(file).split(".")[0]
 
     for framework, properties in SUPPORTED_FRAMEWORKS.items():
+        algo = basename.replace(f"{framework}_", "")
         if root.endswith(framework):
             assert properties["multi_algo"]
-            if "_" in basename:
-                algo = basename.split("_")[0]
-            else:
-                algo = basename
             return FRAMEWORK_MULTI_ALGO_CFG_ENTRYPOINT_KEY.format(
                 FRAMEWORK=framework, ALGO=algo
             )
         elif basename.startswith(f"{framework}"):
             if properties["multi_algo"]:
-                algo = basename[len(framework) + 1 :].split("_")[0]
                 return FRAMEWORK_MULTI_ALGO_CFG_ENTRYPOINT_KEY.format(
                     FRAMEWORK=framework, ALGO=algo
                 )

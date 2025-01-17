@@ -24,7 +24,7 @@ def change_locomotion_command(env: BaseEnv, env_ids: torch.Tensor | None):
 @configclass
 class TaskCfg(BaseLocomotionEnvCfg):
     ## Environment
-    episode_length_s: float = 30.0
+    episode_length_s: float = 15.0
 
     ## Task
     is_finite_horizon: bool = False
@@ -353,7 +353,7 @@ def _construct_observations(
         "state_dyn": torch.cat([robot_feet_incoming_force_full], dim=-1),
         "proprio": torch.cat(
             [
-                remaining_time,
+                # remaining_time,
                 robot_root_rot6d_w,
             ],
             dim=-1,

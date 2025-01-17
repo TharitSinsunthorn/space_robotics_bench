@@ -61,10 +61,7 @@ dreamer = [
 sb3 = [
   # "stable-baselines3~=2.0", "sb3-contrib~=2.0"
 ]
-skrl = [
-  "skrl@git+https://github.com/Toni-SM/skrl.git@cb21eba58fec9c441b8574029c4de8e6b5d7bdcf",
-  # "skrl~=1.4",
-]
+skrl = ["skrl~=1.4"]
 robomimic = [
   # "robomimic@git+https://github.com/ARISE-Initiative/robomimic.git@29d6ca229dec3327f87b54cf1688a94177f92af6",
 ]
@@ -74,7 +71,7 @@ spacemouse = ["pyspacemouse~=1.0"]
 ## Logging
 logging = ["srb[wandb]", "srb[tensorboard]"]
 wandb = ["wandb~=0.19"]
-tensorboard = ["tensorboard~=2.0"]
+tensorboard = ["tensorboard~=2.0", "tensorflow~=2.0"]
 ## Utils
 cli = ["srb[rich]", "argcomplete~=1.0"]
 dev = ["srb[test]", "srb[tracing]", "devtools~=0.12"]

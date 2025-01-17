@@ -18,8 +18,8 @@ jax:
 logger:
   outputs: [
       jsonl,
-      # tensorboard,
-      wandb,
+      tensorboard,
+      # wandb,
       # scope,
     ]
   filter: "score|length|fps|ratio|train/loss/|train/rand/"
@@ -35,13 +35,13 @@ jax.debug: False
 
 ### Model ###
 ##   1M
-# .*\.rssm: { deter: 512, hidden: 64, classes: 4 }
-# .*\.depth: 4
-# .*\.units: 64
+.*\.rssm: { deter: 512, hidden: 64, classes: 4 }
+.*\.depth: 4
+.*\.units: 64
 ##  12M
-.*\.rssm: { deter: 2048, hidden: 256, classes: 16 }
-.*\.depth: 16
-.*\.units: 256
+# .*\.rssm: { deter: 2048, hidden: 256, classes: 16 }
+# .*\.depth: 16
+# .*\.units: 256
 ##  25M
 # .*\.rssm: { deter: 3072, hidden: 384, classes: 24 }
 # .*\.depth: 24
