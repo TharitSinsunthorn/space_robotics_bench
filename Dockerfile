@@ -275,6 +275,17 @@ RUN if [[ "${DEV,,}" = true ]]; then \
     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${DREAMERV3_PATH}" ; \
     fi
 
+## Install skrl locally to enable mounting the source code into the container
+ARG SKRL_PATH="/root/skrl"
+ARG SKRL_REMOTE="https://github.com/Toni-SM/skrl.git"
+ARG SKRL_BRANCH="main"
+ARG SKRL_COMMIT_SHA="d57c8ea138e3356396a8da368f37430f75fb524a" # 2025-01-18
+RUN if [[ "${DEV,,}" = true ]]; then \
+    git clone "${SKRL_REMOTE}" "${SKRL_PATH}" --branch "${SKRL_BRANCH}" && \
+    git -C "${SKRL_PATH}" reset --hard "${SKRL_COMMIT_SHA}" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SKRL_PATH}" ; \
+    fi
+
 ###############
 ### Build ###
 ###############

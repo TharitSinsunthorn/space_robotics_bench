@@ -982,7 +982,7 @@ def parse_cli_args() -> argparse.Namespace:
             "--algo",
             type=str,
             help="Name of the algorithm that should drives the policy for control from teleopration",
-            choices=["dreamer", "skrl_ppo"],  # TODO: Enum
+            choices=["dreamer", "skrl_ppo", "skrl_ppo_rnn"],  # TODO: Enum
             # required=False,
         )
         policy_group.add_argument(
@@ -1000,7 +1000,7 @@ def parse_cli_args() -> argparse.Namespace:
             "--algo",
             type=str,
             help="Name of the algorithm",
-            choices=["dreamer", "skrl_ppo"],  # TODO: Enum
+            choices=["dreamer", "skrl_ppo", "skrl_ppo_rnn"],  # TODO: Enum
             # required=True,
             default="dreamer",
         )
