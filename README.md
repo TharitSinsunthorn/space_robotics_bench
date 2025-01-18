@@ -4,7 +4,7 @@
   <a href="https://AndrejOrsula.github.io/space_robotics_bench"><img src="docs/src/_images/srb_multi_env.jpg" width="100%"></a>
 </p>
 
-[![Discord](https://dcbadge.limes.pink/api/server/p9gZAPWa65?style=flat&theme=discord&compact=true)](https://discord.gg/p9gZAPWa65)
+[![Discord](https://img.shields.io/badge/Discord-invite-5865F2?logo=discord)](https://discord.gg/p9gZAPWa65)
 [![Docs](https://img.shields.io/badge/docs-online-blue?logo=markdown)](https://AndrejOrsula.github.io/space_robotics_bench)
 [![Rust](https://github.com/AndrejOrsula/space_robotics_bench/actions/workflows/rust.yml/badge.svg)](https://github.com/AndrejOrsula/space_robotics_bench/actions/workflows/rust.yml)
 [![Python](https://github.com/AndrejOrsula/space_robotics_bench/actions/workflows/python.yml/badge.svg)](https://github.com/AndrejOrsula/space_robotics_bench/actions/workflows/python.yml)
