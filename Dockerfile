@@ -327,6 +327,7 @@ RUN apt-get update && \
     bash-completion && \
     rm -rf /var/lib/apt/lists/* && \
     echo "source /etc/bash_completion" >> "/etc/bash.bashrc" && \
+    register-python-argcomplete3 simforge > "/etc/bash_completion.d/simforge" && \
     register-python-argcomplete3 srb > "/etc/bash_completion.d/srb"
 
 # TODO: Clean-up Dockerfile

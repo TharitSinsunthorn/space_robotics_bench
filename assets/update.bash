@@ -5,7 +5,6 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" &>/dev/null && pwd)"
 REPOSITORY_DIR="$(dirname "${SCRIPT_DIR}")"
-ASSETS_DIR="${SCRIPT_DIR}"
 
 
 ## Update git submodules
@@ -16,7 +15,7 @@ GIT_SUBMODULE_UPDATE_CMD=(
     update
     --remote
     --recursive
-    "${ASSETS_DIR}"
+    "${SCRIPT_DIR}"
 )
 echo -e "\033[1;90m[TRACE] ${GIT_SUBMODULE_UPDATE_CMD[*]}\033[0m" | xargs
 # shellcheck disable=SC2048
