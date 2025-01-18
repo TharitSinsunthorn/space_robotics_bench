@@ -14,9 +14,6 @@ from srb.core.actions import (
 from srb.core.teleop_devices import Se3Gamepad
 from srb.core.teleop_devices.keyboard import KeyboardTeleopInterface
 from srb.core.teleop_devices.spacemouse import SpacemouseTeleopInterface
-from srb.utils.ros2 import enable_ros2_bridge
-
-enable_ros2_bridge()
 
 if TYPE_CHECKING:
     from rclpy.node import Node
@@ -38,6 +35,9 @@ class CombinedTeleopInterface(DeviceBase):
         | None = None,
     ):
         if not node and ("ros2" in devices or "touch" in devices):
+            from srb.utils.ros2 import enable_ros2_bridge
+
+            enable_ros2_bridge()
             import rclpy
             from rclpy.node import Node
 
