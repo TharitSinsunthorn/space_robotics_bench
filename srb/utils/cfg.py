@@ -4,6 +4,7 @@ from typing import Mapping
 SUPPORTED_FRAMEWORKS = {
     "dreamer": {"multi_algo": False},
     "sb3": {"multi_algo": True},
+    "sbx": {"multi_algo": True},
     "skrl": {"multi_algo": True},
     "robomimic": {"multi_algo": True},
 }

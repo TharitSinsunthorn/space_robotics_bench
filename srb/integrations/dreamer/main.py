@@ -150,7 +150,11 @@ def run(
             train(
                 bind(make_agent, config),
                 bind(
-                    dreamer_main.make_replay, config, "replay" if SAVE_REPLAY else None
+                    # TODO: Use custom replay, because this is just saving the replay to "exp/None" directory
+                    # TODO: This will also allow to use prioritize replay and such
+                    dreamer_main.make_replay,
+                    config,
+                    "replay" if SAVE_REPLAY else None,
                 ),
                 make_env,
                 bind(dreamer_main.make_stream, config),

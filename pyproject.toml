@@ -62,11 +62,11 @@ dreamer = [
 sb3 = [
   "stable-baselines3~=2.4",
   "sb3-contrib~=2.4",
-  # Note: This fork relaxes the dependency for gymnasium (shimmy requires gymnasium>=1.0)
+  # Note: The fork relaxes the dependency for gymnasium (shimmy requires gymnasium>=1.0)
   "rl_zoo3@git+https://github.com/AndrejOrsula/rl-baselines3-zoo.git@e04921b4ccbadbc9f6bcc46cc1787ffc1d2c8963",
 ]
-sbx = ["sbx-rl~=0.19"]
-skrl = ["skrl~=1.4"]
+sbx = ["sbx-rl~=0.19", "tf_keras~=2.0"]
+skrl = ["skrl~=1.0"]
 robomimic = [
   # "robomimic@git+https://github.com/ARISE-Initiative/robomimic.git@29d6ca229dec3327f87b54cf1688a94177f92af6",
 ]

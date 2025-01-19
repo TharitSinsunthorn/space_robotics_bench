@@ -599,6 +599,14 @@ def train_agent(
             from srb.integrations.skrl import main as skrl
 
             skrl.run(workflow=WORKFLOW, **kwargs)
+        case _sb3 if algo.startswith("sb3"):
+            from srb.integrations.sb3 import main as sb3
+
+            sb3.run(workflow=WORKFLOW, algo=algo.strip("sb3_"), **kwargs)
+        case _sbx if algo.startswith("sbx"):
+            from srb.integrations.sbx import main as sbx
+
+            sbx.run(workflow=WORKFLOW, algo=algo.strip("sbx_"), **kwargs)
 
 
 def eval_agent(
@@ -616,6 +624,14 @@ def eval_agent(
             from srb.integrations.skrl import main as skrl
 
             skrl.run(workflow=WORKFLOW, **kwargs)
+        case _sb3 if algo.startswith("sb3"):
+            from srb.integrations.sb3 import main as sb3
+
+            sb3.run(workflow=WORKFLOW, algo=algo.strip("sb3_"), **kwargs)
+        case _sbx if algo.startswith("sbx"):
+            from srb.integrations.sbx import main as sbx
+
+            sbx.run(workflow=WORKFLOW, algo=algo.strip("sbx_"), **kwargs)
 
 
 ### GUI ###
@@ -982,7 +998,15 @@ def parse_cli_args() -> argparse.Namespace:
             "--algo",
             type=str,
             help="Name of the algorithm that should drives the policy for control from teleopration",
-            choices=["dreamer", "skrl_ppo", "skrl_ppo_rnn"],  # TODO: Enum
+            choices=[
+                "dreamer",
+                "skrl_ppo",
+                "skrl_ppo_rnn",
+                "sb3_ppo",
+                "sb3_ppo_lstm",
+                "sbx_ppo",
+                "sbx_ppo_lstm",
+            ],  # TODO: Enum
             # required=False,
         )
         policy_group.add_argument(
@@ -1000,7 +1024,15 @@ def parse_cli_args() -> argparse.Namespace:
             "--algo",
             type=str,
             help="Name of the algorithm",
-            choices=["dreamer", "skrl_ppo", "skrl_ppo_rnn"],  # TODO: Enum
+            choices=[
+                "dreamer",
+                "skrl_ppo",
+                "skrl_ppo_rnn",
+                "sb3_ppo",
+                "sb3_ppo_lstm",
+                "sbx_ppo",
+                "sbx_ppo_lstm",
+            ],  # TODO: Enum
             # required=True,
             default="dreamer",
         )

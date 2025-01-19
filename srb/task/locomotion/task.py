@@ -13,11 +13,13 @@ from srb.env import BaseLocomotionEnv, BaseLocomotionEnvCfg, BaseLocomotionEnvEv
 ##############
 
 
-def change_locomotion_command(env: BaseEnv, env_ids: torch.Tensor | None):
+def change_locomotion_command(
+    env: BaseEnv, env_ids: torch.Tensor | None, magnitude: float = 1.0
+):
     if env_ids is None:
         env_ids = torch.arange(env.cfg.scene.num_envs, device=env.device)
     env._command[env_ids] = math_utils.sample_uniform(  # type: ignore
-        -1.0, 1.0, (len(env_ids), 3), device=env.device
+        -magnitude, magnitude, (len(env_ids), 3), device=env.device
     )
 
 
@@ -37,7 +39,9 @@ class TaskCfg(BaseLocomotionEnvCfg):
             mode="interval",
             is_global_time=True,
             interval_range_s=(0.5, 5.0),  # time_s = num_steps * (decimation * dt)
-            params={},
+            params={
+                "magnitude": 5.0,
+            },
         )
 
     events = EventCfg()
