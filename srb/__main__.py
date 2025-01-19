@@ -1005,7 +1005,6 @@ def parse_cli_args() -> argparse.Namespace:
                 "sb3_ppo",
                 "sb3_ppo_lstm",
                 "sbx_ppo",
-                "sbx_ppo_lstm",
             ],  # TODO: Enum
             # required=False,
         )
@@ -1031,7 +1030,6 @@ def parse_cli_args() -> argparse.Namespace:
                 "sb3_ppo",
                 "sb3_ppo_lstm",
                 "sbx_ppo",
-                "sbx_ppo_lstm",
             ],  # TODO: Enum
             # required=True,
             default="dreamer",

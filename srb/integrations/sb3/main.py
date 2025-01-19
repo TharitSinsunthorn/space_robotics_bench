@@ -81,7 +81,9 @@ def run(
             sync_tensorboard=True,
             monitor_gym=True,
         )
-        tensorboard_log = f"runs/{run_name}"
+        tensorboard_log = logdir.joinpath(run_name)
+    else:
+        tensorboard_log = None
 
     # Wrap the environment
     env = Sb3EnvWrapper(env)  # type: ignore

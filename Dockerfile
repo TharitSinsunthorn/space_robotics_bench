@@ -193,7 +193,7 @@ RUN echo -e "\n# Blender ${BLENDER_VERSION}" >> /entrypoint.bash && \
 ARG ISAACLAB_PATH="/root/isaaclab"
 ARG ISAACLAB_REMOTE="https://github.com/isaac-sim/IsaacLab.git"
 ARG ISAACLAB_BRANCH="main"
-ARG ISAACLAB_COMMIT_SHA="dd044a4977722d85e966c5b63949093c9b14667f" # 2024-12-20
+ARG ISAACLAB_COMMIT_SHA="b5078debe1896c449d5b3a940cebe21bf1560bd0" # 2025-01-18
 # hadolint ignore=SC2044
 RUN echo -e "\n# Isaac Lab ${ISAACLAB_COMMIT_SHA}" >> /entrypoint.bash && \
     echo "export ISAACLAB_PATH=\"${ISAACLAB_PATH}\"" >> /entrypoint.bash && \
@@ -268,7 +268,7 @@ RUN if [[ "${DEV,,}" = true ]]; then \
 ARG DREAMERV3_PATH="/root/dreamerv3"
 ARG DREAMERV3_REMOTE="https://github.com/danijar/dreamerv3.git"
 ARG DREAMERV3_BRANCH="main"
-ARG DREAMERV3_COMMIT_SHA="55c8c67c956fbdace4bf8b594ea12e934a3ae4ba" # 2025-01-13
+ARG DREAMERV3_COMMIT_SHA="55c8c67c956fbdace4bf8b594ea12e934a3ae4ba" # 2025-01-11
 RUN if [[ "${DEV,,}" = true ]]; then \
     git clone "${DREAMERV3_REMOTE}" "${DREAMERV3_PATH}" --branch "${DREAMERV3_BRANCH}" && \
     git -C "${DREAMERV3_PATH}" reset --hard "${DREAMERV3_COMMIT_SHA}" && \
@@ -279,7 +279,7 @@ RUN if [[ "${DEV,,}" = true ]]; then \
 ARG SKRL_PATH="/root/skrl"
 ARG SKRL_REMOTE="https://github.com/Toni-SM/skrl.git"
 ARG SKRL_BRANCH="main"
-ARG SKRL_COMMIT_SHA="d57c8ea138e3356396a8da368f37430f75fb524a" # 2025-01-18
+ARG SKRL_COMMIT_SHA="d57c8ea138e3356396a8da368f37430f75fb524a" # 2025-01-17
 RUN if [[ "${DEV,,}" = true ]]; then \
     git clone "${SKRL_REMOTE}" "${SKRL_PATH}" --branch "${SKRL_BRANCH}" && \
     git -C "${SKRL_PATH}" reset --hard "${SKRL_COMMIT_SHA}" && \

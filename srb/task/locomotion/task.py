@@ -40,7 +40,7 @@ class TaskCfg(BaseLocomotionEnvCfg):
             is_global_time=True,
             interval_range_s=(0.5, 5.0),  # time_s = num_steps * (decimation * dt)
             params={
-                "magnitude": 5.0,
+                "magnitude": 2.0,
             },
         )
 

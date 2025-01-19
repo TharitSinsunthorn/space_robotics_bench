@@ -4,6 +4,7 @@ from typing import Any, Dict, Literal
 
 import elements
 import embodied
+import numpy
 import portal
 import ruamel.yaml as yaml
 from dreamerv3 import agent as dreamer_agent
@@ -18,7 +19,6 @@ from srb.utils.parsing import create_logdir_path, get_last_run_logdir_path
 
 ALGO_NAME = "dreamer"
 UPSTREAM_CONFIG_PATH = Path(dreamer_agent.__file__).parent.joinpath("configs.yaml")
-SAVE_REPLAY: bool = False
 
 
 def run(
@@ -32,6 +32,8 @@ def run(
     continue_training: bool | None = None,
     **kwargs,
 ):
+    save_replay = agent_cfg.get("replay", {}).pop("save", False)
+
     # Determine logdir and checkpoint path
     match workflow:
         case "train":
@@ -149,13 +151,7 @@ def run(
         case "train":
             train(
                 bind(make_agent, config),
-                bind(
-                    # TODO: Use custom replay, because this is just saving the replay to "exp/None" directory
-                    # TODO: This will also allow to use prioritize replay and such
-                    dreamer_main.make_replay,
-                    config,
-                    "replay" if SAVE_REPLAY else None,
-                ),
+                bind(make_replay, config, "replay" if save_replay else None),
                 make_env,
                 bind(dreamer_main.make_stream, config),
                 bind(dreamer_main.make_logger, config),
@@ -170,3 +166,72 @@ def run(
                 args,
                 sim_app=sim_app,
             )
+
+
+def make_replay(config, folder: str | Path | None, mode: str = "train"):
+    batlen = config.batch_length if mode == "train" else config.report_length
+    consec = config.consec_train if mode == "train" else config.consec_report
+    capacity = config.replay.size if mode == "train" else config.replay.size / 10
+    length = consec * batlen + config.replay_context
+    assert config.batch_size * length <= capacity
+
+    if folder:
+        directory = elements.Path(config.logdir) / folder
+        if config.replicas > 1:
+            directory /= f"{config.replica:05}"
+    else:
+        directory = None
+    replay_kwargs = {
+        "length": length,
+        "capacity": int(capacity),
+        "online": config.replay.online,
+        "chunksize": config.replay.chunksize,
+        "directory": directory,
+    }
+
+    if mode == "train":
+        assert (
+            config.replay.fracs.uniform
+            + config.replay.fracs.priority
+            + config.replay.fracs.recency
+            == 1.0
+        ), "Replay fractions must sum to 1."
+
+        if config.replay.fracs.priority > 0.0:
+            assert config.jax.compute_dtype in ("bfloat16", "float32"), (
+                "Gradient scaling for low-precision training can produce invalid loss "
+                "outputs that are incompatible with prioritized replay."
+            )
+        if config.replay.fracs.recency > 0.0:
+            recency = 1.0 / numpy.arange(1, capacity + 1) ** config.replay.recexp
+
+        if config.replay.fracs.uniform == 1.0:
+            replay_kwargs["selector"] = embodied.replay.selectors.Uniform(
+                seed=config.seed
+            )
+        elif config.replay.fracs.priority == 1.0:
+            replay_kwargs["selector"] = embodied.replay.selectors.Prioritized(
+                seed=config.seed, **config.replay.prio
+            )
+        elif config.replay.fracs.recency == 1.0:
+            replay_kwargs["selector"] = embodied.replay.selectors.Recency(
+                recency, seed=config.seed
+            )
+        else:
+            from srb.integrations.dreamer.selector import Mixture
+
+            replay_kwargs["selector"] = Mixture(
+                selectors={
+                    "uniform": embodied.replay.selectors.Uniform(seed=config.seed),
+                    "priority": embodied.replay.selectors.Prioritized(
+                        seed=config.seed, **config.replay.prio
+                    ),
+                    "recency": embodied.replay.selectors.Recency(
+                        recency, seed=config.seed
+                    ),
+                },
+                fractions=config.replay.fracs,
+                seed=config.seed,
+            )
+
+    return embodied.replay.Replay(**replay_kwargs)

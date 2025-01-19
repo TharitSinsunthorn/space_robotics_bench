@@ -163,7 +163,7 @@ def get_last_run_logdir_path(
     algo_name: str,
     task_name: str,
     prefix: str = "logs/",
-) -> str | None:
+) -> str:
     logdir_root = os.path.abspath(os.path.join(prefix, algo_name, task_name))
     logdirs = [
         os.path.join(logdir_root, d)
@@ -178,6 +178,8 @@ def get_last_run_logdir_path(
         if not d.endswith("eval"):
             last_logdir = d
             break
+    if last_logdir is None:
+        raise FileNotFoundError(f"No logdirs found in: {logdir_root}")
     return last_logdir
 
 
