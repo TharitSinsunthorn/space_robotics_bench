@@ -6,11 +6,13 @@ from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
 from omni.isaac.lab.sensors import ContactSensor, ContactSensorCfg
 from omni.isaac.lab.utils import configclass
 from pydantic import BaseModel, NonNegativeInt
+from simforge import TexResConfig
 
 import srb.core.envs as env_utils
 import srb.utils.math as math_utils
 from srb import asset
-from srb.core.asset import Object, RigidObject, RigidObjectCfg
+from srb.core.asset import AssetBaseCfg, RigidObject, RigidObjectCfg
+from srb.core.envs import env_cfg
 from srb.env import (
     BaseManipulationEnv,
     BaseManipulationEnvCfg,
@@ -23,7 +25,7 @@ from srb.env import (
 ##############
 
 
-class PegCfg(Object, arbitrary_types_allowed=True):
+class PegCfg(BaseModel, arbitrary_types_allowed=True):
     ## Model
     asset_cfg: RigidObjectCfg
 
@@ -43,30 +45,74 @@ class PegCfg(Object, arbitrary_types_allowed=True):
     state_randomizer: EventTermCfg | None = None
 
 
-class HoleCfg(Object):
+class HoleCfg(BaseModel):
     ## Geometry
     offset_pos_bottom: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     offset_pos_entrance: Tuple[float, float, float]
 
 
-class PegInHoleCfg(BaseModel, arbitrary_types_allowed=True):
+class PegInHoleCfg(BaseModel):
     peg: PegCfg
     hole: HoleCfg
+
+
+def peg_in_hole_from_cfg(
+    cfg: env_cfg.EnvironmentConfig,
+    *,
+    seed: int,
+    num_assets: int,
+    prim_path_peg: str = "{ENV_REGEX_NS}/peg",
+    prim_path_hole: str = "{ENV_REGEX_NS}/hole",
+    scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
+    texture_resolution: TexResConfig | None = None,
+    short_peg: bool = False,
+    peg_kwargs: Dict[str, Any],
+    hole_kwargs: Dict[str, Any],
+    **kwargs,
+) -> Tuple[RigidObjectCfg, AssetBaseCfg]:
+    match cfg.assets.object.variant:
+        case env_cfg.AssetVariant.DATASET:
+            peg_cfg = (
+                asset.ShortProfilePeg() if short_peg else asset.ProfilePeg()
+            ).asset_cfg
+            hole_cfg = asset.ProfileHole().asset_cfg
+
+        case env_cfg.AssetVariant.PROCEDURAL:
+            peg_cfg = asset.RandomPeg(
+                scale=scale, texture_resolution=texture_resolution
+            ).asset_cfg
+            peg_cfg.spawn.seed = seed  # type: ignore
+            peg_cfg.spawn.num_assets = num_assets  # type: ignore
+
+            hole_cfg = asset.RandomHole(
+                scale=scale, texture_resolution=texture_resolution
+            ).asset_cfg
+            hole_cfg.spawn.seed = seed  # type: ignore
+            hole_cfg.spawn.num_assets = num_assets  # type: ignore
+
+    peg_cfg.prim_path = prim_path_peg
+    peg_kwargs.update(**kwargs)
+    peg_cfg.spawn.replace(**peg_kwargs)
+
+    hole_cfg.prim_path = prim_path_hole
+    hole_kwargs.update(**kwargs)
+    hole_cfg.spawn.replace(**hole_kwargs)
+
+    return peg_cfg, hole_cfg
 
 
 def peg_and_hole_cfg(
     env_cfg: env_utils.EnvironmentConfig,
     *,
+    seed: int,
+    init_state: RigidObjectCfg.InitialStateCfg,
+    num_assets: int = 1,
     prim_path_peg: str = "{ENV_REGEX_NS}/peg",
     prim_path_hole: str = "{ENV_REGEX_NS}/hole",
     asset_cfg_peg: SceneEntityCfg = SceneEntityCfg("object"),
-    num_assets: int = 1,
-    size: Tuple[float, float, float] = (0.05, 0.05, 0.05),
-    spawn_kwargs_peg: Dict[str, Any] = {},
-    spawn_kwargs_hole: Dict[str, Any] = {},
-    procgen_seed_offset: int = 0,
-    procgen_kwargs_peg: Dict[str, Any] = {},
-    procgen_kwargs_hole: Dict[str, Any] = {},
+    scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
+    peg_kwargs: Dict[str, Any] = {},
+    hole_kwargs: Dict[str, Any] = {},
     **kwargs,
 ) -> PegInHoleCfg:
     pose_range_peg = {
@@ -82,19 +128,20 @@ def peg_and_hole_cfg(
     offset_pos_ends = ((0.0, 0.0, 0.0), (0.0, 0.0, 0.2))
     offset_pos_entrance = (0.0, 0.0, 0.02)
 
-    peg_cfg, hole_cfg = asset.peg_in_hole_from_env_cfg(
+    peg_cfg, hole_cfg = peg_in_hole_from_cfg(
         env_cfg,
+        seed=seed,
+        num_assets=num_assets,
         prim_path_peg=prim_path_peg,
         prim_path_hole=prim_path_hole,
-        num_assets=num_assets,
-        size=size,
-        spawn_kwargs_peg=spawn_kwargs_peg,
-        spawn_kwargs_hole=spawn_kwargs_hole,
-        procgen_seed_offset=procgen_seed_offset,
-        procgen_kwargs_peg=procgen_kwargs_peg,
-        procgen_kwargs_hole=procgen_kwargs_hole,
+        scale=scale,
+        peg_kwargs=peg_kwargs,
+        hole_kwargs=hole_kwargs,
         **kwargs,
     )
+
+    peg_cfg.init_state = init_state
+    hole_cfg.init_state = init_state
 
     return PegInHoleCfg(
         peg=PegCfg(
@@ -140,9 +187,10 @@ class TaskCfg(BaseManipulationEnvCfg):
         ## Scene
         self.problem_cfg = peg_and_hole_cfg(
             self.env_cfg,
+            seed=self.seed,
             num_assets=self.scene.num_envs,
             init_state=RigidObjectCfg.InitialStateCfg(pos=(0.5, 0.0, 0.02)),
-            spawn_kwargs_peg={
+            peg_kwargs={
                 "activate_contact_sensors": True,
             },
         )

@@ -15,20 +15,25 @@ from typing import (
     Type,
 )
 
-from pydantic import BaseModel
-from simforge import BlGeometry, BlModel, TexResConfig
+from pydantic import BaseModel, PositiveFloat
+from simforge import BlGeometry, BlModel, BlShader, TexResConfig
 
-from srb.core.asset import AssetBaseCfg
+from srb.core.asset import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
 from srb.core.asset.asset_type import AssetType
-from srb.core.sim import SimforgeAssetCfg
+from srb.core.sim import MultiAssetSpawnerCfg, SimforgeAssetCfg, SpawnerCfg
 from srb.utils import logging
 from srb.utils.str import convert_to_snake_case
 
 
 class Asset(BaseModel):
     INPUT_BLOCKLIST: ClassVar[Set] = {"asset_cfg"}
-    asset_cfg: AssetBaseCfg
+    asset_cfg: AssetBaseCfg | RigidObjectCfg | ArticulationCfg
 
+    scale: (
+        Tuple[PositiveFloat, PositiveFloat, PositiveFloat]
+        | Tuple[PositiveFloat, PositiveFloat]
+        | None
+    ) = None
     texture_resolution: TexResConfig | None = None
 
     @cached_property
@@ -105,36 +110,97 @@ class Asset(BaseModel):
     def model_post_init(self, __context):
         super().model_post_init(__context)
 
+        assert self.asset_cfg.spawn is not None
+
         # Apply direct attributes as inputs to the underlying asset configuration
         inputs = self.inputs
         if len(inputs) == 0:
             return
+        Asset.__set_inputs(self.asset_cfg.spawn, inputs)
 
-        if isinstance(self.asset_cfg.spawn, SimforgeAssetCfg):
-            for asset in self.asset_cfg.spawn.assets:
+    @staticmethod
+    def __set_inputs(spawner: SpawnerCfg, inputs: Mapping[str, Any]):
+        if isinstance(spawner, SimforgeAssetCfg):
+            for asset in spawner.assets:
                 match asset:
-                    case geo if isinstance(geo, BlGeometry):
+                    case _geo if isinstance(asset, BlGeometry):
                         for k, v in inputs.items():
-                            for op in geo.ops:
-                                if hasattr(op, k):
+                            _set = False
+                            for op in asset.ops:
+                                if hasattr(op, k) and isinstance(
+                                    getattr(op, k), type(v)
+                                ):
                                     setattr(op, k, v)
-                    case model if isinstance(model, BlModel):
+                                    _set = True
+                                    logging.trace(
+                                        f'Updated input "{k}" to "{v}" for {BlGeometry.__name__} operation "{op.__class__.__name__}" of "{asset.__class__.__name__}"'
+                                    )
+                            if not _set:
+                                logging.debug(
+                                    f'Input "{k}" of type "{type(k)}" not updated for "{asset.__class__.__name__}"'
+                                )
+                    case _model if isinstance(asset, BlModel):
                         for k, v in inputs.items():
-                            for op in model.geo.ops:
-                                if hasattr(op, k):
+                            _set = False
+                            for op in asset.geo.ops:
+                                if hasattr(op, k) and isinstance(
+                                    getattr(op, k), type(v)
+                                ):
                                     setattr(op, k, v)
-                            if model.mat is not None and hasattr(model.mat.shader, k):
-                                setattr(model.mat.shader, k, v)
-                            if hasattr(model, k):
-                                setattr(model, k, v)
+                                    _set = True
+                                    logging.trace(
+                                        f'Updated input "{k}" to "{v}" for {BlGeometry.__name__} operation "{op.__class__.__name__}" of "{asset.__class__.__name__}/{asset.geo.__class__.__name__}"'
+                                    )
+                            if (
+                                asset.mat is not None
+                                and hasattr(asset.mat.shader, k)
+                                and isinstance(getattr(asset.mat.shader, k), type(v))
+                            ):
+                                setattr(asset.mat.shader, k, v)
+                                _set = True
+                                logging.trace(
+                                    f'Updated input "{k}" to "{v}" for "{asset.mat.shader.__class__.__name__}" {BlShader.__name__} of "{asset.__class__.__name__}/{asset.mat.__class__.__name__}"'
+                                )
+                            if hasattr(asset, k) and isinstance(
+                                getattr(asset, k), type(v)
+                            ):
+                                setattr(asset, k, v)
+                                _set = True
+                                logging.trace(
+                                    f'Updated input "{k}" to "{v}" for "{asset.__class__.__name__}"'
+                                )
+                            if not _set:
+                                logging.debug(
+                                    f'Input "{k}" of type "{type(k)}" not updated for "{asset.__class__.__name__}"'
+                                )
                     case _:
                         logging.warning(
-                            f"SimForge asset of type '{type(asset)}' is not supported for input processing"
+                            f"SimForge asset of type '{type(asset)}' is not supported for input updates"
                         )
+        elif isinstance(spawner, MultiAssetSpawnerCfg):
+            for subspawner in spawner.assets_cfg:
+                Asset.__set_inputs(subspawner, inputs)
+            for k, v in inputs.items():
+                _set = False
+                if hasattr(spawner, k) and isinstance(getattr(spawner, k), type(v)):
+                    setattr(spawner, k, v)
+                if not _set:
+                    logging.debug(
+                        f'Input "{k}" of type "{type(k)}" not updated for "{spawner.__class__.__name__}"'
+                    )
         else:
             for k, v in inputs.items():
-                if hasattr(self.asset_cfg.spawn, k):
-                    setattr(self.asset_cfg.spawn, k, v)
+                _set = False
+                if hasattr(spawner, k) and isinstance(getattr(spawner, k), type(v)):
+                    setattr(spawner, k, v)
+                    _set = True
+                    logging.trace(
+                        f'Updated input "{k}" to "{v}" for "{spawner.__class__.__name__}"'
+                    )
+                if not _set:
+                    logging.debug(
+                        f'Input "{k}" of type "{type(k)}" not updated for "{spawner.__class__.__name__}"'
+                    )
 
 
 class AssetRegistry:

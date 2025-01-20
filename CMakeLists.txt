@@ -8,21 +8,14 @@ find_package(ament_cmake_python REQUIRED)
 ## Install Python package
 ament_python_install_package(srb)
 
-## Install Python scripts
-set(SCRIPTS_DIR scripts)
+## Install CLI script
 install(PROGRAMS
-# TODO: Remove procgen cache and maybe other scripts
-    # ${SCRIPTS_DIR}/utils/clean_procgen_cache.py
-    # ${SCRIPTS_DIR}/utils/tensorboard.bash
-    # ${SCRIPTS_DIR}/utils/update_assets.bash
-    # ${SCRIPTS_DIR}/gui.bash
-    # ${SCRIPTS_DIR}/list_envs.py
-    # ${SCRIPTS_DIR}/random_agent.py
-    # ${SCRIPTS_DIR}/ros2.py
-    # ${SCRIPTS_DIR}/teleop.py
-    # ${SCRIPTS_DIR}/zero_agent.py
+    srb/__main__.py
     DESTINATION lib/${PROJECT_NAME}
 )
+
+## Alias the CLI as "main"
+install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink \"__main__.py\" \"${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/main\")")
 
 ## Install directories
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})

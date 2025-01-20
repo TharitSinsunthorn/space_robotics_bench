@@ -138,24 +138,24 @@ class BaseMobileRoboticsEnvCfg(BaseEnvCfg):
         )
 
         ## Scene
-        self.scene.light = asset.sunlight_from_env_cfg(self.env_cfg)
-        self.scene.sky = asset.sky_from_env_cfg(self.env_cfg)
-        self.terrain_cfg = asset.terrain_from_env_cfg(
+        self.scene.light = asset.sunlight_from_cfg(self.env_cfg)
+        self.scene.sky = asset.sky_from_cfg(self.env_cfg)
+        self.scene.terrain = asset.terrain_from_cfg(
             self.env_cfg,
+            seed=self.seed,
             num_assets=self.scene.num_envs,
-            size=(
+            scale=(
                 self.scene.env_spacing - 1.0,
                 self.scene.env_spacing - 1.0,
             ),
             density=0.2,
-            flat_area_size=4.0,
             texture_resolution={
                 BakeType.ALBEDO: 4096,
                 BakeType.NORMAL: 2048,
                 BakeType.ROUGHNESS: 1024,
             },
+            flat_area_size=4.0,
         )
-        self.scene.terrain = self.terrain_cfg.asset_cfg
         self.robot_cfg = asset.Perseverance()
         self.scene.robot = self.robot_cfg.asset_cfg
 

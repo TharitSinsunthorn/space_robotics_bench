@@ -1,15 +1,17 @@
 import sys
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 import torch
 from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
 from omni.isaac.lab.sensors import ContactSensor, ContactSensorCfg
 from omni.isaac.lab.utils import configclass
+from pydantic import BaseModel
+from simforge import TexResConfig
 
-import srb.core.envs as env_utils
 import srb.utils.math as math_utils
 from srb import asset
-from srb.core.asset import Object, RigidObject, RigidObjectCfg
+from srb.core.asset import RigidObject, RigidObjectCfg
+from srb.core.envs import env_cfg
 from srb.env import (
     BaseManipulationEnv,
     BaseManipulationEnvCfg,
@@ -22,7 +24,7 @@ from srb.env import (
 ##############
 
 
-class DebrisCfg(Object, arbitrary_types_allowed=True):
+class DebrisCfg(BaseModel, arbitrary_types_allowed=True):
     ## Model
     asset_cfg: RigidObjectCfg
 
@@ -47,18 +49,18 @@ class TaskCfg(BaseManipulationEnvCfg):
     events = EventCfg()
 
     def __post_init__(self):
-        if self.env_cfg.domain != env_utils.Domain.ORBIT:
+        if self.env_cfg.domain != env_cfg.Domain.ORBIT:
             print(
                 f"[WARN] Environment requires ORBIT scenario ({self.env_cfg.domain} ignored)",
                 file=sys.stderr,
             )
-            self.env_cfg.domain = env_utils.Domain.ORBIT
-        if self.env_cfg.assets.terrain.variant != env_utils.AssetVariant.NONE:
+            self.env_cfg.domain = env_cfg.Domain.ORBIT
+        if self.env_cfg.assets.terrain.variant != env_cfg.AssetVariant.NONE:
             print(
                 f"[WARN] Environment requires NONE terrain ({self.env_cfg.assets.terrain.variant} ignored)",
                 file=sys.stderr,
             )
-            self.env_cfg.assets.terrain.variant = env_utils.AssetVariant.NONE
+            self.env_cfg.assets.terrain.variant = env_cfg.AssetVariant.NONE
 
         super().__post_init__()
 
@@ -68,11 +70,10 @@ class TaskCfg(BaseManipulationEnvCfg):
         ## Scene
         self.object_cfg = self._object_cfg(
             self.env_cfg,
+            seed=self.seed,
             num_assets=self.scene.num_envs,
             init_state=RigidObjectCfg.InitialStateCfg(pos=(1.0, 0.0, 0.5)),
-            spawn_kwargs={
-                "activate_contact_sensors": True,
-            },
+            activate_contact_sensors=True,
         )
         self.scene.object = self.object_cfg.asset_cfg
 
@@ -94,22 +95,30 @@ class TaskCfg(BaseManipulationEnvCfg):
 
     @staticmethod
     def _object_cfg(
-        env_cfg: env_utils.EnvironmentConfig,
+        cfg: env_cfg.EnvironmentConfig,
         *,
+        seed: int,
         num_assets: int,
+        init_state: RigidObjectCfg.InitialStateCfg,
         prim_path: str = "{ENV_REGEX_NS}/sample",
         asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
-        spawn_kwargs: Dict[str, Any] = {},
+        scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
+        texture_resolution: TexResConfig | None = None,
         **kwargs,
     ) -> DebrisCfg:
+        debris_cfg = asset.rigid_object_from_cfg(
+            cfg,
+            seed=seed,
+            num_assets=num_assets,
+            prim_path=prim_path,
+            scale=scale,
+            texture_resolution=texture_resolution,
+        )
+        debris_cfg.init_state = init_state
+        debris_cfg.spawn.replace(**kwargs)
+
         return DebrisCfg(
-            asset_cfg=asset.object_of_interest_from_env_cfg(
-                env_cfg,
-                num_assets=num_assets,
-                prim_path=prim_path,
-                spawn_kwargs=spawn_kwargs,
-                **kwargs,
-            ),
+            asset_cfg=debris_cfg,
             state_randomizer=EventTermCfg(
                 func=mdp.reset_root_state_uniform,
                 mode="reset",

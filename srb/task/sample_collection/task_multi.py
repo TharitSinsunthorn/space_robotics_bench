@@ -33,14 +33,12 @@ class MultiTaskCfg(TaskCfg):
         self.object_cfg = [
             sample_cfg(
                 self.env_cfg,
+                seed=self.seed,
+                num_assets=self.scene.num_envs + (i * self.scene.num_envs),
                 prim_path=f"{{ENV_REGEX_NS}}/sample{i}",
                 asset_cfg=SceneEntityCfg(f"object{i}"),
-                num_assets=self.scene.num_envs,
                 init_state=RigidObjectCfg.InitialStateCfg(pos=(0.55, 0.0, 0.0)),
-                procgen_seed_offset=i * self.scene.num_envs,
-                spawn_kwargs={
-                    "activate_contact_sensors": True,
-                },
+                activate_contact_sensors=True,
             )
             for i in range(self.num_problems_per_env)
         ]

@@ -1,15 +1,17 @@
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 import torch
 from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
 from omni.isaac.lab.sensors import ContactSensor, ContactSensorCfg
 from omni.isaac.lab.utils import configclass
+from pydantic import BaseModel
+from simforge import TexResConfig
 
 import srb.core.envs as env_utils
 import srb.core.sim as sim_utils
 import srb.utils.math as math_utils
 from srb import asset
-from srb.core.asset import Object, RigidObject, RigidObjectCfg
+from srb.core.asset import RigidObject, RigidObjectCfg
 from srb.core.markers import VisualizationMarkers, VisualizationMarkersCfg
 from srb.core.sim.spawners import SphereCfg
 from srb.env import (
@@ -24,7 +26,7 @@ from srb.env import (
 ##############
 
 
-class SampleCfg(Object, arbitrary_types_allowed=True):
+class SampleCfg(BaseModel, arbitrary_types_allowed=True):
     ## Model
     asset_cfg: RigidObjectCfg
 
@@ -33,15 +35,15 @@ class SampleCfg(Object, arbitrary_types_allowed=True):
 
 
 def sample_cfg(
-    env_cfg: env_utils.EnvironmentConfig,
+    cfg: env_utils.EnvironmentConfig,
     *,
+    seed: int,
+    num_assets: int,
+    init_state: RigidObjectCfg.InitialStateCfg,
     prim_path: str = "{ENV_REGEX_NS}/sample",
     asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
-    num_assets: int = 1,
-    size: Tuple[float, float] = (0.06, 0.06, 0.04),
-    spawn_kwargs: Dict[str, Any] = {},
-    procgen_seed_offset: int = 0,
-    procgen_kwargs: Dict[str, Any] = {},
+    scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
+    texture_resolution: TexResConfig | None = None,
     **kwargs,
 ) -> SampleCfg:
     pose_range = {
@@ -52,11 +54,11 @@ def sample_cfg(
         "yaw": (-torch.pi, torch.pi),
     }
 
-    match env_cfg.assets.object.variant:
+    match cfg.assets.object.variant:
         case env_utils.AssetVariant.PRIMITIVE:
             pose_range["z"] = (0.1, 0.1)
         case env_utils.AssetVariant.DATASET:
-            match env_cfg.domain:
+            match cfg.domain:
                 case env_utils.Domain.MARS:
                     pose_range.update(
                         {
@@ -74,17 +76,19 @@ def sample_cfg(
         case _:
             pose_range["z"] = (0.06, 0.06)
 
+    sample_cfg = asset.rigid_object_from_cfg(
+        cfg,
+        seed=seed,
+        num_assets=num_assets,
+        prim_path=prim_path,
+        scale=scale,
+        texture_resolution=texture_resolution,
+    )
+    sample_cfg.init_state = init_state
+    sample_cfg.spawn.replace(**kwargs)
+
     return SampleCfg(
-        asset_cfg=asset.object_of_interest_from_env_cfg(
-            env_cfg,
-            prim_path=prim_path,
-            num_assets=num_assets,
-            size=size,
-            spawn_kwargs=spawn_kwargs,
-            procgen_seed_offset=procgen_seed_offset,
-            procgen_kwargs=procgen_kwargs,
-            **kwargs,
-        ),
+        asset_cfg=sample_cfg,
         state_randomizer=EventTermCfg(
             func=mdp.reset_root_state_uniform,
             mode="reset",
@@ -135,11 +139,10 @@ class TaskCfg(BaseManipulationEnvCfg):
         ## Scene
         self.object_cfg = sample_cfg(
             self.env_cfg,
+            seed=self.seed,
             num_assets=self.scene.num_envs,
             init_state=RigidObjectCfg.InitialStateCfg(pos=(0.55, 0.0, 0.0)),
-            spawn_kwargs={
-                "activate_contact_sensors": True,
-            },
+            activate_contact_sensors=True,
         )
         self.scene.object = self.object_cfg.asset_cfg
         if self.vehicle_cfg:

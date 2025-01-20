@@ -161,25 +161,25 @@ class BaseLocomotionEnvCfg(BaseEnvCfg):
         )
 
         ## Scene
-        self.scene.light = asset.sunlight_from_env_cfg(self.env_cfg)
-        self.scene.sky = asset.sky_from_env_cfg(self.env_cfg)
+        self.scene.light = asset.sunlight_from_cfg(self.env_cfg)
+        self.scene.sky = asset.sky_from_cfg(self.env_cfg)
         # self.robot_cfg = asset.legged_robot_from_env_cfg(self.env_cfg)
         self.robot_cfg = asset.AnymalMulti()
         self.scene.robot = self.robot_cfg.asset_cfg
-        self.terrain_cfg = asset.terrain_from_env_cfg(
+        self.scene.terrain = asset.terrain_from_cfg(
             self.env_cfg,
+            seed=self.seed,
             num_assets=1,
-            size=(63.0, 63.0),
             prim_path="/World/terrain",
+            scale=(63.0, 63.0),
             density=0.2,
-            flat_area_size=4.0,
             texture_resolution={
                 BakeType.ALBEDO: 4096,
                 BakeType.NORMAL: 2048,
                 BakeType.ROUGHNESS: 1024,
             },
+            flat_area_size=4.0,
         )
-        self.scene.terrain = self.terrain_cfg.asset_cfg
 
         ## Actions
         self.actions = self.robot_cfg.action_cfg

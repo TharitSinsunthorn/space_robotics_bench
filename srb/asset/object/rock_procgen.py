@@ -1,17 +1,35 @@
-from typing import Sequence
-
-from omni.isaac.lab.utils import configclass
-from simforge import Asset
 from simforge_foundry import model as sf_model
 
+import srb.core.sim as sim_utils
+from srb.core.asset import Object, RigidObjectCfg
 from srb.core.sim import SimforgeAssetCfg
 
 
-@configclass
-class LunarRockCfg(SimforgeAssetCfg):
-    assets: Sequence[Asset] = [sf_model.MoonRock()]
+class LunarRock(Object):
+    asset_cfg: RigidObjectCfg = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/object",
+        spawn=SimforgeAssetCfg(
+            assets=[sf_model.MoonRock()],
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
+                mesh_approximation="convexDecomposition"
+            ),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+            mass_props=sim_utils.MassPropertiesCfg(density=2000.0),
+        ),
+    )
 
 
-@configclass
-class MarsRockCfg(SimforgeAssetCfg):
-    assets: Sequence[Asset] = [sf_model.MarsRock()]
+class MarsRock(Object):
+    asset_cfg: RigidObjectCfg = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/object",
+        spawn=SimforgeAssetCfg(
+            assets=[sf_model.MarsRock()],
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
+                mesh_approximation="convexDecomposition"
+            ),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+            mass_props=sim_utils.MassPropertiesCfg(density=2000.0),
+        ),
+    )

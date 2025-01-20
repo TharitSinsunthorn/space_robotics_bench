@@ -220,7 +220,7 @@ def _compute_intermediate_state(
 
     # Reward: Command tracking (linear)
     WEIGHT_CMD_LIN_VEL_XY = 2.5
-    EXP_STD_CMD_LIN_VEL_XY = 0.25
+    EXP_STD_CMD_LIN_VEL_XY = 0.5
     reward_cmd_lin_vel_xy = WEIGHT_CMD_LIN_VEL_XY * torch.exp(
         -torch.sum(torch.square(command[:, :2] - root_lin_vel[:, :2]), dim=1)
         / EXP_STD_CMD_LIN_VEL_XY

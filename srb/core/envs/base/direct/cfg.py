@@ -24,6 +24,8 @@ class BaseEnvCfg(DirectRLEnvCfg):
     Extended version of :class:`omni.isaac.lab.envs.DirectRLEnvCfg`.
     """
 
+    seed: int = 0
+
     ## Updated defaults
     # Disable UI window by default
     ui_window_class_type: type | None = None

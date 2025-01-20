@@ -1,16 +1,17 @@
 import sys
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 import torch
 from omni.isaac.core.prims.xform_prim_view import XFormPrimView
 from omni.isaac.lab.sensors import ContactSensor, ContactSensorCfg
 from omni.isaac.lab.utils import configclass
+from pydantic import BaseModel
 
 import srb.core.envs as env_utils
 import srb.core.sim as sim_utils
 import srb.utils.math as math_utils
 from srb import asset
-from srb.core.asset import Object, RigidObject, RigidObjectCfg
+from srb.core.asset import RigidObject, RigidObjectCfg
 from srb.core.managers import EventTermCfg, SceneEntityCfg
 from srb.core.markers import VisualizationMarkers, VisualizationMarkersCfg
 from srb.env import (
@@ -27,7 +28,7 @@ from ..peg_in_hole.task import peg_and_hole_cfg
 ##############
 
 
-class PanelCfg(Object, arbitrary_types_allowed=True):
+class PanelCfg(BaseModel, arbitrary_types_allowed=True):
     ## Geometry
     offset_pos: Tuple[float, float, float] = (0.0, 0.0, 0.15)
 
@@ -49,7 +50,7 @@ class TaskCfg(BaseManipulationEnvCfg):
     panel_target_marker_cfg = VisualizationMarkersCfg(
         prim_path="/Visuals/panel_target",
         markers={
-            "target": asset.object.SolarPanelCfg(
+            "target": asset.object.SolarPanel().asset_cfg.spawn.replace(
                 visible=False,
                 visual_material=sim_utils.PreviewSurfaceCfg(
                     emissive_color=(0.2, 0.2, 0.2),
@@ -83,14 +84,15 @@ class TaskCfg(BaseManipulationEnvCfg):
         self.problem_cfgs = [
             peg_and_hole_cfg(
                 self.env_cfg,
+                seed=self.seed,
                 prim_path_peg=f"{{ENV_REGEX_NS}}/peg{i}",
                 prim_path_hole=f"{{ENV_REGEX_NS}}/hole{i}",
                 asset_cfg_peg=SceneEntityCfg(f"object{i}"),
                 init_state=RigidObjectCfg.InitialStateCfg(pos=init_pos),
-                spawn_kwargs_peg={
+                short_peg=short_peg,
+                peg_kwargs={
                     "activate_contact_sensors": True,
                 },
-                short_peg=short_peg,
             )
             for i, (init_pos, short_peg) in enumerate(
                 [
@@ -177,10 +179,8 @@ class TaskCfg(BaseManipulationEnvCfg):
     def _panel_cfg(
         env_cfg: env_utils.EnvironmentConfig,
         *,
+        init_state: RigidObjectCfg.InitialStateCfg,
         asset_cfg: SceneEntityCfg = SceneEntityCfg("panel"),
-        prim_path: str = "{ENV_REGEX_NS}/panel",
-        spawn_kwargs: Dict[str, Any] = {},
-        **kwargs,
     ) -> PanelCfg:
         offset_pos = (0.0, 0.0, 0.15)
         pose_range = {
@@ -194,20 +194,17 @@ class TaskCfg(BaseManipulationEnvCfg):
                 torch.pi / 2 + torch.pi / 32,
             ),
         }
+        init_state.pos = (
+            init_state.pos[0] + offset_pos[0],
+            init_state.pos[1] + offset_pos[1],
+            init_state.pos[2] + offset_pos[2],
+        )
 
-        if kwargs.get("init_state") is not None:
-            kwargs["init_state"].pos = (
-                *kwargs["init_state"].pos[:2],
-                kwargs["init_state"].pos[2] + offset_pos[2],
-            )
+        cfg = asset.SolarPanel().asset_cfg
+        cfg.init_state = init_state
 
         return PanelCfg(
-            asset_cfg=asset.solar_panel_from_env_cfg(
-                env_cfg=env_cfg,
-                prim_path=prim_path,
-                spawn_kwargs=spawn_kwargs,
-                **kwargs,
-            ),
+            asset_cfg=cfg,
             offset_pos=offset_pos,
             state_randomizer=EventTermCfg(
                 func=mdp.reset_root_state_uniform,

@@ -153,12 +153,13 @@ class BaseAerialRoboticsEnvCfg(BaseEnvCfg):
         )
 
         ## Scene
-        self.scene.light = asset.sunlight_from_env_cfg(self.env_cfg)
-        self.scene.sky = asset.sky_from_env_cfg(self.env_cfg)
-        self.terrain_cfg = asset.terrain_from_env_cfg(
+        self.scene.light = asset.sunlight_from_cfg(self.env_cfg)
+        self.scene.sky = asset.sky_from_cfg(self.env_cfg)
+        self.scene.terrain = asset.terrain_from_cfg(
             self.env_cfg,
+            seed=self.seed,
             num_assets=self.scene.num_envs,
-            size=(
+            scale=(
                 self.scene.env_spacing - 1.0,
                 self.scene.env_spacing - 1.0,
             ),
@@ -169,7 +170,6 @@ class BaseAerialRoboticsEnvCfg(BaseEnvCfg):
                 BakeType.ROUGHNESS: 1024,
             },
         )
-        self.scene.terrain = self.terrain_cfg.asset_cfg
         self.robot_cfg = asset.Ingenuity()
         self.scene.robot = self.robot_cfg.asset_cfg
 

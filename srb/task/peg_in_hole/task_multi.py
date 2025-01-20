@@ -41,16 +41,16 @@ class MultiTaskCfg(TaskCfg):
         self.problem_cfg = [
             peg_and_hole_cfg(
                 self.env_cfg,
+                seed=self.seed + (i * self.scene.num_envs),
+                num_assets=self.scene.num_envs,
                 prim_path_peg=f"{{ENV_REGEX_NS}}/peg{i}",
                 prim_path_hole=f"{{ENV_REGEX_NS}}/hole{i}",
                 asset_cfg_peg=SceneEntityCfg(f"object{i}"),
-                num_assets=self.scene.num_envs,
                 init_state=RigidObjectCfg.InitialStateCfg(
                     pos=grid_spacing_pos[i],
                     rot=grid_spacing_rot[i],
                 ),
-                procgen_seed_offset=i * self.scene.num_envs,
-                spawn_kwargs_peg={
+                peg_kwargs={
                     "activate_contact_sensors": True,
                 },
             )

@@ -74,6 +74,8 @@ def run(
     runner.run(mode=workflow)
 
 
+# TODO: Maybe remove (currently enabled and training on ll205)
+# (does not work without, robot stays still on ll201)
 class NormalizeReward(gymnasium.Wrapper, gymnasium.utils.RecordConstructorArgs):
     def __init__(
         self,

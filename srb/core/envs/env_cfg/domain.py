@@ -13,6 +13,10 @@ class Domain(str, Enum):
         return self.name.lower()
 
     @property
+    def requires_terrain(self) -> bool:
+        return self is not Domain.ORBIT
+
+    @property
     def gravity_magnitude(self) -> float:
         """
         Magnitude of gravitational acceleration in m/s².

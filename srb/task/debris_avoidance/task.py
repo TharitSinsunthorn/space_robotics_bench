@@ -1,14 +1,14 @@
 import sys
-from typing import Any, Dict, Sequence, Tuple
+from typing import Dict, Sequence, Tuple
 
 import torch
 from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
 from omni.isaac.lab.utils import configclass
+from pydantic import BaseModel
 
 import srb.core.envs as env_utils
-import srb.core.sim as sim_utils
-from srb.asset import Asteroid
-from srb.core.asset import Object, RigidObjectCfg
+from srb import asset
+from srb.core.asset import RigidObjectCfg
 from srb.env import BaseSpacecraftRoboticsEnv, BaseSpacecraftRoboticsEnvCfg, mdp
 
 ##############
@@ -16,40 +16,28 @@ from srb.env import BaseSpacecraftRoboticsEnv, BaseSpacecraftRoboticsEnvCfg, mdp
 ##############
 
 
-class ExtDebrisCfg(Object, arbitrary_types_allowed=True):
+class ExtDebrisCfg(BaseModel):
     ## Model
     asset_cfg: RigidObjectCfg
 
 
 def asteroid_cfg(
-    env_cfg: env_utils.EnvironmentConfig,
-    *,
+    num_assets: int,
+    seed: int,
+    init_state: RigidObjectCfg.InitialStateCfg,
     prim_path: str = "{ENV_REGEX_NS}/sample",
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
-    num_assets: int = 1,
-    size: Tuple[float, float] = (0.06, 0.06, 0.04),
-    spawn_kwargs: Dict[str, Any] = {},
-    procgen_seed_offset: int = 0,
+    scale: Tuple[float, float, float] = (10.0, 10.0, 10.0),
     **kwargs,
 ) -> ExtDebrisCfg:
-    return ExtDebrisCfg(
-        asset_cfg=RigidObjectCfg(
-            prim_path=prim_path,
-            spawn=Asteroid(
-                scale=(10, 10, 10),
-                num_assets=num_assets,
-                seed=env_cfg.seed + procgen_seed_offset,
-                collision_props=sim_utils.CollisionPropertiesCfg(),
-                mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
-                    mesh_approximation="sdf",
-                ),
-                rigid_props=sim_utils.RigidBodyPropertiesCfg(),
-                mass_props=sim_utils.MassPropertiesCfg(density=2000.0),
-                **spawn_kwargs,
-            ),
-            **kwargs,
-        ),
-    )
+    cfg = asset.Asteroid(scale=scale).asset_cfg
+
+    cfg.spawn.num_assets = num_assets  # type: ignore
+    cfg.spawn.seed = seed  # type: ignore
+    cfg.init_state = init_state
+    cfg.prim_path = prim_path
+    cfg.spawn.replace(**kwargs)
+
+    return ExtDebrisCfg(asset_cfg=cfg)
 
 
 @configclass
@@ -75,15 +63,11 @@ class TaskCfg(BaseSpacecraftRoboticsEnvCfg):
         ## Scene
         self.object_cfgs = [
             asteroid_cfg(
-                self.env_cfg,
                 prim_path=f"{{ENV_REGEX_NS}}/asteroid{i}",
-                asset_cfg=SceneEntityCfg(f"object{i}"),
                 num_assets=self.scene.num_envs,
+                seed=self.seed + (i * self.scene.num_envs),
                 init_state=RigidObjectCfg.InitialStateCfg(pos=(0.55, 0.0, 0.0)),
-                procgen_seed_offset=i * self.scene.num_envs,
-                spawn_kwargs={
-                    "activate_contact_sensors": True,
-                },
+                activate_contact_sensors=True,
             )
             for i in range(self.num_problems_per_env)
         ]

@@ -1,19 +1,16 @@
-from typing import Any, Dict
-
 from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
 
-import srb.core.envs as env_utils
-import srb.core.sim as sim_utils
+from srb.core import sim as sim_utils
 from srb.core.asset import AssetBaseCfg
+from srb.core.envs import env_cfg
 from srb.utils import rtx_settings
 from srb.utils.path import SRB_ASSETS_DIR_SRB_HDRI
 
 
-def sky_from_env_cfg(
-    env_cfg: env_utils.EnvironmentConfig,
+def sky_from_cfg(
+    cfg: env_cfg.EnvironmentConfig,
     *,
     prim_path: str = "/World/sky",
-    spawn_kwargs: Dict[str, Any] = {},
     **kwargs,
 ) -> AssetBaseCfg | None:
     texture_file = None
@@ -43,10 +40,11 @@ def sky_from_env_cfg(
     #     enable_film_grain=True,
     # )
 
-    match env_cfg.domain:
-        case env_utils.Domain.EARTH:
+    match cfg.domain:
+        case env_cfg.Domain.EARTH:
             texture_file = f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr"
-        case env_utils.Domain.MARS:
+        case env_cfg.Domain.MARS:
+            # Move elsewhere
             rtx_settings.simple_fog(
                 color=(0.8, 0.4, 0.2),
                 intensity=0.25,
@@ -57,7 +55,7 @@ def sky_from_env_cfg(
             texture_file = SRB_ASSETS_DIR_SRB_HDRI.joinpath(
                 "martian_sky_day.hdr"
             ).as_posix()
-        case env_utils.Domain.ORBIT:
+        case env_cfg.Domain.ORBIT:
             texture_file = SRB_ASSETS_DIR_SRB_HDRI.joinpath(
                 "low_lunar_orbit.jpg"
             ).as_posix()
@@ -67,9 +65,8 @@ def sky_from_env_cfg(
     return AssetBaseCfg(
         prim_path=prim_path,
         spawn=sim_utils.DomeLightCfg(
-            intensity=0.25 * env_cfg.domain.light_intensity,
+            intensity=0.25 * cfg.domain.light_intensity,
             texture_file=texture_file,
-            **spawn_kwargs,
+            **kwargs,
         ),
-        **kwargs,
     )

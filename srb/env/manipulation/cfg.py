@@ -141,29 +141,28 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
         ## Scene
         if self.env_cfg.domain == env_utils.Domain.ORBIT:
             self.scene.env_spacing = 42.0
-        self.scene.light = asset.sunlight_from_env_cfg(self.env_cfg)
-        self.scene.sky = asset.sky_from_env_cfg(self.env_cfg)
+        self.scene.light = asset.sunlight_from_cfg(self.env_cfg)
+        self.scene.sky = asset.sky_from_cfg(self.env_cfg)
         # self.robot_cfg = assets.manipulator_from_env_cfg(self.env_cfg)
         self.robot_cfg = asset.Franka()
         self.scene.robot = self.robot_cfg.asset_cfg
-        self.vehicle_cfg = asset.vehicle_from_env_cfg(self.env_cfg)
-        self.terrain_cfg = asset.terrain_from_env_cfg(
+        self.vehicle_cfg = asset.vehicle_from_cfg(self.env_cfg)
+        self.scene.terrain = asset.terrain_from_cfg(
             self.env_cfg,
+            seed=self.seed,
             num_assets=self.scene.num_envs,
-            size=(
+            scale=(
                 self.scene.env_spacing - 1.0,
                 self.scene.env_spacing - 1.0,
             ),
             density=0.1,
-            flat_area_size=2.0,
             texture_resolution={
                 BakeType.ALBEDO: 2048,
                 BakeType.NORMAL: 1024,
                 BakeType.ROUGHNESS: 512,
             },
+            flat_area_size=2.0,
         )
-        if self.terrain_cfg:
-            self.scene.terrain = self.terrain_cfg.asset_cfg
         if self.vehicle_cfg:
             # Add vehicle to scene
             self.scene.vehicle = self.vehicle_cfg.asset_cfg

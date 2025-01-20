@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from srb.core.interfaces.ros2 import ROS2
     from srb.core.teleop_devices import CombinedTeleopInterface
 
-# TODO: Clean-up args
+# TODO: Clean-up args with enums, add choices, ...
 
 
 def main():
@@ -678,6 +678,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
 
     import importlib
     import inspect
+    from os import path as posixpath
 
     from rich import print
     from rich.table import Table
@@ -700,6 +701,9 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
         category.add(RegisteredEntity.TERRAIN)
         category.add(RegisteredEntity.ROBOT)
 
+    if RegisteredEntity.ENV in category:
+        import srb.task as srb_tasks
+
     # Print table for assets
     if (
         RegisteredEntity.OBJECT in category
@@ -711,10 +715,12 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
         table.add_column("Type", justify="center", style="magenta", no_wrap=True)
         table.add_column("Subtype", justify="center", style="red", no_wrap=True)
         table.add_column("Parent Class", justify="left", style="green", no_wrap=True)
+        table.add_column("Asset Cfg", justify="left", style="yellow")
         table.add_column("Name", justify="left", style="blue", no_wrap=True)
+        table.add_column("Path", justify="left", style="white")
         i = 0
         if RegisteredEntity.OBJECT in category:
-            import srb.asset.object as _  # noqa: F401
+            import srb.asset.object as srb_objects
 
             asset_type = AssetType.OBJECT
             asset_classes = AssetRegistry.registry.get(asset_type, ())
@@ -722,16 +728,33 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                 i += 1
                 asset_name = convert_to_snake_case(asset_class.__name__)
                 parent_class = asset_class.__bases__[0]
+                try:
+                    asset_cfg_class = asset_class().asset_cfg.__class__  # type: ignore
+                except Exception:
+                    asset_cfg_class = None
+                asset_module_path = Path(
+                    inspect.getabsfile(importlib.import_module(asset_class.__module__))
+                )
+                try:
+                    asset_module_relpath = asset_module_path.relative_to(
+                        Path(inspect.getabsfile(srb_objects)).parent
+                    )
+                except ValueError:
+                    asset_module_relpath = posixpath.join("EXT", asset_module_path.name)
                 table.add_row(
                     str(i),
                     str(asset_type),
                     "",
                     f"[link=vscode://file/{inspect.getabsfile(parent_class)}:{inspect.getsourcelines(parent_class)[1]}]{parent_class.__name__}[/link]",
+                    f"[link=vscode://file/{inspect.getabsfile(asset_cfg_class)}:{inspect.getsourcelines(asset_cfg_class)[1]}]{asset_cfg_class.__name__}[/link]"
+                    if asset_cfg_class
+                    else "",
                     f"[link=vscode://file/{inspect.getabsfile(asset_class)}:{inspect.getsourcelines(asset_class)[1]}]{asset_name}[/link]",
+                    f"[link=vscode://file/{asset_module_path}]{asset_module_relpath}[/link]",
                     end_section=(j + 1) == len(asset_classes),
                 )
         if RegisteredEntity.TERRAIN in category:
-            import srb.asset.terrain as _  # noqa: F401
+            import srb.asset.terrain as srb_terrains
 
             asset_type = AssetType.TERRAIN
             asset_classes = AssetRegistry.registry.get(asset_type, ())
@@ -739,16 +762,33 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                 i += 1
                 asset_name = convert_to_snake_case(asset_class.__name__)
                 parent_class = asset_class.__bases__[0]
+                try:
+                    asset_cfg_class = asset_class().asset_cfg.__class__  # type: ignore
+                except Exception:
+                    asset_cfg_class = None
+                asset_module_path = Path(
+                    inspect.getabsfile(importlib.import_module(asset_class.__module__))
+                )
+                try:
+                    asset_module_relpath = asset_module_path.relative_to(
+                        Path(inspect.getabsfile(srb_terrains)).parent
+                    )
+                except ValueError:
+                    asset_module_relpath = posixpath.join("EXT", asset_module_path.name)
                 table.add_row(
                     str(i),
                     str(asset_type),
                     "",
                     f"[link=vscode://file/{inspect.getabsfile(parent_class)}:{inspect.getsourcelines(parent_class)[1]}]{parent_class.__name__}[/link]",
+                    f"[link=vscode://file/{inspect.getabsfile(asset_cfg_class)}:{inspect.getsourcelines(asset_cfg_class)[1]}]{asset_cfg_class.__name__}[/link]"
+                    if asset_cfg_class
+                    else "",
                     f"[link=vscode://file/{inspect.getabsfile(asset_class)}:{inspect.getsourcelines(asset_class)[1]}]{asset_name}[/link]",
+                    f"[link=vscode://file/{asset_module_path}]{asset_module_relpath}[/link]",
                     end_section=(j + 1) == len(asset_classes),
                 )
         if RegisteredEntity.ROBOT in category:
-            import srb.asset.robot as _  # noqa: F401
+            import srb.asset.robot as srb_robots
 
             asset_type = AssetType.ROBOT
             for asset_subtype, asset_classes in RobotRegistry.items():
@@ -756,12 +796,33 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                     i += 1
                     asset_name = convert_to_snake_case(asset_class.__name__)
                     parent_class = asset_class.__bases__[0]
+                    try:
+                        asset_cfg_class = asset_class().asset_cfg.__class__  # type: ignore
+                    except Exception:
+                        asset_cfg_class = None
+                    asset_module_path = Path(
+                        inspect.getabsfile(
+                            importlib.import_module(asset_class.__module__)
+                        )
+                    )
+                    try:
+                        asset_module_relpath = asset_module_path.relative_to(
+                            Path(inspect.getabsfile(srb_robots)).parent
+                        )
+                    except ValueError:
+                        asset_module_relpath = posixpath.join(
+                            "EXT", asset_module_path.name
+                        )
                     table.add_row(
                         str(i),
                         str(asset_type),
                         str(asset_subtype),
                         f"[link=vscode://file/{inspect.getabsfile(parent_class)}:{inspect.getsourcelines(parent_class)[1]}]{parent_class.__name__}[/link]",
+                        f"[link=vscode://file/{inspect.getabsfile(asset_cfg_class)}:{inspect.getsourcelines(asset_cfg_class)[1]}]{asset_cfg_class.__name__}[/link]"
+                        if asset_cfg_class
+                        else "",
                         f"[link=vscode://file/{inspect.getabsfile(asset_class)}:{inspect.getsourcelines(asset_class)[1]}]{asset_name}[/link]",
+                        f"[link=vscode://file/{asset_module_path}]{asset_module_relpath}[/link]",
                         end_section=(j + 1) == len(asset_classes),
                     )
         print(table)
@@ -769,8 +830,6 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
     # Print table for environments
     if RegisteredEntity.ENV in category:
         import gymnasium
-
-        import srb.task as srb_tasks
 
         table = Table(title="Environments of the Space Robotics Bench")
         table.add_column("#", justify="right", style="cyan", no_wrap=True)
@@ -787,9 +846,17 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
             env = gymnasium.registry[task_id]
             entrypoint_str = env.entry_point
             entrypoint_module, entrypoint_class = str(entrypoint_str).split(":")
-            env_module_path = inspect.getabsfile(
-                importlib.import_module(entrypoint_module.rsplit(".", 1)[0])
+            env_module_path = Path(
+                inspect.getabsfile(
+                    importlib.import_module(entrypoint_module.rsplit(".", 1)[0])
+                )
             )
+            try:
+                env_module_relpath = env_module_path.parent.relative_to(
+                    Path(inspect.getabsfile(srb_tasks)).parent
+                )
+            except ValueError:
+                env_module_relpath = posixpath.join("EXT", env_module_path.name)
             entrypoint_module = importlib.import_module(entrypoint_module)
             entrypoint_class = getattr(entrypoint_module, entrypoint_class)
             entrypoint_parent = entrypoint_class.__bases__[0]
@@ -801,7 +868,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                 task_id.removeprefix("srb/"),
                 f"[link=vscode://file/{inspect.getabsfile(entrypoint_class)}:{inspect.getsourcelines(entrypoint_class)[1]}]{entrypoint_class.__name__}[/link]([red][link=vscode://file/{inspect.getabsfile(entrypoint_parent)}:{inspect.getsourcelines(entrypoint_parent)[1]}]{entrypoint_parent.__name__}[/link][/red])",
                 f"[link=vscode://file/{inspect.getabsfile(cfg_class)}:{inspect.getsourcelines(cfg_class)[1]}]{cfg_class.__name__}[/link]([magenta][link=vscode://file/{inspect.getabsfile(cfg_parent)}:{inspect.getsourcelines(cfg_parent)[1]}]{cfg_parent.__name__}[/link][/magenta])",
-                f"[link=vscode://file/{env_module_path}]{Path(env_module_path).parent.relative_to(Path(inspect.getabsfile(srb_tasks)).parent)}[/link]",
+                f"[link=vscode://file/{env_module_path}]{env_module_relpath}[/link]",
             )
         print(table)
 

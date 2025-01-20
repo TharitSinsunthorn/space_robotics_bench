@@ -26,9 +26,8 @@ logger:
   filter: "score|length|fps|ratio|train/loss/|train/rand/"
   timer: True
   fps: 15
-# TODO: Reduce log timing
-run.log_every: 300
-run.report_every: 600
+run.log_every: 120
+run.report_every: 300
 run.save_every: 1200
 run.usage:
   { psutil: False, nvsmi: False, gputil: False, malloc: False, gc: False }
