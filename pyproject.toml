@@ -37,7 +37,9 @@ dependencies = [
   # TODO: Add isaac lab to dependencies
   "oxidasim~=0.1",
   ## Assets
-  "simforge~=0.1",
+  # TODO: Simplify simforge requirement (minor version | remove simforge_foundry once it is integrated)
+  "simforge~=0.1.2",
+  "simforge_foundry@git+https://github.com/AndrejOrsula/simforge_foundry.git@240d992efb628dbb34124fda5edcc187781814f2",
   ## Typing
   "pydantic~=2.0",
 ]

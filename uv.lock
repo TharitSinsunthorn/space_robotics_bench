@@ -2392,16 +2392,24 @@ wheels = [
 
 [[package]]
 name = "simforge"
-version = "0.1.1"
+version = "0.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "platformdirs" },
     { name = "pydantic" },
     { name = "pytest-cov" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a7/69/9d9e8f3ceb3c7cb0213a1eb80f6136716765e8505425721a354a7a465ed4/simforge-0.1.1.tar.gz", hash = "sha256:d22902451357255a82c78ba50131d40e1b44831e246124bb8f3e2d3902836346", size = 27972114 }
+sdist = { url = "https://files.pythonhosted.org/packages/73/ce/664dcd5e781cc3347dea1d41dc21c2a701e4fbf59b6e3426e245f5c76abc/simforge-0.1.2.tar.gz", hash = "sha256:0008db2528282cd7139b90f3b44939d2eb4acde21e70d617949700b3ab04186b", size = 27982017 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/3b/13ebac39a5c4206534da20976c3c16e01121b3722fe663fbe7ed8ed79329/simforge-0.1.1-py3-none-any.whl", hash = "sha256:e6199395985a785208965f7763fe588090f4dc6232c913178b54c95396629eca", size = 60811 },
+    { url = "https://files.pythonhosted.org/packages/4e/b9/e5f72df2f4835530c8bbba366631f8e3c92e3f5e3610491903789156725f/simforge-0.1.2-py3-none-any.whl", hash = "sha256:4f0d83b4b77f20cf0b2649dc4437ed12d8330552ec71a785e02eb445f5c6d0ad", size = 62012 },
+]
+
+[[package]]
+name = "simforge-foundry"
+version = "0.1.0"
+source = { git = "https://github.com/AndrejOrsula/simforge_foundry.git?rev=240d992efb628dbb34124fda5edcc187781814f2#240d992efb628dbb34124fda5edcc187781814f2" }
+dependencies = [
+    { name = "simforge" },
 ]
 
 [[package]]
@@ -2476,6 +2484,7 @@ dependencies = [
     { name = "oxidasim" },
     { name = "pydantic" },
     { name = "simforge" },
+    { name = "simforge-foundry" },
 ]
 
 [package.optional-dependencies]
@@ -2575,7 +2584,8 @@ requires-dist = [
     { name = "rl-zoo3", marker = "extra == 'sb3'", git = "https://github.com/AndrejOrsula/rl-baselines3-zoo.git?rev=e04921b4ccbadbc9f6bcc46cc1787ffc1d2c8963#e04921b4ccbadbc9f6bcc46cc1787ffc1d2c8963" },
     { name = "sb3-contrib", marker = "extra == 'sb3'", specifier = "~=2.4" },
     { name = "sbx-rl", marker = "extra == 'sbx'", specifier = "~=0.19" },
-    { name = "simforge", specifier = "~=0.1" },
+    { name = "simforge", specifier = "~=0.1.2" },
+    { name = "simforge-foundry", git = "https://github.com/AndrejOrsula/simforge_foundry.git?rev=240d992efb628dbb34124fda5edcc187781814f2#240d992efb628dbb34124fda5edcc187781814f2" },
     { name = "skrl", marker = "extra == 'skrl'", specifier = "~=1.0" },
     { name = "srb", extras = ["algo"], marker = "extra == 'all'" },
     { name = "srb", extras = ["cli"], marker = "extra == 'all'" },
