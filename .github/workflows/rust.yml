@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "docs/**"
   pull_request:
   release:
     types: [published]
@@ -14,8 +16,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  MSRV: "1.80"
-  ROS_DISTRO: "humble"
+  MSRV: "1.82"
+  ROS_DISTRO: "jazzy"
   CARGO_TERM_COLOR: always
   CRATE_NAME_SYS: srb_sys
   CRATE_NAME_LIB: srb
@@ -109,7 +111,7 @@ jobs:
       ## [stable] Generate coverage with cargo llvm-cov
       - name: stable | Generate coverage
         if: ${{ matrix.toolchain == 'stable' }}
-        run: source /opt/ros/${{ env.ROS_DISTRO }}/setup.bash && cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
+        run: source /opt/ros/${{ env.ROS_DISTRO }}/setup.bash && cargo llvm-cov --workspace --exclude ${{ env.CRATE_NAME_GUI }} --all-features --lcov --output-path lcov.info
       ## [stable] Upload coverage to codecov.io
       - name: stable | Upload coverage
         if: ${{ matrix.toolchain == 'stable' }}
