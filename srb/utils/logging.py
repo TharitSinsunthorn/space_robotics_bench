@@ -13,9 +13,8 @@ logger = logging.getLogger("srb")
 logger.propagate = False
 
 # Set the logger level
-# TODO: Default to info
 logger.setLevel(
-    (environ.get("LOG_LEVEL") or environ.get("SRB_LOG_LEVEL", "DEBUG")).upper()
+    (environ.get("LOG_LEVEL") or environ.get("SRB_LOG_LEVEL", "INFO")).upper()
 )
 
 # Set up console logging handlers (either rich or plain)

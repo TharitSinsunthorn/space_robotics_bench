@@ -34,11 +34,11 @@ dependencies = [
   ## Core
   "gymnasium~=0.29",
   ## Simulation
-  # TODO: Add isaac lab to dependencies
+  # TODO: Add Isaac Lab to dependencies
   "oxidasim~=0.1",
   ## Assets
-  # TODO: Simplify simforge requirement (minor version | remove simforge_foundry once it is integrated)
-  "simforge~=0.1.2",
+  # TODO: Remove simforge_foundry once assets are integrated into main
+  "simforge~=0.1",
   "simforge_foundry@git+https://github.com/AndrejOrsula/simforge_foundry.git@240d992efb628dbb34124fda5edcc187781814f2",
   ## Typing
   "pydantic~=2.0",
@@ -59,7 +59,9 @@ all = [
 ## Algorithms
 algo = ["srb[dreamer]", "srb[sb3]", "srb[sbx]", "srb[skrl]", "srb[robomimic]"]
 dreamer = [
-  "dreamer@git+https://github.com/danijar/dreamerv3.git@55c8c67c956fbdace4bf8b594ea12e934a3ae4ba",
+  # Note: Only editable install of dreamer works for now (circular import of  partially initialized module included with sys.path)
+  # TODO: Fork and fix
+  # "dreamer@git+https://github.com/danijar/dreamerv3.git@55c8c67c956fbdace4bf8b594ea12e934a3ae4ba",
 ]
 sb3 = [
   "stable-baselines3~=2.4",

@@ -43,6 +43,9 @@ from std_msgs.msg import Float32, Header, String  # noqa: E402
 from std_srvs.srv import Empty as EmptySrv  # noqa: E402
 from tf2_ros import TransformBroadcaster  # noqa: E402
 
+# TODO: Improve the ROS 2 interface to dynamically include all observations and reward components
+# TODO: Map each actiongroup to a specific topic type
+
 
 class ROS2:
     OBSERVATION_MAPPING = {
