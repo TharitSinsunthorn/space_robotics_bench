@@ -1,18 +1,19 @@
 [workspace.package]
 authors = ["Andrej Orsula <orsula.andrej@gmail.com>"]
-description = "Space Robotics Bench"
 categories = ["science::robotics"]
-keywords = ["benchmark", "robotics", "simulation", "space"]
-readme = "README.md"
-license = "MIT OR Apache-2.0"
-homepage = "https://github.com/AndrejOrsula/space_robotics_bench"
-repository = "https://github.com/AndrejOrsula/space_robotics_bench"
+description = "Space Robotics Bench"
 documentation = "https://andrejorsula.github.io/space_robotics_bench"
 edition = "2021"
+homepage = "https://github.com/AndrejOrsula/space_robotics_bench"
+keywords = ["benchmark", "robotics", "simulation", "space"]
+license = "MIT OR Apache-2.0"
+publish = true
+readme = "README.md"
+repository = "https://github.com/AndrejOrsula/space_robotics_bench"
 rust-version = "1.80"
 version = "0.0.1"
-publish = false
 
 [workspace]
 resolver = "2"
-members = ["crates/srb_gui"]
+members = ["crates/srb", "crates/srb_gui", "crates/srb_py", "crates/srb_sys"]
+default-members = ["crates/srb_gui"]

@@ -40,7 +40,7 @@ macro_rules! generate_font_definitions {
     (@insert_data |$font_data:ident| $name:literal) => {
         $font_data.insert(
             $name.to_owned(),
-            $crate::macros::include_assets_font!($name),
+            $crate::macros::include_assets_font!($name).into(),
         );
     };
 }

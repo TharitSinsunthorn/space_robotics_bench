@@ -1,3 +1,5 @@
+//! GUI for the Space Robotics Bench
+
 pub use app::App;
 pub use consts::*;
 
