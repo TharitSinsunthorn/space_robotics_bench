@@ -46,6 +46,9 @@ class PegCfg(BaseModel, arbitrary_types_allowed=True):
 
 
 class HoleCfg(BaseModel):
+    ## Model
+    asset_cfg: AssetBaseCfg
+
     ## Geometry
     offset_pos_bottom: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     offset_pos_entrance: Tuple[float, float, float]
