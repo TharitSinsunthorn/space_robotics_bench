@@ -6,9 +6,9 @@ from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
 from omni.isaac.lab.scene import InteractiveSceneCfg
 from omni.isaac.lab.utils import configclass
 
-import srb.core.sim as sim_utils
 from srb import asset
 from srb.core import mdp
+from srb.core import sim as sim_utils
 from srb.core.envs import BaseEnvCfg
 from srb.core.sim import SimulationCfg
 

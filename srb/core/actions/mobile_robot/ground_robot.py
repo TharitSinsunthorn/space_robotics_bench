@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import MISSING
-from typing import List, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 import torch
 from omni.isaac.lab.managers import ActionTerm, ActionTermCfg
@@ -9,20 +9,25 @@ from omni.isaac.lab.utils import configclass
 from srb.core.actions import JointPositionActionCfg
 from srb.core.actions.action_group import ActionGroup
 from srb.core.asset import Articulation
-from srb.core.envs import BaseEnv
+
+if TYPE_CHECKING:
+    from srb.core.envs import BaseEnv
 
 
-# TODO: Fix this and move to common or something
+# TODO: Rename this and move to common or something
 @configclass
 class LocomotionJointSpaceActionCfg(ActionGroup):
     joint_pos: JointPositionActionCfg = MISSING
+
+    def supports_policy_teleop(self) -> bool:
+        return True
 
 
 class WheeledRoverAction(ActionTerm):
     cfg: "WheeledRoverActionCfg"
     _asset: Articulation
 
-    def __init__(self, cfg: "WheeledRoverActionCfg", env: BaseEnv):
+    def __init__(self, cfg: "WheeledRoverActionCfg", env: "BaseEnv"):
         super().__init__(cfg, env)
 
         self._steering_joint_indices = self._asset.find_joints(

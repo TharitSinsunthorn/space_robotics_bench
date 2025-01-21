@@ -60,7 +60,7 @@ all = [
 algo = ["srb[dreamer]", "srb[sb3]", "srb[sbx]", "srb[skrl]", "srb[robomimic]"]
 dreamer = [
   # Note: Only editable install of dreamer works for now (circular import of  partially initialized module included with sys.path)
-  # TODO: Fork and fix
+  # TODO: Fork and fix regular dreamer install
   # "dreamer@git+https://github.com/danijar/dreamerv3.git@55c8c67c956fbdace4bf8b594ea12e934a3ae4ba",
 ]
 sb3 = [

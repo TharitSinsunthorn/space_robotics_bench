@@ -6,10 +6,10 @@ from omni.isaac.lab.sensors import ContactSensor
 from omni.isaac.lab.utils import configclass
 
 import srb.core.envs as env_utils
-import srb.utils.math as math_utils
 from srb.core.asset import RigidObject, RigidObjectCfg
 from srb.core.markers import VisualizationMarkers
 from srb.env import BaseManipulationEnv, mdp
+from srb.utils import math as math_utils
 
 from .task import TaskCfg, sample_cfg
 

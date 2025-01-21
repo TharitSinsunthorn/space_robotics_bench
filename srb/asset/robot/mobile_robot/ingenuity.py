@@ -4,9 +4,9 @@ from omni.isaac.lab.assets.articulation import ArticulationCfg
 from torch import pi
 
 import srb.core.asset as asset_utils
-import srb.utils.math as math_utils
 from srb.core.actions import MultiCopterActionCfg, MultiCopterActionGroupCfg
 from srb.core.asset import Frame, MultiCopter
+from srb.utils import math as math_utils
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
 

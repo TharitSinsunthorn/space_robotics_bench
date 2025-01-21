@@ -8,9 +8,8 @@ from omni.isaac.lab.utils import configclass
 from pydantic import BaseModel
 
 import srb.core.envs as env_utils
-import srb.core.sim as sim_utils
-import srb.utils.math as math_utils
 from srb import asset
+from srb.core import sim as sim_utils
 from srb.core.asset import RigidObject, RigidObjectCfg
 from srb.core.managers import EventTermCfg, SceneEntityCfg
 from srb.core.markers import VisualizationMarkers, VisualizationMarkersCfg
@@ -20,6 +19,7 @@ from srb.env import (
     BaseManipulationEnvEventCfg,
     mdp,
 )
+from srb.utils import math as math_utils
 
 from ..peg_in_hole.task import peg_and_hole_cfg
 

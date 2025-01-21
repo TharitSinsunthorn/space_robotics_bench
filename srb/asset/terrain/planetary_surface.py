@@ -1,6 +1,6 @@
 from simforge_foundry import model as sf_model
 
-import srb.core.sim as sim_utils
+from srb.core import sim as sim_utils
 from srb.core.asset import AssetBaseCfg, Surface
 from srb.core.sim import SimforgeAssetCfg
 

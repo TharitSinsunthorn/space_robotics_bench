@@ -18,7 +18,6 @@ from srb.core.teleop_devices.spacemouse import SpacemouseTeleopInterface
 if TYPE_CHECKING:
     from rclpy.node import Node
 
-# TODO: Rename touch to haptic
 # TODO: Use enum for devices
 
 
@@ -34,7 +33,7 @@ class CombinedTeleopInterface(DeviceBase):
         | WheeledRoverActionGroupCfg
         | None = None,
     ):
-        if not node and ("ros2" in devices or "touch" in devices):
+        if not node and ("ros2" in devices or "haptic" in devices):
             from srb.utils.ros2 import enable_ros2_bridge
 
             enable_ros2_bridge()
@@ -82,7 +81,7 @@ class CombinedTeleopInterface(DeviceBase):
                             rot_sensitivity=1.0 * rot_sensitivity,
                         )
                     )
-                case "touch":
+                case "haptic":
                     from srb.core.teleop_devices.haptic import HapticROS2TeleopInterface
 
                     interface = HapticROS2TeleopInterface(

@@ -9,7 +9,6 @@ from pydantic import BaseModel, NonNegativeInt
 from simforge import TexResConfig
 
 import srb.core.envs as env_utils
-import srb.utils.math as math_utils
 from srb import asset
 from srb.core.asset import AssetBaseCfg, RigidObject, RigidObjectCfg
 from srb.core.envs import env_cfg
@@ -19,6 +18,7 @@ from srb.env import (
     BaseManipulationEnvEventCfg,
     mdp,
 )
+from srb.utils import math as math_utils
 
 ##############
 ### Config ###
@@ -78,13 +78,13 @@ def peg_in_hole_from_cfg(
             hole_cfg = asset.ProfileHole().asset_cfg
 
         case env_cfg.AssetVariant.PROCEDURAL:
-            peg_cfg = asset.RandomPeg(
+            peg_cfg = asset.Peg(
                 scale=scale, texture_resolution=texture_resolution
             ).asset_cfg
             peg_cfg.spawn.seed = seed  # type: ignore
             peg_cfg.spawn.num_assets = num_assets  # type: ignore
 
-            hole_cfg = asset.RandomHole(
+            hole_cfg = asset.Hole(
                 scale=scale, texture_resolution=texture_resolution
             ).asset_cfg
             hole_cfg.spawn.seed = seed  # type: ignore

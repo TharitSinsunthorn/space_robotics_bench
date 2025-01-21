@@ -4,10 +4,10 @@ from omni.isaac.lab.controllers import DifferentialIKControllerCfg
 from omni.isaac.lab.envs.mdp import DifferentialInverseKinematicsActionCfg
 from torch import pi
 
-import srb.utils.math as math_utils
 from srb.core.actions import ManipulatorTaskSpaceActionCfg
 from srb.core.asset import ArticulationCfg, Frame, SingleArmManipulator, Transform
 from srb.core.envs import mdp
+from srb.utils import math as math_utils
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
 

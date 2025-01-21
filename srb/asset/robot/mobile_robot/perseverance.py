@@ -3,9 +3,9 @@ from omni.isaac.lab.actuators import ImplicitActuatorCfg
 from omni.isaac.lab.assets.articulation import ArticulationCfg
 
 import srb.core.asset as asset_utils
-import srb.utils.math as math_utils
 from srb.core.actions import WheeledRoverActionCfg, WheeledRoverActionGroupCfg
 from srb.core.asset import Frame, WheeledRobot
+from srb.utils import math as math_utils
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
 

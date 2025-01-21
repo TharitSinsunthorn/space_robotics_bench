@@ -63,9 +63,8 @@ def agent_main(
     import srb.task as _  # noqa: F401
     from srb.core.teleop_devices import EventKeyboardTeleopInterface
     from srb.utils import logging
-    from srb.utils.hydra import hydra_task_config
+    from srb.utils.cfg import create_logdir_path, hydra_task_config
     from srb.utils.isaacsim import hide_ui
-    from srb.utils.parsing import create_logdir_path
 
     if find_spec("rich"):
         from rich import print
@@ -219,8 +218,7 @@ def teleop_agent(
     teleop_device: Sequence[str],
     pos_sensitivity: float,
     rot_sensitivity: float,
-    ros2_integration: bool,
-    gui_integration: bool,
+    integration: Sequence[str],
     algo: str,
     **kwargs,
 ):
@@ -247,7 +245,7 @@ def teleop_agent(
         env.cfg.enable_truncation = False
 
     # Create ROS 2 node
-    if ros2_integration or gui_integration:
+    if "gui" in integration or "ros2" in integration:
         import rclpy
         from rclpy.executors import MultiThreadedExecutor
         from rclpy.node import Node
@@ -263,7 +261,7 @@ def teleop_agent(
         node=ros_node,
         pos_sensitivity=pos_sensitivity,
         rot_sensitivity=rot_sensitivity,
-        action_cfg=env.cfg.robot_cfg.action_cfg,  # type: ignore
+        action_cfg=env.cfg.robot_cfg.action_cfg,
     )
 
     ## Set up reset callback
@@ -279,21 +277,21 @@ def teleop_agent(
     teleop_interface.reset()
     print(teleop_interface)
 
-    ## Create ROS 2 interface
-    if ros2_integration:
-        from srb.core.interfaces.ros2 import ROS2
-
-        ros2_interface = ROS2(env, node=ros_node)
-    else:
-        ros2_interface = None
-
     ## Create GUI interface
-    if gui_integration:
+    if "gui" in integration:
         from srb.core.interfaces.gui import GuiInterface
 
         gui_interface = GuiInterface(env, node=ros_node)
     else:
         gui_interface = None
+
+    ## Create ROS 2 interface
+    if "ros2" in integration:
+        from srb.core.interfaces.ros2 import ROS2
+
+        ros2_interface = ROS2(env, node=ros_node)
+    else:
+        ros2_interface = None
 
     ## Initialize the environment
     env.reset()
@@ -308,8 +306,8 @@ def teleop_agent(
 
     ## Determine how to teleoperate the agent and dispatch the appropriate implementation
     env_supports_direct_teleop = (
-        hasattr(env.cfg.robot_cfg.action_cfg.__class__, "map_teleop_actions")  # type: ignore
-        and env.cfg.robot_cfg.action_cfg.__class__.map_teleop_actions  # type: ignore
+        hasattr(env.cfg.robot_cfg.action_cfg.__class__, "map_teleop_actions")
+        and env.cfg.robot_cfg.action_cfg.__class__.map_teleop_actions
         is not ActionGroup.map_teleop_actions
     )
 
@@ -322,7 +320,7 @@ def teleop_agent(
             gui_interface=gui_interface,
             **kwargs,
         )
-    elif True:  # TODO: Add condition to check if the environment supports teleoperation via policy
+    elif env.cfg.robot_cfg.action_cfg.supports_policy_teleop():
         if algo:
             _teleop_agent_via_policy(
                 env=env,
@@ -357,7 +355,7 @@ def _teleop_agent_direct(
     from srb.core.managers import SceneEntityCfg
 
     is_manip_task = isinstance(
-        env.cfg.robot_cfg.action_cfg,  # type: ignore
+        env.cfg.robot_cfg.action_cfg,
         ManipulatorTaskSpaceActionCfg,
     )
 
@@ -368,7 +366,7 @@ def _teleop_agent_direct(
             twist, event = teleop_interface.advance()
             if is_manip_task and not disable_control_scheme_inversion:
                 twist[:2] *= -1.0
-            actions = env.cfg.robot_cfg.action_cfg.map_teleop_actions(  # type: ignore
+            actions = env.cfg.robot_cfg.action_cfg.map_teleop_actions(
                 torch.from_numpy(twist).to(device=env.device, dtype=torch.float32),
                 event,
             ).repeat(env.num_envs, 1)
@@ -382,7 +380,7 @@ def _teleop_agent_direct(
                 FT_FEEDBACK_SCALE = torch.tensor([0.16, 0.16, 0.16, 0.0, 0.0, 0.0])
                 ft_feedback_asset_cfg = SceneEntityCfg(
                     "robot",
-                    body_names=env.cfg.robot_cfg.regex_links_hand,  # type: ignore
+                    body_names=env.cfg.robot_cfg.regex_links_hand,
                 )
                 ft_feedback_asset_cfg.resolve(env.scene)
                 ft_feedback = (
@@ -394,6 +392,10 @@ def _teleop_agent_direct(
                 )
                 teleop_interface.set_ft_feedback(ft_feedback)  # type: ignore
 
+            ## Update GUI interface
+            if gui_interface:
+                gui_interface.update()
+
             ## Update ROS 2 interface
             if ros2_interface:
                 ros2_interface.publish(
@@ -404,10 +406,6 @@ def _teleop_agent_direct(
                     info,
                 )
                 ros2_interface.update()
-
-            ## Update GUI interface
-            if gui_interface:
-                gui_interface.update()
 
             ## Process reset request
             global should_reset
@@ -435,16 +433,14 @@ def _teleop_agent_via_policy(
         WrapperObsType,
     )
 
-    from srb.core import mdp
     from srb.core.actions import ManipulatorTaskSpaceActionCfg
-    from srb.core.managers import SceneEntityCfg
 
     # Disable command randomization
     if hasattr(env.cfg.events, "command"):
         env.cfg.events.command = None  # type: ignore
 
     is_manip_task = isinstance(
-        env.cfg.robot_cfg.action_cfg,  # type: ignore
+        env.cfg.robot_cfg.action_cfg,
         ManipulatorTaskSpaceActionCfg,
     )
 
@@ -491,23 +487,9 @@ def _teleop_agent_via_policy(
 
             observation, reward, terminated, truncated, info = super().step(action)
 
-            ## Provide force feedback for manipulation tasks
-            if is_manip_task:
-                # TODO: Generalize force feedback for all tasks
-                FT_FEEDBACK_SCALE = torch.tensor([0.16, 0.16, 0.16, 0.0, 0.0, 0.0])
-                ft_feedback_asset_cfg = SceneEntityCfg(
-                    "robot",
-                    body_names=env.cfg.robot_cfg.regex_links_hand,  # type: ignore
-                )
-                ft_feedback_asset_cfg.resolve(env.scene)
-                ft_feedback = (
-                    FT_FEEDBACK_SCALE
-                    * mdp.body_incoming_wrench_mean(
-                        env=env,
-                        asset_cfg=ft_feedback_asset_cfg,
-                    )[0, ...].cpu()
-                )
-                teleop_interface.set_ft_feedback(ft_feedback)  # type: ignore
+            ## Update GUI interface
+            if gui_interface:
+                gui_interface.update()
 
             ## Update ROS 2 interface
             if ros2_interface:
@@ -519,10 +501,6 @@ def _teleop_agent_via_policy(
                     info,
                 )
                 ros2_interface.update()
-
-            ## Update GUI interface
-            if gui_interface:
-                gui_interface.update()
 
             ## Process reset request
             global should_reset
@@ -1047,17 +1025,15 @@ def parse_cli_args() -> argparse.Namespace:
             default=False,
             help="Flag to disable inverting the control scheme due to view for manipulation-based tasks.",
         )
-        teleop_group.add_argument(
-            "--ros2_integration",
-            action="store_true",
-            default=False,  # TODO: Convert to "integrations" list alongside gui (with enum)
-            help="Flag to enable ROS 2 interface for subscribing to per-env actions and publishing per-env observations",
-        )
-        teleop_group.add_argument(
-            "--gui_integration",
-            action="store_true",
-            default=False,
-            help="Flag to enable GUI integration",
+
+        integrations_group = _agent_parser.add_argument_group("Integrations")
+        integrations_group.add_argument(
+            "--integration",
+            type=str,
+            nargs="*",
+            choices=["gui", "ros2"],
+            default=[],  # TODO: Convert to enum
+            help="Sequence of integrations ro enable",
         )
 
         policy_group = _agent_parser.add_argument_group("Teleop Policy")
@@ -1159,11 +1135,25 @@ def parse_cli_args() -> argparse.Namespace:
 
         argcomplete.autocomplete(parser)
 
+    # Allow separation of arguments meant for other purposes
     if "--" in sys.argv:
         sys.argv = [sys.argv[0], *sys.argv[(sys.argv.index("--") + 1) :]]
-    # TODO: Announce unknown arguments if they start with '-' and do not contain '=' or similar
-    args, unknown_args = parser.parse_known_args()
-    sys.argv = [sys.argv[0], *unknown_args]
+
+    # Parse arguments
+    args, other_args = parser.parse_known_args()
+
+    # Detect any unsupported arguments
+    unsupported_args = [
+        arg for arg in other_args if arg.startswith("-") or "=" not in arg
+    ]
+    if unsupported_args:
+        raise ValueError(
+            f'Unsupported CLI argument{"s" if len(unsupported_args) > 1 else ""}: '
+            + ", ".join(f'"{arg}"' if " " in arg else arg for arg in unsupported_args)
+        )
+
+    # Forward other arguments to hydra
+    sys.argv = [sys.argv[0], *other_args]
 
     return args
 

@@ -1,11 +1,11 @@
 from simforge_foundry import geometry as sf_geometry
 
-import srb.core.sim as sim_utils
+from srb.core import sim as sim_utils
 from srb.core.asset import AssetBaseCfg, Object, RigidObjectCfg
 from srb.core.sim import SimforgeAssetCfg
 
 
-class RandomPeg(Object):
+class Peg(Object):
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/peg",
         spawn=SimforgeAssetCfg(
@@ -21,7 +21,7 @@ class RandomPeg(Object):
 
 
 # TODO: Consider making it a kinematic rigid body object
-class RandomHole(Object):
+class Hole(Object):
     asset_cfg: AssetBaseCfg = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/hole",
         spawn=SimforgeAssetCfg(

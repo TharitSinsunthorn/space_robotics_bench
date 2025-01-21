@@ -1,6 +1,6 @@
-import srb.core.sim as sim_utils
-import srb.utils.math as math_utils
+from srb.core import sim as sim_utils
 from srb.core.asset import AssetBaseCfg, Frame, StaticVehicle, Transform
+from srb.utils import math as math_utils
 from srb.utils.path import SRB_ASSETS_DIR_SRB_VEHICLE
 
 

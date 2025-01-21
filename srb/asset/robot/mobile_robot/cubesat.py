@@ -1,7 +1,7 @@
 from omni.isaac.lab.assets.rigid_object import RigidObjectCfg
 from simforge_foundry import model as sf_model
 
-import srb.core.sim as sim_utils
+from srb.core import sim as sim_utils
 from srb.core.actions import SpacecraftActionCfg, SpacecraftActionGroupCfg
 from srb.core.asset import Frame, Spacecraft
 

@@ -4,9 +4,9 @@ import torch
 from omni.isaac.lab.managers import EventTermCfg
 from omni.isaac.lab.utils import configclass
 
-import srb.utils.math as math_utils
 from srb.core.envs import BaseEnv
 from srb.env import BaseLocomotionEnv, BaseLocomotionEnvCfg, BaseLocomotionEnvEventCfg
+from srb.utils import math as math_utils
 
 ##############
 ### Config ###

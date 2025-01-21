@@ -6,10 +6,10 @@ from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
 from omni.isaac.lab.sensors import ContactSensor
 from omni.isaac.lab.utils import configclass
 
-import srb.utils.math as math_utils
 import srb.utils.sampling as spacing_utils
 from srb.core.asset import RigidObject, RigidObjectCfg
 from srb.env import BaseManipulationEnv, mdp
+from srb.utils import math as math_utils
 
 from .task import TaskCfg, peg_and_hole_cfg
 

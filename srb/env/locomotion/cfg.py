@@ -8,9 +8,9 @@ from omni.isaac.lab.sensors import ContactSensorCfg
 from omni.isaac.lab.utils import configclass
 from simforge import BakeType
 
-import srb.core.sim as sim_utils
 from srb import asset
 from srb.core import mdp
+from srb.core import sim as sim_utils
 from srb.core.envs import BaseEnvCfg
 from srb.core.sim import SimulationCfg
 

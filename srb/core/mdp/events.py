@@ -4,9 +4,9 @@ import torch
 from omni.isaac.core.prims.xform_prim_view import XFormPrimView
 from omni.isaac.lab.managers import SceneEntityCfg
 
-import srb.utils.math as math_utils
 import srb.utils.sampling as sampling_utils
 from srb.core.asset import Articulation, RigidObject
+from srb.utils import math as math_utils
 
 if TYPE_CHECKING:
     from srb.core.envs import BaseEnv

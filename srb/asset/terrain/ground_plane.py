@@ -1,4 +1,4 @@
-import srb.core.sim as sim_utils
+from srb.core import sim as sim_utils
 from srb.core.asset import AssetBaseCfg, Surface
 
 

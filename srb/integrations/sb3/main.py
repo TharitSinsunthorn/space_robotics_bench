@@ -10,7 +10,7 @@ from stable_baselines3.common.callbacks import tqdm
 from srb.core.envs import BaseEnv
 from srb.integrations.sb3.exp_manager import ExperimentManager
 from srb.integrations.sb3.wrapper import Sb3EnvWrapper
-from srb.utils.parsing import (
+from srb.utils.cfg import (
     create_logdir_path,
     get_last_dir,
     get_last_file,

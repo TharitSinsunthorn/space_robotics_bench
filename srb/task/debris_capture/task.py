@@ -8,7 +8,6 @@ from omni.isaac.lab.utils import configclass
 from pydantic import BaseModel
 from simforge import TexResConfig
 
-import srb.utils.math as math_utils
 from srb import asset
 from srb.core.asset import RigidObject, RigidObjectCfg
 from srb.core.envs import env_cfg
@@ -18,6 +17,7 @@ from srb.env import (
     BaseManipulationEnvEventCfg,
     mdp,
 )
+from srb.utils import math as math_utils
 
 ##############
 ### Config ###

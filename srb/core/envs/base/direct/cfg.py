@@ -1,7 +1,10 @@
+from dataclasses import MISSING
+
 import gymnasium
 from omni.isaac.lab.envs import DirectRLEnvCfg
 from omni.isaac.lab.utils import configclass
 
+from srb.core.asset import Robot
 from srb.core.envs.env_cfg import EnvironmentConfig
 
 # # Add this somewhere here
@@ -37,6 +40,8 @@ class BaseEnvCfg(DirectRLEnvCfg):
     ## Environment
     # TODO: Rename to something more sensible
     env_cfg: EnvironmentConfig = EnvironmentConfig()
+
+    robot_cfg: Robot = MISSING  # type: ignore
 
     ## Misc
     # Flag that disables the timeout for the environment

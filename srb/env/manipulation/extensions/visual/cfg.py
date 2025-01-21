@@ -8,7 +8,7 @@ from omni.isaac.lab.sensors.camera.camera_cfg import PinholeCameraCfg
 from omni.isaac.lab.utils import configclass
 
 import srb.core.asset as asset_utils
-import srb.utils.math as math_utils
+from srb.utils import math as math_utils
 
 
 @configclass

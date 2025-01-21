@@ -1,9 +1,8 @@
-from omni.isaac.lab.utils.assets import ISAAC_NUCLEUS_DIR
-
 from srb.core import sim as sim_utils
 from srb.core.asset import AssetBaseCfg
 from srb.core.envs import env_cfg
 from srb.utils import rtx_settings
+from srb.utils.nucleus import ISAAC_NUCLEUS_DIR
 from srb.utils.path import SRB_ASSETS_DIR_SRB_HDRI
 
 

@@ -7,7 +7,7 @@ from srb.core.envs import env_cfg
 
 from .asteroid import Asteroid  # noqa: F401
 from .cubesat_debris import CubesatDebris  # noqa: F401
-from .peg_in_hole_procgen import RandomHole, RandomPeg  # noqa: F401
+from .peg_in_hole import Hole, Peg  # noqa: F401
 from .peg_in_hole_profile import ProfileHole, ProfilePeg, ShortProfilePeg  # noqa: F401
 from .rock_procgen import LunarRock, MarsRock  # noqa: F401
 from .sample_tube import SampleTube  # noqa: F401

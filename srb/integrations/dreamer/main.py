@@ -15,7 +15,7 @@ from srb.core.envs import BaseEnv
 from srb.integrations.dreamer.eval import eval_only
 from srb.integrations.dreamer.train import train
 from srb.integrations.dreamer.wrapper import EmbodiedEnvWrapper
-from srb.utils.parsing import create_logdir_path, get_last_run_logdir_path
+from srb.utils.cfg import create_logdir_path, get_last_run_logdir_path
 
 ALGO_NAME = "dreamer"
 UPSTREAM_CONFIG_PATH = Path(dreamer_agent.__file__).parent.joinpath("configs.yaml")

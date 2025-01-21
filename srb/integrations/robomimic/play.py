@@ -20,7 +20,7 @@ def main(launcher: AppLauncher, args: argparse.Namespace):
     from omni.isaac.kit import SimulationApp
 
     import srb  # noqa: F401
-    from srb.utils.parsing import parse_task_cfg
+    from srb.utils.cfg import parse_task_cfg
 
     ## Extract simulation app
     sim_app: SimulationApp = launcher.app

@@ -1,5 +1,5 @@
 # from omni.isaac.lab.assets.articulation import ArticulationCfg
-# import srb.core.sim as sim_utils
+# from srb.core import sim as sim_utils
 import omni.isaac.lab.sim as sim_utils
 from omni.isaac.lab.assets.articulation import ArticulationCfg
 from omni.isaac.lab_assets import ANYDRIVE_3_LSTM_ACTUATOR_CFG

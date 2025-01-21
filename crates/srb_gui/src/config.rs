@@ -305,17 +305,18 @@ impl TaskConfig {
                 "--teleop_device",
                 "keyboard",
                 "spacemouse",
-                "touch",
                 "ros2",
+                "haptic",
             ]);
             // Arguments
             if self.enable_ui {
                 exec = exec.args(&[
-                    "--gui_integration",
-                    // "--ros2_integration",
+                    "--integration",
+                    "gui",
+                    // "ros2",
                 ]);
             } else {
-                exec = exec.args(&["--disable_ui", "--gui_integration"]);
+                exec = exec.args(&["--disable_ui", "--integration", "gui"]);
             }
         }
 
@@ -326,7 +327,7 @@ impl TaskConfig {
 
         // Environment variables - Environment
         exec = exec.arg(format!(
-            "env.env_cfg.seed={}",
+            "env.seed={}",
             self.env_cfg.seed.to_string().trim_matches('"').to_owned()
         ));
         exec = exec.arg(format!(

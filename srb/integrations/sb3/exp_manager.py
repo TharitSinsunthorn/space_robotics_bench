@@ -46,7 +46,7 @@ class ExperimentManager(__ExperimentManager):
     ) -> VecEnv:
         # Special case for GoalEnvs: log success rate too
         if (
-            # env.is_goal_env  # TODO: Implement
+            # env.is_goal_env  # TODO: Add goal env handling
             False and len(self.monitor_kwargs) == 0
         ):
             self.monitor_kwargs = dict(info_keywords=("is_success",))

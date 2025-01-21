@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import srb.core.envs as env_utils
-import srb.core.sim as sim_utils
+from srb.core import sim as sim_utils
 
 
 def contrastive_color_from_env_cfg(
