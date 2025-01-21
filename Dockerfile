@@ -18,6 +18,10 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN echo "#!/usr/bin/env bash" >> /entrypoint.bash && \
     chmod +x /entrypoint.bash
 
+###########################
+### System Dependencies ###
+###########################
+
 ## Copy Isaac Sim into the base image
 ARG ISAAC_SIM_PATH="/root/isaac-sim"
 ENV ISAAC_SIM_PYTHON="${ISAAC_SIM_PATH}/python.sh"
@@ -33,9 +37,10 @@ RUN ISAAC_SIM_VERSION="$(cut -d'-' -f1 < "${ISAAC_SIM_PATH}/VERSION")" && \
 RUN sed -i 's|$SCRIPT_DIR/../../../$LD_LIBRARY_PATH:||' "${ISAAC_SIM_PATH}/setup_python_env.sh" && \
     sed -i 's|$SCRIPT_DIR/../../../$PYTHONPATH:||' "${ISAAC_SIM_PATH}/setup_python_env.sh"
 
-## Optimization: Build Python to improve the runtime performance of training
-ARG PYTHON_VERSION="3.10.15"
-ENV PYTHONEXE="/usr/local/bin/python${PYTHON_VERSION%%.*}"
+## Build Python with enabled optimizations to improve the runtime training performance
+ARG PYTHON_VERSION="3.10.16"
+ARG PYTHON_PREFIX="/usr/local"
+ENV PYTHONEXE="${PYTHON_PREFIX}/bin/python${PYTHON_VERSION%.*}"
 # hadolint ignore=DL3003,DL3008
 RUN PYTHON_DL_PATH="/tmp/Python-${PYTHON_VERSION}.tar.xz" && \
     PYTHON_SRC_DIR="/tmp/python${PYTHON_VERSION}" && \
@@ -63,38 +68,57 @@ RUN PYTHON_DL_PATH="/tmp/Python-${PYTHON_VERSION}.tar.xz" && \
     tar xf "${PYTHON_DL_PATH}" -C "${PYTHON_SRC_DIR}" --strip-components=1 && \
     rm "${PYTHON_DL_PATH}" && \
     cd "${PYTHON_SRC_DIR}" && \
-    "${PYTHON_SRC_DIR}/configure" --enable-shared --enable-optimizations --with-lto --prefix="/usr/local" && \
+    "${PYTHON_SRC_DIR}/configure" --enable-shared --enable-optimizations --with-lto --prefix="${PYTHON_PREFIX}" && \
     make -j "$(nproc)" && \
     make install && \
-    ln -sr "${PYTHONEXE}" /usr/local/bin/python && \
     cd - && \
     rm -rf "${PYTHON_SRC_DIR}"
+## Create a 'python' symlink for convenience
+RUN ln -sr "${PYTHONEXE}" "${PYTHON_PREFIX}/bin/python"
 ## Fix `PYTHONEXE` by disabling the append of "isaac-sim/kit/kernel/plugins" to `LD_LIBRARY_PATH` inside `isaac-sim/setup_python_env.sh`
 # hadolint ignore=SC2016
 RUN sed -i 's|$SCRIPT_DIR/kit/kernel/plugins:||' "${ISAAC_SIM_PATH}/setup_python_env.sh"
+## Make the system Python identical with Isaac Sim Python
+# hadolint ignore=SC2016
+RUN mv "${PYTHONEXE}" "${PYTHON_PREFIX}/bin/python${PYTHON_VERSION}" && \
+    echo -e '#!/bin/bash\n${ISAAC_SIM_PYTHON} "${@}"' > "${PYTHONEXE}" && \
+    chmod +x "${PYTHONEXE}"
+ENV PYTHONEXE="${PYTHON_PREFIX}/bin/python${PYTHON_VERSION}"
+## Fake that Python was installed via apt
+# hadolint ignore=DL3008
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
+    equivs && \
+    rm -rf /var/lib/apt/lists/* && \
+    for pkg in "libpython${PYTHON_VERSION%.*}" "libpython${PYTHON_VERSION%.*}-dev" "python${PYTHON_VERSION%.*}-dev"; do \
+    equivs-control "${pkg}" && \
+    echo -e "Package: ${pkg}\nProvides: ${pkg}\nVersion: ${PYTHON_VERSION}\nArchitecture: all" > "${pkg}" && \
+    equivs-build "${pkg}" && \
+    dpkg -i "${pkg}_${PYTHON_VERSION}_all.deb" && \
+    apt-mark hold "${pkg}" && \
+    rm "${pkg}" "${pkg}_${PYTHON_VERSION}_all.deb" ; \
+    done
 
 ## Install system dependencies
 # hadolint ignore=DL3008
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
     # Common
+    bash-completion \
     build-essential \
     ca-certificates \
+    clang \
     cmake \
     curl \
     git \
     mold \
     xz-utils \
-    # Isaac Sim
+    # Graphics
     libgl1 \
     libglu1 \
-    libxt-dev \
-    # Blender
-    libegl1 \
-    # egui
+    libxi6 \
     libxkbcommon-x11-0 \
-    # r2r
-    clang \
+    libxt-dev \
     # Video recording/processing
     ffmpeg && \
     rm -rf /var/lib/apt/lists/*
@@ -103,7 +127,7 @@ RUN apt-get update && \
 RUN "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --upgrade pip
 
 ## Install Rust
-ARG RUST_VERSION="1.83"
+ARG RUST_VERSION="1.84"
 RUN echo -e "\n# Rust ${RUST_VERSION}" >> /entrypoint.bash && \
     echo "export PATH=\"${HOME}/.cargo/bin\${PATH:+:\${PATH}}\"" >> /entrypoint.bash && \
     echo "export CARGO_TARGET_DIR=\"${HOME}/.cargo/target\"" >> /entrypoint.bash && \
@@ -115,6 +139,7 @@ RUN echo -e "\n# Rust ${RUST_VERSION}" >> /entrypoint.bash && \
 ## Install (Space) ROS
 ARG INSTALL_SPACEROS=false
 ARG ROS_DISTRO="humble"
+ARG SPACEROS_TAG="${ROS_DISTRO}-2024.10.0"
 # hadolint ignore=SC1091,DL3008
 RUN if [[ "${INSTALL_SPACEROS,,}" != true ]]; then \
     curl --proto "=https" --tlsv1.2 -sSfL "https://raw.githubusercontent.com/ros/rosdistro/master/ros.key" -o /usr/share/keyrings/ros-archive-keyring.gpg && \
@@ -130,7 +155,6 @@ RUN if [[ "${INSTALL_SPACEROS,,}" != true ]]; then \
     echo -e "\n# ROS ${ROS_DISTRO^}" >> /entrypoint.bash && \
     echo "source \"/opt/ros/${ROS_DISTRO}/setup.bash\" --" >> /entrypoint.bash ; \
     fi
-ARG SPACEROS_TAG="${ROS_DISTRO}-2024.10.0"
 # hadolint ignore=SC1091,DL3003,DL3008
 RUN if [[ "${INSTALL_SPACEROS,,}" = true ]]; then \
     curl --proto "=https" --tlsv1.2 -sSfL "https://raw.githubusercontent.com/ros/rosdistro/master/ros.key" -o /usr/share/keyrings/ros-archive-keyring.gpg && \
@@ -180,7 +204,7 @@ RUN if [[ "${INSTALL_SPACEROS,,}" = true ]]; then \
 ## Install Blender
 ARG BLENDER_PATH="/root/blender"
 ARG BLENDER_VERSION="4.3.2"
-ENV BLENDER_PYTHON="${BLENDER_PATH}/${BLENDER_VERSION%.*}/python/bin/python3.11"
+ARG BLENDER_PYTHON="${BLENDER_PATH}/${BLENDER_VERSION%.*}/python/bin/python3.11"
 # hadolint ignore=SC2016
 RUN echo -e "\n# Blender ${BLENDER_VERSION}" >> /entrypoint.bash && \
     echo "export PATH=\"${BLENDER_PATH}\${PATH:+:\${PATH}}\"" >> /entrypoint.bash && \
@@ -205,6 +229,69 @@ RUN echo -e "\n# Isaac Lab ${ISAACLAB_COMMIT_SHA}" >> /entrypoint.bash && \
     fi ; \
     done
 
+###################
+### Development ###
+###################
+ARG DEV=true
+
+## Simulation
+ARG OXIDASIM_DEV=false
+ARG OXIDASIM_PATH="/root/oxidasim"
+ARG OXIDASIM_REMOTE="https://github.com/AndrejOrsula/oxidasim.git"
+ARG OXIDASIM_BRANCH="main"
+# hadolint ignore=SC1091
+RUN if [[ "${DEV,,}" = true && "${OXIDASIM_DEV,,}" = true ]]; then \
+    git clone "${OXIDASIM_REMOTE}" "${OXIDASIM_PATH}" --branch "${OXIDASIM_BRANCH}" && \
+    source /entrypoint.bash -- && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${OXIDASIM_PATH}[all]" ; \
+    fi
+
+## Assets
+ARG SIMFORGE_DEV=true
+ARG SIMFORGE_PATH="/root/simforge"
+ARG SIMFORGE_REMOTE="https://github.com/AndrejOrsula/simforge.git"
+ARG SIMFORGE_BRANCH="main"
+RUN if [[ "${DEV,,}" = true && "${SIMFORGE_DEV,,}" = true ]]; then \
+    git clone "${SIMFORGE_REMOTE}" "${SIMFORGE_PATH}" --branch "${SIMFORGE_BRANCH}" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_PATH}[all]" && \
+    "${BLENDER_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_PATH}[dev]" ; \
+    fi
+ARG SIMFORGE_FOUNDRY_DEV=true
+ARG SIMFORGE_FOUNDRY_PATH="/root/simforge_foundry"
+ARG SIMFORGE_FOUNDRY_REMOTE="https://github.com/AndrejOrsula/simforge_foundry.git"
+ARG SIMFORGE_FOUNDRY_BRANCH="dev"
+RUN if [[ "${DEV,,}" = true && "${SIMFORGE_FOUNDRY_DEV,,}" = true ]]; then \
+    git clone "${SIMFORGE_FOUNDRY_REMOTE}" "${SIMFORGE_FOUNDRY_PATH}" --branch "${SIMFORGE_FOUNDRY_BRANCH}" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_FOUNDRY_PATH}" && \
+    "${BLENDER_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_FOUNDRY_PATH}" ; \
+    fi
+
+## Reinforcement Learning
+ARG DREAMER_DEV=true
+ARG DREAMER_PATH="/root/dreamerv3"
+ARG DREAMER_REMOTE="https://github.com/danijar/dreamerv3.git"
+ARG DREAMER_BRANCH="main"
+ARG DREAMER_COMMIT_SHA="55c8c67c956fbdace4bf8b594ea12e934a3ae4ba" # 2025-01-11
+RUN if [[ "${DEV,,}" = true && "${DREAMER_DEV,,}" = true ]]; then \
+    git clone "${DREAMER_REMOTE}" "${DREAMER_PATH}" --branch "${DREAMER_BRANCH}" && \
+    git -C "${DREAMER_PATH}" reset --hard "${DREAMER_COMMIT_SHA}" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${DREAMER_PATH}" ; \
+    fi
+ARG SKRL_DEV=false
+ARG SKRL_PATH="/root/skrl"
+ARG SKRL_REMOTE="https://github.com/Toni-SM/skrl.git"
+ARG SKRL_BRANCH="main"
+ARG SKRL_COMMIT_SHA="d57c8ea138e3356396a8da368f37430f75fb524a" # 2025-01-17
+RUN if [[ "${DEV,,}" = true && "${SKRL_DEV,,}" = true ]]; then \
+    git clone "${SKRL_REMOTE}" "${SKRL_PATH}" --branch "${SKRL_BRANCH}" && \
+    git -C "${SKRL_PATH}" reset --hard "${SKRL_COMMIT_SHA}" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SKRL_PATH}" ; \
+    fi
+
+##################
+### Entrypoint ###
+##################
+
 ## Define the workspace of the project
 ARG SRB_PATH="/root/ws"
 RUN echo -e "\n# Space Robotics Bench" >> /entrypoint.bash && \
@@ -218,87 +305,39 @@ RUN echo -e "\n# Execute command" >> /entrypoint.bash && \
     sed -i '$a source /entrypoint.bash --' ~/.bashrc
 ENTRYPOINT ["/entrypoint.bash"]
 
-## Install dependencies
-# hadolint ignore=DL3013,SC2046
-RUN --mount=type=bind,source=pyproject.toml,target="${SRB_PATH}/pyproject.toml" \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --ignore-installed toml~=0.10 && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir $(python -c "f='${SRB_PATH}/pyproject.toml'; from toml import load; print(' '.join(filter(lambda d: not d.startswith(p['name']), (*p.get('dependencies', ()), *(d for ds in p.get('optional-dependencies', {}).values() for d in ds)))) if (p := load(f).get('project', None)) else '')")
+####################
+### Dependencies ###
+####################
 
-## Install ROS dependencies in advance to cache the layers (speeds up rebuilds)
-RUN --mount=type=bind,source=package.xml,target="${SRB_PATH}/package.xml" \
+## Install ROS dependencies
+RUN --mount=type=bind,source="package.xml",target="${SRB_PATH}/package.xml" \
     apt-get update && \
     rosdep update --rosdistro "${ROS_DISTRO}" && \
     DEBIAN_FRONTEND=noninteractive rosdep install --default-yes --ignore-src --rosdistro "${ROS_DISTRO}" --from-paths "${SRB_PATH}" && \
     rm -rf /var/lib/apt/lists/* /root/.ros/rosdep/sources.cache
 
-###############
-### Develop ###
-###############
-ARG DEV=true
-
-# ARG OXIDASIM_PATH="/root/oxidasim"
-# ARG OXIDASIM_REMOTE="https://github.com/AndrejOrsula/oxidasim.git"
-# ARG OXIDASIM_BRANCH="main"
-# # hadolint ignore=SC1091
-# RUN if [[ "${DEV,,}" = true ]]; then \
-#     source /entrypoint.bash -- && \
-#     git clone "${OXIDASIM_REMOTE}" "${OXIDASIM_PATH}" --branch "${OXIDASIM_BRANCH}" && \
-#     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${OXIDASIM_PATH}[all]" ; \
-#     fi
-
-ARG SIMFORGE_PATH="/root/simforge"
-ARG SIMFORGE_REMOTE="https://github.com/AndrejOrsula/simforge.git"
-ARG SIMFORGE_BRANCH="main"
-RUN if [[ "${DEV,,}" = true ]]; then \
-    git clone "${SIMFORGE_REMOTE}" "${SIMFORGE_PATH}" --branch "${SIMFORGE_BRANCH}" && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_PATH}[all]" && \
-    "${BLENDER_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_PATH}[dev]" ; \
-    fi
-
-ARG SIMFORGE_FOUNDRY_PATH="/root/simforge_foundry"
-ARG SIMFORGE_FOUNDRY_REMOTE="https://github.com/AndrejOrsula/simforge_foundry.git"
-ARG SIMFORGE_FOUNDRY_BRANCH="dev"
-RUN if [[ "${DEV,,}" = true ]]; then \
-    git clone "${SIMFORGE_FOUNDRY_REMOTE}" "${SIMFORGE_FOUNDRY_PATH}" --branch "${SIMFORGE_FOUNDRY_BRANCH}" && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_FOUNDRY_PATH}" && \
-    "${BLENDER_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_FOUNDRY_PATH}" ; \
-    fi
-
-## Install DreamerV3 locally to enable mounting the source code into the container
-ARG DREAMERV3_PATH="/root/dreamerv3"
-ARG DREAMERV3_REMOTE="https://github.com/danijar/dreamerv3.git"
-ARG DREAMERV3_BRANCH="main"
-ARG DREAMERV3_COMMIT_SHA="55c8c67c956fbdace4bf8b594ea12e934a3ae4ba" # 2025-01-11
-RUN if [[ "${DEV,,}" = true ]]; then \
-    git clone "${DREAMERV3_REMOTE}" "${DREAMERV3_PATH}" --branch "${DREAMERV3_BRANCH}" && \
-    git -C "${DREAMERV3_PATH}" reset --hard "${DREAMERV3_COMMIT_SHA}" && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${DREAMERV3_PATH}" ; \
-    fi
-
-## Install skrl locally to enable mounting the source code into the container
-ARG SKRL_PATH="/root/skrl"
-ARG SKRL_REMOTE="https://github.com/Toni-SM/skrl.git"
-ARG SKRL_BRANCH="main"
-ARG SKRL_COMMIT_SHA="d57c8ea138e3356396a8da368f37430f75fb524a" # 2025-01-17
-RUN if [[ "${DEV,,}" = true ]]; then \
-    git clone "${SKRL_REMOTE}" "${SKRL_PATH}" --branch "${SKRL_BRANCH}" && \
-    git -C "${SKRL_PATH}" reset --hard "${SKRL_COMMIT_SHA}" && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SKRL_PATH}" ; \
-    fi
+## Install Python dependencies
+# hadolint ignore=DL3013,SC2046
+RUN --mount=type=bind,source="pyproject.toml",target="${SRB_PATH}/pyproject.toml" \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --ignore-installed toml~=0.10 && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir $("${ISAAC_SIM_PYTHON}" -c "f='${SRB_PATH}/pyproject.toml'; from toml import load; print(' '.join(filter(lambda d: not d.startswith(p['name']), (*p.get('dependencies', ()), *(d for ds in p.get('optional-dependencies', {}).values() for d in ds)))) if (p := load(f).get('project', None)) else '')")
 
 ###############
-### Build ###
+### Project ###
 ###############
 
 ## Copy the source code into the image
 COPY . "${SRB_PATH}"
 
-# ## Build Rust targets
-# # hadolint ignore=SC1091
-# RUN source /entrypoint.bash -- && \
-#     cargo build --release --workspace --all-targets
+## Build Rust targets of the project
+ARG BUILD_RUST=false
+# hadolint ignore=SC1091
+RUN if [[ "${BUILD_RUST,,}" = true ]]; then \
+    source /entrypoint.bash -- && \
+    cargo build --release --workspace --all-targets --all-features ; \
+    fi
 
-## Install project as ROS package
+## Install project as ROS 2 package
 ARG ROS_WS="/opt/ros/${ROS_DISTRO}/ws"
 # hadolint ignore=SC1091
 RUN source /entrypoint.bash -- && \
@@ -306,10 +345,23 @@ RUN source /entrypoint.bash -- && \
     rm -rf ./log && \
     sed -i "s|source \"/opt/ros/${ROS_DISTRO}/setup.bash\" --|source \"${ROS_WS}/install/setup.bash\" --|" /entrypoint.bash
 
-## Install project as editable Python module
+## Install project as editable Python package
 # hadolint ignore=SC1091
 RUN source /entrypoint.bash -- && \
     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --no-deps --editable "${SRB_PATH}[all]"
+
+ARG EXECUTABLES="simforge srb space_robotics_bench"
+
+## Update the shebang of installed executables (ISAAC_SIM_PYTHON is bypassed by default)
+RUN for exe in ${EXECUTABLES}; do \
+    sed -i "1s|.*|#!${ISAAC_SIM_PYTHON}|" "$(which "${exe}")" ; \
+    done
+
+## Configure argcomplete
+RUN echo "source /etc/bash_completion" >> "/etc/bash.bashrc" && \
+    for exe in ${EXECUTABLES}; do \
+    register-python-argcomplete3 "${exe}" > "/etc/bash_completion.d/${exe}" ; \
+    done
 
 ## Set the default command
 CMD ["bash"]
@@ -321,24 +373,5 @@ CMD ["bash"]
 ## Skip writing Python bytecode to the disk to avoid polluting mounted host volume with `__pycache__` directories
 ENV PYTHONDONTWRITEBYTECODE=1
 
-## Enable full error backtraces in Hydra
+## Enable full error backtrace with Hydra
 ENV HYDRA_FULL_ERROR=1
-
-## Make the default Python executable point to the Isaac Sim Python
-# hadolint ignore=SC2016
-RUN mv "${PYTHONEXE}" "${PYTHONEXE}.original" && \
-    echo -e '#!/bin/bash\n${ISAAC_SIM_PYTHON} "${@}"' > "${PYTHONEXE}" && \
-    chmod +x "${PYTHONEXE}"
-ENV PYTHONEXE="${PYTHONEXE}.original"
-
-## Configure argcomplete
-# hadolint ignore=DL3008
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
-    bash-completion && \
-    rm -rf /var/lib/apt/lists/* && \
-    echo "source /etc/bash_completion" >> "/etc/bash.bashrc" && \
-    register-python-argcomplete3 simforge > "/etc/bash_completion.d/simforge" && \
-    register-python-argcomplete3 srb > "/etc/bash_completion.d/srb"
-
-# TODO: Clean-up Dockerfile
