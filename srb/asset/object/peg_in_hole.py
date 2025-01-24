@@ -1,21 +1,24 @@
-from simforge_foundry import geometry as sf_geometry
+import simforge_foundry
 
-from srb.core import sim as sim_utils
 from srb.core.asset import AssetBaseCfg, Object, RigidObjectCfg
-from srb.core.sim import SimforgeAssetCfg
+from srb.core.sim import (
+    CollisionPropertiesCfg,
+    MassPropertiesCfg,
+    MeshCollisionPropertiesCfg,
+    RigidBodyPropertiesCfg,
+    SimforgeAssetCfg,
+)
 
 
 class Peg(Object):
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/peg",
         spawn=SimforgeAssetCfg(
-            assets=[sf_geometry.PegGeo()],
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
-                mesh_approximation="sdf"
-            ),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
-            mass_props=sim_utils.MassPropertiesCfg(density=1000.0),
+            assets=[simforge_foundry.PegGeo()],
+            collision_props=CollisionPropertiesCfg(),
+            mesh_collision_props=MeshCollisionPropertiesCfg(mesh_approximation="sdf"),
+            rigid_props=RigidBodyPropertiesCfg(),
+            mass_props=MassPropertiesCfg(density=1000.0),
         ),
     )
 
@@ -25,12 +28,12 @@ class Hole(Object):
     asset_cfg: AssetBaseCfg = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/hole",
         spawn=SimforgeAssetCfg(
-            assets=[sf_geometry.HoleGeo()],
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            # mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
+            assets=[simforge_foundry.HoleGeo()],
+            collision_props=CollisionPropertiesCfg(),
+            # mesh_collision_props=MeshCollisionPropertiesCfg(
             #     mesh_approximation="sdf"
             # ),
-            # rigid_props=sim_utils.RigidBodyPropertiesCfg(),
-            # mass_props=sim_utils.MassPropertiesCfg(density=1000.0),
+            # rigid_props=RigidBodyPropertiesCfg(),
+            # mass_props=MassPropertiesCfg(density=1000.0),
         ),
     )

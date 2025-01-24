@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Mapping, Sequence
 
-import gymnasium as gym
-import numpy as np
+import gymnasium
+import numpy
 import torch
 from stable_baselines3.common.vec_env.base_vec_env import (
     VecEnv,
@@ -9,11 +9,11 @@ from stable_baselines3.common.vec_env.base_vec_env import (
     VecEnvStepReturn,
 )
 
-from srb.core.envs import BaseEnv
+from srb.core.envs import DirectEnv
 
 
 class Sb3EnvWrapper(VecEnv):
-    def __init__(self, env: BaseEnv):
+    def __init__(self, env: DirectEnv):
         # Initialize the wrapper
         self.env = env
         # Collect common information
@@ -26,10 +26,12 @@ class Sb3EnvWrapper(VecEnv):
         #   we set it to some high value here. Maybe this is not general but something to think about.
         observation_space = self.unwrapped.single_observation_space
         action_space = self.unwrapped.single_action_space
-        if isinstance(action_space, gym.spaces.Box) and not action_space.is_bounded(
-            "both"
-        ):
-            action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=action_space.shape)
+        if isinstance(
+            action_space, gymnasium.spaces.Box
+        ) and not action_space.is_bounded("both"):
+            action_space = gymnasium.spaces.Box(
+                low=-1.0, high=1.0, shape=action_space.shape
+            )
 
         # Initialize vec-env
         VecEnv.__init__(self, self.num_envs, observation_space, action_space)
@@ -38,7 +40,7 @@ class Sb3EnvWrapper(VecEnv):
         self._ep_len_buf = torch.zeros(self.num_envs, device=self.sim_device)
 
         # Use the appropriate observation processing function
-        if isinstance(observation_space, gym.spaces.Dict):
+        if isinstance(observation_space, gymnasium.spaces.Dict):
             self._process_obs = self._process_obs_dict  # type: ignore
 
     def __str__(self):
@@ -52,7 +54,7 @@ class Sb3EnvWrapper(VecEnv):
         return cls.__name__
 
     @property
-    def unwrapped(self) -> BaseEnv:
+    def unwrapped(self) -> DirectEnv:
         return self.env.unwrapped  # type: ignore
 
     def get_episode_rewards(self) -> Sequence[float]:
@@ -75,7 +77,7 @@ class Sb3EnvWrapper(VecEnv):
     def step_async(self, actions):
         # Convert input to numpy array
         if not isinstance(actions, torch.Tensor):
-            actions = np.asarray(actions)
+            actions = numpy.asarray(actions)
             actions = torch.from_numpy(actions).to(
                 device=self.sim_device, dtype=torch.float32
             )
@@ -165,23 +167,23 @@ class Sb3EnvWrapper(VecEnv):
     def get_images(self):
         raise NotImplementedError("Getting images is not supported.")
 
-    def _process_obs(self, obs: torch.Tensor) -> np.ndarray:
+    def _process_obs(self, obs: torch.Tensor) -> numpy.ndarray:
         return obs.detach().cpu().numpy()
 
     def _process_obs_dict(
         self, obs: Dict[str, torch.Tensor]
-    ) -> Mapping[str, np.ndarray]:
+    ) -> Mapping[str, numpy.ndarray]:
         for key, value in obs.items():
             obs[key] = value.detach().cpu().numpy()  # type: ignore
         return obs  # type: ignore
 
     def _process_extras(
         self,
-        obs: np.ndarray,
-        terminated: np.ndarray,
-        truncated: np.ndarray,
+        obs: numpy.ndarray,
+        terminated: numpy.ndarray,
+        truncated: numpy.ndarray,
         extras: Dict[str, Any],
-        reset_ids: np.ndarray,
+        reset_ids: numpy.ndarray,
     ) -> Sequence[Mapping[str, Any]]:
         # Create empty list of dictionaries to fill
         infos: List[Dict[str, Any]] = [

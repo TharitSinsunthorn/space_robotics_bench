@@ -1,7 +1,8 @@
 from typing import Dict, Tuple
 
 import torch
-from omni.isaac.lab.sensors import Camera
+
+from srb.core.sensors import Camera
 
 
 def extract_images(camera: Camera) -> Dict[str, torch.Tensor]:

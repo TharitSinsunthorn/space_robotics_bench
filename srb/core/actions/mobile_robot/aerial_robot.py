@@ -3,22 +3,22 @@ from dataclasses import MISSING
 from typing import TYPE_CHECKING, Dict
 
 import torch
-from omni.isaac.lab.managers import ActionTerm, ActionTermCfg
-from omni.isaac.lab.utils import configclass
 
 from srb.core.actions.action_group import ActionGroup
 from srb.core.asset import Articulation
+from srb.core.managers import ActionTerm, ActionTermCfg
+from srb.utils import configclass
 from srb.utils.math import euler_xyz_from_quat, quat_from_euler_xyz
 
 if TYPE_CHECKING:
-    from srb.core.envs import BaseEnv
+    from srb.core.envs import DirectEnv
 
 
 class MultiCopterAction(ActionTerm):
     cfg: "MultiCopterActionCfg"
     _asset: Articulation
 
-    def __init__(self, cfg: "MultiCopterActionCfg", env: "BaseEnv"):
+    def __init__(self, cfg: "MultiCopterActionCfg", env: "DirectEnv"):
         super().__init__(cfg, env)
 
         self._body_index = self._asset.find_bodies(self.cfg.frame_base)[0]

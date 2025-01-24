@@ -1,12 +1,13 @@
 from typing import Sequence
 
 import gymnasium
-import numpy as np
+import numpy
 import torch
-from omni.isaac.lab.envs import DirectRLEnv
-from omni.isaac.lab.managers import ActionManager
+from omni.isaac.lab.envs import DirectRLEnv as __DirectRLEnv
 
-from . import BaseEnvCfg
+from srb.core.managers import ActionManager
+
+from . import DirectEnvCfg
 
 
 class __PostInitCaller(type):
@@ -16,14 +17,10 @@ class __PostInitCaller(type):
         return obj
 
 
-class BaseEnv(DirectRLEnv, metaclass=__PostInitCaller):
-    """
-    Extended version of :class:`omni.isaac.lab.envs.DirectRLEnv`.
-    """
+class DirectEnv(__DirectRLEnv, metaclass=__PostInitCaller):
+    cfg: DirectEnvCfg
 
-    cfg: BaseEnvCfg
-
-    def __init__(self, cfg: BaseEnvCfg, render_mode: str | None = None, **kwargs):
+    def __init__(self, cfg: DirectEnvCfg, render_mode: str | None = None, **kwargs):
         super().__init__(cfg, render_mode, **kwargs)
 
         if self.cfg.actions:
@@ -65,7 +62,7 @@ class BaseEnv(DirectRLEnv, metaclass=__PostInitCaller):
     def _update_gym_env_spaces(self):
         # Action space
         self.single_action_space = gymnasium.spaces.Box(
-            low=-np.inf, high=np.inf, shape=(self.cfg.num_actions,)
+            low=-numpy.inf, high=numpy.inf, shape=(self.cfg.num_actions,)
         )
         self.action_space = gymnasium.vector.utils.batch_space(
             self.single_action_space, self.num_envs
@@ -78,7 +75,7 @@ class BaseEnv(DirectRLEnv, metaclass=__PostInitCaller):
             obs_buf,
         ) in self._get_observations().items():
             self.single_observation_space[obs_key] = gymnasium.spaces.Box(
-                low=-np.inf, high=np.inf, shape=obs_buf.shape[1:]
+                low=-numpy.inf, high=numpy.inf, shape=obs_buf.shape[1:]
             )
         self.observation_space = gymnasium.vector.utils.batch_space(
             self.single_observation_space, self.num_envs

@@ -2,18 +2,21 @@ from typing import TYPE_CHECKING, Dict, List, Tuple
 
 import torch
 from omni.isaac.core.prims.xform_prim_view import XFormPrimView
-from omni.isaac.lab.managers import SceneEntityCfg
 
-import srb.utils.sampling as sampling_utils
 from srb.core.asset import Articulation, RigidObject
-from srb.utils import math as math_utils
+from srb.core.managers import SceneEntityCfg
+from srb.utils.math import quat_from_euler_xyz, quat_mul, sample_uniform
+from srb.utils.sampling import (
+    sample_poisson_disk_2d_looped,
+    sample_poisson_disk_3d_looped,
+)
 
 if TYPE_CHECKING:
-    from srb.core.envs import BaseEnv
+    from srb.core.envs import DirectEnv
 
 
 def reset_xform_orientation_uniform(
-    env: "BaseEnv",
+    env: "DirectEnv",
     env_ids: torch.Tensor,
     orientation_distribution_params: Dict[str, Tuple[float, float]],
     asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
@@ -25,11 +28,11 @@ def reset_xform_orientation_uniform(
         for key in ["roll", "pitch", "yaw"]
     ]
     ranges = torch.tensor(range_list, device=asset._device)
-    rand_samples = math_utils.sample_uniform(
+    rand_samples = sample_uniform(
         ranges[:, 0], ranges[:, 1], (1, 3), device=asset._device
     )
 
-    orientations = math_utils.quat_from_euler_xyz(
+    orientations = quat_from_euler_xyz(
         rand_samples[:, 0], rand_samples[:, 1], rand_samples[:, 2]
     )
 
@@ -37,7 +40,7 @@ def reset_xform_orientation_uniform(
 
 
 def follow_xform_orientation_linear_trajectory(
-    env: "BaseEnv",
+    env: "DirectEnv",
     env_ids: torch.Tensor,
     orientation_step_params: Dict[str, float],
     asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
@@ -50,17 +53,15 @@ def follow_xform_orientation_linear_trajectory(
         [orientation_step_params.get(key, 0.0) for key in ["roll", "pitch", "yaw"]],
         device=asset._device,
     )
-    step_quat = math_utils.quat_from_euler_xyz(steps[0], steps[1], steps[2]).unsqueeze(
-        0
-    )
+    step_quat = quat_from_euler_xyz(steps[0], steps[1], steps[2]).unsqueeze(0)
 
-    orientations = math_utils.quat_mul(current_quat, step_quat)
+    orientations = quat_mul(current_quat, step_quat)
 
     asset.set_world_poses(orientations=orientations)
 
 
 def reset_joints_by_offset(
-    env: "BaseEnv",
+    env: "DirectEnv",
     env_ids: torch.Tensor,
     position_range: tuple[float, float],
     velocity_range: tuple[float, float],
@@ -79,12 +80,8 @@ def reset_joints_by_offset(
     joint_vel = asset.data.default_joint_vel[env_ids].clone()
 
     # Bias these values randomly
-    joint_pos += math_utils.sample_uniform(
-        *position_range, joint_pos.shape, joint_pos.device
-    )
-    joint_vel += math_utils.sample_uniform(
-        *velocity_range, joint_vel.shape, joint_vel.device
-    )
+    joint_pos += sample_uniform(*position_range, joint_pos.shape, joint_pos.device)
+    joint_vel += sample_uniform(*velocity_range, joint_vel.shape, joint_vel.device)
 
     # Clamp joint pos to limits
     joint_pos_limits = asset.data.soft_joint_pos_limits[env_ids]
@@ -104,7 +101,7 @@ def reset_joints_by_offset(
 
 
 def reset_root_state_uniform_poisson_disk_2d(
-    env: "BaseEnv",
+    env: "DirectEnv",
     env_ids: torch.Tensor,
     pose_range: dict[str, tuple[float, float]],
     velocity_range: dict[str, tuple[float, float]],
@@ -129,7 +126,7 @@ def reset_root_state_uniform_poisson_disk_2d(
     ]
     ranges = torch.tensor(range_list, dtype=torch.float32, device=assets[0].device)
     samples_pos_xy = torch.tensor(
-        sampling_utils.sample_poisson_disk_2d_looped(
+        sample_poisson_disk_2d_looped(
             (len(env_ids), len(asset_cfgs)),
             (
                 (range_list[0][0], range_list[1][0]),
@@ -139,7 +136,7 @@ def reset_root_state_uniform_poisson_disk_2d(
         ),
         device=assets[0].device,
     )
-    rand_samples = math_utils.sample_uniform(
+    rand_samples = sample_uniform(
         ranges[2:, 0],
         ranges[2:, 1],
         (len(env_ids), len(asset_cfgs), 4),
@@ -152,10 +149,10 @@ def reset_root_state_uniform_poisson_disk_2d(
         + env.scene.env_origins[env_ids].repeat(len(asset_cfgs), 1, 1).swapaxes(0, 1)
         + rand_samples[:, :, 0:3]
     )
-    orientations_delta = math_utils.quat_from_euler_xyz(
+    orientations_delta = quat_from_euler_xyz(
         rand_samples[:, :, 3], rand_samples[:, :, 4], rand_samples[:, :, 5]
     )
-    orientations = math_utils.quat_mul(root_states[:, :, 3:7], orientations_delta)
+    orientations = quat_mul(root_states[:, :, 3:7], orientations_delta)
 
     # Velocities
     range_list = [
@@ -163,7 +160,7 @@ def reset_root_state_uniform_poisson_disk_2d(
         for key in ["x", "y", "z", "roll", "pitch", "yaw"]
     ]
     ranges = torch.tensor(range_list, dtype=torch.float32, device=assets[0].device)
-    rand_samples = math_utils.sample_uniform(
+    rand_samples = sample_uniform(
         ranges[:, 0],
         ranges[:, 1],
         (len(env_ids), len(asset_cfgs), 6),
@@ -185,7 +182,7 @@ def reset_root_state_uniform_poisson_disk_2d(
 
 
 def reset_root_state_uniform_poisson_disk_3d(
-    env: "BaseEnv",
+    env: "DirectEnv",
     env_ids: torch.Tensor,
     pose_range: dict[str, tuple[float, float, float]],
     velocity_range: dict[str, tuple[float, float, float]],
@@ -210,7 +207,7 @@ def reset_root_state_uniform_poisson_disk_3d(
     ]
     ranges = torch.tensor(range_list, dtype=torch.float32, device=assets[0].device)
     samples_pos = torch.tensor(
-        sampling_utils.sample_poisson_disk_3d_looped(
+        sample_poisson_disk_3d_looped(
             (len(env_ids), len(asset_cfgs)),
             (
                 (range_list[0][0], range_list[1][0], range_list[2][0]),
@@ -220,7 +217,7 @@ def reset_root_state_uniform_poisson_disk_3d(
         ),
         device=assets[0].device,
     )
-    rand_samples = math_utils.sample_uniform(
+    rand_samples = sample_uniform(
         ranges[3:, 0],
         ranges[3:, 1],
         (len(env_ids), len(asset_cfgs), 3),
@@ -233,10 +230,10 @@ def reset_root_state_uniform_poisson_disk_3d(
         + env.scene.env_origins[env_ids].repeat(len(asset_cfgs), 1, 1).swapaxes(0, 1)
         + rand_samples[:, :, 0:3]
     )
-    orientations_delta = math_utils.quat_from_euler_xyz(
+    orientations_delta = quat_from_euler_xyz(
         rand_samples[:, :, 3], rand_samples[:, :, 4], rand_samples[:, :, 5]
     )
-    orientations = math_utils.quat_mul(root_states[:, :, 3:7], orientations_delta)
+    orientations = quat_mul(root_states[:, :, 3:7], orientations_delta)
 
     # Velocities
     range_list = [
@@ -244,7 +241,7 @@ def reset_root_state_uniform_poisson_disk_3d(
         for key in ["x", "y", "z", "roll", "pitch", "yaw"]
     ]
     ranges = torch.tensor(range_list, dtype=torch.float32, device=assets[0].device)
-    rand_samples = math_utils.sample_uniform(
+    rand_samples = sample_uniform(
         ranges[:, 0],
         ranges[:, 1],
         (len(env_ids), len(asset_cfgs), 6),

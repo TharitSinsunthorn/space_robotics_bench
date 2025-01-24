@@ -4,14 +4,14 @@ from typing import Tuple
 from simforge import TexResConfig
 
 from srb.core.asset import AssetBaseCfg
-from srb.core.envs import env_cfg
+from srb.core.envs import AssetVariant, BaseEnvCfg, Domain
 
 from .ground_plane import GroundPlane
 from .planetary_surface import MarsSurface, MoonSurface
 
 
 def terrain_from_cfg(
-    cfg: env_cfg.EnvironmentConfig,
+    cfg: BaseEnvCfg,
     *,
     seed: int,
     num_assets: int,
@@ -25,11 +25,11 @@ def terrain_from_cfg(
     if not cfg.domain.requires_terrain:
         return None
 
-    match cfg.assets.terrain.variant:
-        case env_cfg.AssetVariant.NONE:
+    match cfg.terrain:
+        case None:
             return None
 
-        case env_cfg.AssetVariant.PRIMITIVE:
+        case AssetVariant.PRIMITIVE:
             asset_cfg = GroundPlane(**kwargs).asset_cfg
 
             scaling_factor = math.sqrt(num_assets)
@@ -38,12 +38,12 @@ def terrain_from_cfg(
                 scaling_factor * scale[1],
             )
 
-        case env_cfg.AssetVariant.PROCEDURAL:
+        case AssetVariant.PROCEDURAL:
             if len(scale) == 2:
                 scale = (scale[0], scale[1], (scale[0] + scale[1]) / 20.0)
 
             match cfg.domain:
-                case env_cfg.Domain.MOON:
+                case Domain.MOON:
                     asset_cfg = MoonSurface(
                         scale=scale,
                         texture_resolution=texture_resolution,
@@ -52,7 +52,7 @@ def terrain_from_cfg(
                         **kwargs,
                     ).asset_cfg
 
-                case env_cfg.Domain.MARS:
+                case Domain.MARS:
                     asset_cfg = MarsSurface(
                         scale=scale,
                         texture_resolution=texture_resolution,

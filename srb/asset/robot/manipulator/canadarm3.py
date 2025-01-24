@@ -1,13 +1,16 @@
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.actuators import ImplicitActuatorCfg
-from omni.isaac.lab.controllers import DifferentialIKControllerCfg
-from omni.isaac.lab.envs.mdp import DifferentialInverseKinematicsActionCfg
+from omni.isaac.lab.sim import UsdFileCfg
 from torch import pi
 
 from srb.core.actions import ManipulatorTaskSpaceActionCfg
+from srb.core.actuators import ImplicitActuatorCfg
 from srb.core.asset import ArticulationCfg, Frame, SingleArmManipulator, Transform
-from srb.core.envs import mdp
-from srb.utils import math as math_utils
+from srb.core.controllers import DifferentialIKControllerCfg
+from srb.core.mdp import (
+    BinaryJointPositionActionCfg,
+    DifferentialInverseKinematicsActionCfg,
+)
+from srb.core.sim import ArticulationRootPropertiesCfg, RigidBodyPropertiesCfg
+from srb.utils.math import quat_from_rpy
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
 
@@ -15,15 +18,15 @@ class Canadarm3Large(SingleArmManipulator):
     ## Model
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
-        spawn=sim_utils.UsdFileCfg(
+        spawn=UsdFileCfg(
             usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("canadarm3_large")
             .joinpath("canadarm3_large.usdc")
             .as_posix(),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=True,
                 max_depenetration_velocity=5.0,
             ),
-            articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+            articulation_props=ArticulationRootPropertiesCfg(
                 enabled_self_collisions=False,
                 solver_position_iteration_count=12,
                 solver_velocity_iteration_count=1,
@@ -55,7 +58,7 @@ class Canadarm3Large(SingleArmManipulator):
 
     ## Actions
     action_cfg: ManipulatorTaskSpaceActionCfg = ManipulatorTaskSpaceActionCfg(
-        arm=mdp.DifferentialInverseKinematicsActionCfg(
+        arm=DifferentialInverseKinematicsActionCfg(
             asset_name="robot",
             joint_names=["canadarm3_large_joint_[1-7]"],
             body_name="canadarm3_large_7",
@@ -69,7 +72,7 @@ class Canadarm3Large(SingleArmManipulator):
                 pos=(0.0, 0.0, 0.0)
             ),
         ),
-        hand=mdp.BinaryJointPositionActionCfg(
+        hand=BinaryJointPositionActionCfg(
             asset_name="robot",
             joint_names=["canadarm3_large_joint_7"],
             close_command_expr={"canadarm3_large_joint_7": 0.0},
@@ -87,14 +90,14 @@ class Canadarm3Large(SingleArmManipulator):
         prim_relpath="canadarm3_large_0/camera_base",
         offset=Transform(
             translation=(0.06, 0.0, 0.15),
-            rotation=math_utils.quat_from_rpy(0.0, -10.0, 0.0),
+            rotation=quat_from_rpy(0.0, -10.0, 0.0),
         ),
     )
     frame_camera_wrist: Frame = Frame(
         prim_relpath="canadarm3_large_7/camera_wrist",
         offset=Transform(
             translation=(0.0, 0.0, -0.45),
-            rotation=math_utils.quat_from_rpy(0.0, 90.0, 180.0),
+            rotation=quat_from_rpy(0.0, 90.0, 180.0),
         ),
     )
 

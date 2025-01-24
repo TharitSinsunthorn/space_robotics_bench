@@ -1,26 +1,27 @@
 import math
 
 import torch
-from omni.isaac.lab.envs import ViewerCfg
-from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
-from omni.isaac.lab.scene import InteractiveSceneCfg
-from omni.isaac.lab.utils import configclass
 
 from srb import asset
-from srb.core import mdp
-from srb.core import sim as sim_utils
-from srb.core.envs import BaseEnvCfg
-from srb.core.sim import SimulationCfg
+from srb.core.envs import DirectEnvCfg, InteractiveSceneCfg, ViewerCfg
+from srb.core.managers import EventTermCfg, SceneEntityCfg
+from srb.core.mdp import (
+    reset_root_state_uniform,
+    reset_scene_to_default,
+    reset_xform_orientation_uniform,
+)
+from srb.core.sim import PhysxCfg, RenderCfg, RigidBodyMaterialCfg, SimulationCfg
+from srb.utils import configclass
 
 
 @configclass
 class BaseSpacecraftRoboticsEnvEventCfg:
     ## Default scene reset
-    reset_all = EventTermCfg(func=mdp.reset_scene_to_default, mode="reset")
+    reset_all = EventTermCfg(func=reset_scene_to_default, mode="reset")
 
     ## Light
     reset_rand_light_rot = EventTermCfg(
-        func=mdp.reset_xform_orientation_uniform,
+        func=reset_xform_orientation_uniform,
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("light"),
@@ -33,7 +34,7 @@ class BaseSpacecraftRoboticsEnvEventCfg:
 
     ## Robot
     reset_rand_robot_state = EventTermCfg(
-        func=mdp.reset_root_state_uniform,
+        func=reset_root_state_uniform,
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("robot"),
@@ -67,7 +68,7 @@ class BaseSpacecraftRoboticsEnvEventCfg:
 
 
 @configclass
-class BaseSpacecraftRoboticsEnvCfg(BaseEnvCfg):
+class BaseSpacecraftRoboticsEnvCfg(DirectEnvCfg):
     ## Environment
     episode_length_s: float = 50.0
     env_rate: float = 1.0 / 50.0
@@ -78,7 +79,7 @@ class BaseSpacecraftRoboticsEnvCfg(BaseEnvCfg):
     ## Simulation
     sim = SimulationCfg(
         disable_contact_processing=True,
-        physx=sim_utils.PhysxCfg(
+        physx=PhysxCfg(
             enable_ccd=False,
             enable_stabilization=False,
             bounce_threshold_velocity=0.0,
@@ -97,10 +98,10 @@ class BaseSpacecraftRoboticsEnvCfg(BaseEnvCfg):
             gpu_collision_stack_size=2 ** (26 - 4),
             gpu_max_num_partitions=8,
         ),
-        render=sim_utils.RenderCfg(
+        render=RenderCfg(
             enable_reflections=True,
         ),
-        physics_material=sim_utils.RigidBodyMaterialCfg(
+        physics_material=RigidBodyMaterialCfg(
             static_friction=1.0,
             dynamic_friction=1.0,
             restitution=0.0,
@@ -130,7 +131,7 @@ class BaseSpacecraftRoboticsEnvCfg(BaseEnvCfg):
         self.decimation = int(self.agent_rate / self.env_rate)
         self.sim.dt = self.env_rate
         self.sim.render_interval = self.decimation
-        self.sim.gravity = (0.0, 0.0, -self.env_cfg.domain.gravity_magnitude)
+        self.sim.gravity = (0.0, 0.0, -self.domain.gravity_magnitude)
         # Increase GPU settings based on the number of environments
         gpu_capacity_factor = self.scene.num_envs
         self.sim.physx.gpu_heap_capacity *= gpu_capacity_factor
@@ -148,11 +149,11 @@ class BaseSpacecraftRoboticsEnvCfg(BaseEnvCfg):
         )
 
         ## Scene
-        self.scene.light = asset.sunlight_from_cfg(self.env_cfg)
-        self.scene.sky = asset.sky_from_cfg(self.env_cfg)
-        self.robot_cfg = asset.Cubesat()
-        self.robot_cfg.asset_cfg.spawn.num_assets = self.scene.num_envs
-        self.scene.robot = self.robot_cfg.asset_cfg
+        self.scene.light = asset.sunlight_from_cfg(self)
+        self.scene.sky = asset.sky_from_cfg(self)
+        self.robot = asset.Cubesat()
+        self.robot.asset_cfg.spawn.num_assets = self.scene.num_envs
+        self.scene.robot = self.robot.asset_cfg
 
         ## Actions
-        self.actions = self.robot_cfg.action_cfg
+        self.actions = self.robot.action_cfg

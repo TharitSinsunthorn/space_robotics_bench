@@ -3,7 +3,7 @@ from functools import partial as bind
 
 import elements
 import embodied
-import numpy as np
+import numpy
 from omni.isaac.kit import SimulationApp
 
 from srb.integrations.dreamer.driver import DriverParallelEnv
@@ -45,7 +45,7 @@ def train(
         episode.add("length", 1, agg="sum")
         episode.add("rewards", tran["reward"], agg="stack")
         for key, value in tran.items():
-            if value.dtype == np.uint8 and value.ndim == 3:
+            if value.dtype == numpy.uint8 and value.ndim == 3:
                 if worker == 0:
                     episode.add(f"policy_{key}", value, agg="stack")
             elif key.startswith("log/"):
@@ -62,7 +62,7 @@ def train(
             )
             rew = result.pop("rewards")
             if len(rew) > 1:
-                result["reward_rate"] = (np.abs(rew[1:] - rew[:-1]) >= 0.01).mean()
+                result["reward_rate"] = (numpy.abs(rew[1:] - rew[:-1]) >= 0.01).mean()
             epstats.add(result)
 
     ########### ONLY THIS IS CHANGED (+1 fix below) ############

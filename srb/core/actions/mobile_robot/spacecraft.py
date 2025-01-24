@@ -3,21 +3,21 @@ from dataclasses import MISSING
 from typing import TYPE_CHECKING
 
 import torch
-from omni.isaac.lab.managers import ActionTerm, ActionTermCfg
-from omni.isaac.lab.utils import configclass
 
 from srb.core.actions.action_group import ActionGroup
 from srb.core.asset import Articulation
+from srb.core.managers import ActionTerm, ActionTermCfg
+from srb.utils import configclass
 
 if TYPE_CHECKING:
-    from srb.core.envs import BaseEnv
+    from srb.core.envs import DirectEnv
 
 
 class SpacecraftAction(ActionTerm):
     cfg: "SpacecraftActionCfg"
     _asset: Articulation
 
-    def __init__(self, cfg: "SpacecraftActionCfg", env: "BaseEnv"):
+    def __init__(self, cfg: "SpacecraftActionCfg", env: "DirectEnv"):
         super().__init__(cfg, env)
 
     @property

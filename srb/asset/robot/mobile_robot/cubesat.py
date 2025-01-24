@@ -1,23 +1,27 @@
-from omni.isaac.lab.assets.rigid_object import RigidObjectCfg
-from simforge_foundry import model as sf_model
+import simforge_foundry
 
-from srb.core import sim as sim_utils
 from srb.core.actions import SpacecraftActionCfg, SpacecraftActionGroupCfg
-from srb.core.asset import Frame, Spacecraft
+from srb.core.asset import Frame, RigidObjectCfg, Spacecraft
+from srb.core.sim import (
+    CollisionPropertiesCfg,
+    MeshCollisionPropertiesCfg,
+    RigidBodyPropertiesCfg,
+    SimforgeAssetCfg,
+)
 
 
 class Cubesat(Spacecraft):
     ## Model
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/robot",
-        spawn=sim_utils.SimforgeAssetCfg(
-            assets=[sf_model.Cubesat()],
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+        spawn=SimforgeAssetCfg(
+            assets=[simforge_foundry.Cubesat()],
+            rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=True,
                 max_depenetration_velocity=5.0,
             ),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
+            collision_props=CollisionPropertiesCfg(),
+            mesh_collision_props=MeshCollisionPropertiesCfg(
                 mesh_approximation="meshSimplification"
             ),
             activate_contact_sensors=True,

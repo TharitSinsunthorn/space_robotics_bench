@@ -1,15 +1,13 @@
-from dataclasses import MISSING
-
 import gymnasium
-from omni.isaac.lab.envs import DirectRLEnvCfg
-from omni.isaac.lab.utils import configclass
+from omni.isaac.lab.envs import DirectRLEnvCfg as __DirectRLEnvCfg
 
-from srb.core.asset import Robot
-from srb.core.envs.env_cfg import EnvironmentConfig
+from srb.core.envs.base.cfg import BaseEnvCfg
+from srb.utils import configclass
 
 # # Add this somewhere here
+# from srb.core.mdp import randomize_physics_scene_gravity
 # reset_gravity = EventTerm(
-#     func=mdp.randomize_physics_scene_gravity,
+#     func=randomize_physics_scene_gravity,
 #     mode="interval",
 #     is_global_time=True,
 #     interval_range_s=(36.0, 36.0),  # time_s = num_steps * (decimation * dt)
@@ -22,11 +20,7 @@ from srb.core.envs.env_cfg import EnvironmentConfig
 
 
 @configclass
-class BaseEnvCfg(DirectRLEnvCfg):
-    """
-    Extended version of :class:`omni.isaac.lab.envs.DirectRLEnvCfg`.
-    """
-
+class DirectEnvCfg(BaseEnvCfg, __DirectRLEnvCfg):
     seed: int = 0
 
     ## Updated defaults
@@ -36,12 +30,6 @@ class BaseEnvCfg(DirectRLEnvCfg):
     num_actions: int = 0
     # Redundant: spaces are automatically extracted
     num_observations: int = 0
-
-    ## Environment
-    # TODO: Rename to something more sensible
-    env_cfg: EnvironmentConfig = EnvironmentConfig()
-
-    robot_cfg: Robot = MISSING  # type: ignore
 
     ## Misc
     # Flag that disables the timeout for the environment

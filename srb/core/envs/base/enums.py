@@ -61,8 +61,8 @@ class Domain(str, Enum):
         """
         Range of gravitational acceleration in m/s² calculated as the magnitude ± variation/2.
         """
-        magnitude = self.gravity_magnitude()
-        delta = self.gravity_variation() / 2.0
+        magnitude = self.gravity_magnitude
+        delta = self.gravity_variation / 2.0
         return (magnitude - delta, magnitude + delta)
 
     @property
@@ -108,8 +108,8 @@ class Domain(str, Enum):
         """
         Range of Solar light intensity in W/m² calculated as the intensity ± variation/2.
         """
-        intensity = self.light_intensity()
-        delta = self.light_intensity_variation() / 2.0
+        intensity = self.light_intensity
+        delta = self.light_intensity_variation / 2.0
         return (intensity - delta, intensity + delta)
 
     @property
@@ -146,8 +146,8 @@ class Domain(str, Enum):
         """
         Range of the angular diameter of the Solar light source in degrees calculated as the diameter ± variation/2.
         """
-        diameter = self.light_angular_diameter()
-        delta = self.light_angular_diameter_variation() / 2.0
+        diameter = self.light_angular_diameter
+        delta = self.light_angular_diameter_variation / 2.0
         return (diameter - delta, diameter + delta)
 
     @property
@@ -188,6 +188,15 @@ class Domain(str, Enum):
         Range of the temperature of the Solar light source in K calculated as the temperature ± variation/2.
         """
 
-        temperature = self.light_color_temperature()
-        delta = self.light_color_temperature_variation() / 2.0
+        temperature = self.light_color_temperature
+        delta = self.light_color_temperature_variation / 2.0
         return (temperature - delta, temperature + delta)
+
+
+class AssetVariant(str, Enum):
+    PRIMITIVE = auto()
+    DATASET = auto()
+    PROCEDURAL = auto()
+
+    def __str__(self) -> str:
+        return self.name.lower()

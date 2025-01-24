@@ -1,16 +1,16 @@
 from typing import TYPE_CHECKING
 
 import torch
-from omni.isaac.lab.managers import SceneEntityCfg
 
 from srb.core.asset import Articulation
+from srb.core.managers import SceneEntityCfg
 
 if TYPE_CHECKING:
-    from srb.core.envs import BaseEnv
+    from srb.core.envs import DirectEnv
 
 
 def body_incoming_wrench_mean(
-    env: "BaseEnv", asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+    env: "DirectEnv", asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     """Incoming spatial wrench on bodies of an articulation in the simulation world frame.
 

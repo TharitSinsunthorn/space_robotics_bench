@@ -1,34 +1,37 @@
 import math
 
 import torch
-from omni.isaac.lab.envs import ViewerCfg
-from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
-from omni.isaac.lab.scene import InteractiveSceneCfg
-from omni.isaac.lab.sensors import ContactSensorCfg
-from omni.isaac.lab.sensors.frame_transformer.frame_transformer_cfg import (
-    FrameTransformerCfg,
-    OffsetCfg,
-)
-from omni.isaac.lab.utils import configclass
 from simforge import BakeType
 
-import srb.core.envs as env_utils
 from srb import asset
-from srb.core import mdp
-from srb.core import sim as sim_utils
-from srb.core.envs import BaseEnvCfg
+from srb.core.asset import StaticVehicle
+from srb.core.envs import (
+    AssetVariant,
+    DirectEnvCfg,
+    Domain,
+    InteractiveSceneCfg,
+    ViewerCfg,
+)
+from srb.core.managers import EventTermCfg, SceneEntityCfg
 from srb.core.markers import FRAME_MARKER_SMALL_CFG
-from srb.core.sim import SimulationCfg
+from srb.core.mdp import (
+    reset_joints_by_offset,
+    reset_scene_to_default,
+    reset_xform_orientation_uniform,
+)
+from srb.core.sensors import ContactSensorCfg, FrameTransformerCfg, OffsetCfg
+from srb.core.sim import PhysxCfg, RenderCfg, RigidBodyMaterialCfg, SimulationCfg
+from srb.utils import configclass
 
 
 @configclass
 class BaseManipulationEnvEventCfg:
     ## Default scene reset
-    reset_all = EventTermCfg(func=mdp.reset_scene_to_default, mode="reset")
+    reset_all = EventTermCfg(func=reset_scene_to_default, mode="reset")
 
     ## Light
     reset_rand_light_rot = EventTermCfg(
-        func=mdp.reset_xform_orientation_uniform,
+        func=reset_xform_orientation_uniform,
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("light"),
@@ -47,7 +50,7 @@ class BaseManipulationEnvEventCfg:
 
     ## Robot
     reset_rand_robot_state = EventTermCfg(
-        func=mdp.reset_joints_by_offset,
+        func=reset_joints_by_offset,
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("robot"),
@@ -58,7 +61,7 @@ class BaseManipulationEnvEventCfg:
 
 
 @configclass
-class BaseManipulationEnvCfg(BaseEnvCfg):
+class BaseManipulationEnvCfg(DirectEnvCfg):
     ## Environment
     episode_length_s: float = 50.0
     env_rate: float = 1.0 / 200.0
@@ -69,7 +72,7 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
     ## Simulation
     sim = SimulationCfg(
         disable_contact_processing=True,
-        physx=sim_utils.PhysxCfg(
+        physx=PhysxCfg(
             enable_ccd=True,
             enable_stabilization=True,
             bounce_threshold_velocity=0.0,
@@ -88,10 +91,10 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
             gpu_collision_stack_size=2 ** (26 - 3),
             gpu_max_num_partitions=8,
         ),
-        render=sim_utils.RenderCfg(
+        render=RenderCfg(
             enable_reflections=True,
         ),
-        physics_material=sim_utils.RigidBodyMaterialCfg(
+        physics_material=RigidBodyMaterialCfg(
             static_friction=1.0,
             dynamic_friction=1.0,
             restitution=0.0,
@@ -114,6 +117,9 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
     ## Events
     events = BaseManipulationEnvEventCfg()
 
+    ## TODO: Categorize | Update type
+    vehicle: StaticVehicle | AssetVariant | None = AssetVariant.DATASET
+
     def __post_init__(self):
         super().__post_init__()
 
@@ -121,7 +127,7 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
         self.decimation = int(self.agent_rate / self.env_rate)
         self.sim.dt = self.env_rate
         self.sim.render_interval = self.decimation
-        self.sim.gravity = (0.0, 0.0, -self.env_cfg.domain.gravity_magnitude)
+        self.sim.gravity = (0.0, 0.0, -self.domain.gravity_magnitude)
         # Increase GPU settings based on the number of environments
         gpu_capacity_factor = math.pow(self.scene.num_envs, 0.2)
         self.sim.physx.gpu_heap_capacity *= gpu_capacity_factor
@@ -139,16 +145,16 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
         )
 
         ## Scene
-        if self.env_cfg.domain == env_utils.Domain.ORBIT:
+        if self.domain == Domain.ORBIT:
             self.scene.env_spacing = 42.0
-        self.scene.light = asset.sunlight_from_cfg(self.env_cfg)
-        self.scene.sky = asset.sky_from_cfg(self.env_cfg)
-        # self.robot_cfg = assets.manipulator_from_env_cfg(self.env_cfg)
-        self.robot_cfg = asset.Franka()
-        self.scene.robot = self.robot_cfg.asset_cfg
-        self.vehicle_cfg = asset.vehicle_from_cfg(self.env_cfg)
+        self.scene.light = asset.sunlight_from_cfg(self)
+        self.scene.sky = asset.sky_from_cfg(self)
+        # self.robot_cfg = assets.manipulator_from_env_cfg(self)
+        self.robot = asset.Franka()
+        self.scene.robot = self.robot.asset_cfg
+        self.vehicle = asset.vehicle_from_cfg(self)
         self.scene.terrain = asset.terrain_from_cfg(
-            self.env_cfg,
+            self,
             seed=self.seed,
             num_assets=self.scene.num_envs,
             scale=(
@@ -163,34 +169,34 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
             },
             flat_area_size=2.0,
         )
-        if self.vehicle_cfg:
+        if self.vehicle:
             # Add vehicle to scene
-            self.scene.vehicle = self.vehicle_cfg.asset_cfg
+            self.scene.vehicle = self.vehicle.asset_cfg
             self.scene.vehicle.init_state.pos = (
-                self.vehicle_cfg.frame_manipulator_base.offset.translation
+                self.vehicle.frame_manipulator_base.offset.translation
             )
 
             # Update the robot based on the vehicle
             self.scene.robot.init_state.pos = (
-                self.vehicle_cfg.frame_manipulator_base.offset.translation
+                self.vehicle.frame_manipulator_base.offset.translation
             )
             self.scene.robot.init_state.rot = (
-                self.vehicle_cfg.frame_manipulator_base.offset.rotation
+                self.vehicle.frame_manipulator_base.offset.rotation
             )
 
         ## Actions
-        self.actions = self.robot_cfg.action_cfg
+        self.actions = self.robot.action_cfg
 
         ## Sensors
         self.scene.tf_robot_ee = FrameTransformerCfg(
-            prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.frame_base.prim_relpath}",
+            prim_path=f"{self.scene.robot.prim_path}/{self.robot.frame_base.prim_relpath}",
             target_frames=[
                 FrameTransformerCfg.FrameCfg(
                     name="robot_ee",
-                    prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.frame_ee.prim_relpath}",
+                    prim_path=f"{self.scene.robot.prim_path}/{self.robot.frame_ee.prim_relpath}",
                     offset=OffsetCfg(
-                        pos=self.robot_cfg.frame_ee.offset.translation,
-                        rot=self.robot_cfg.frame_ee.offset.rotation,
+                        pos=self.robot.frame_ee.offset.translation,
+                        rot=self.robot.frame_ee.offset.rotation,
                     ),
                 ),
             ],
@@ -206,8 +212,8 @@ class BaseManipulationEnvCfg(BaseEnvCfg):
         ## Events
         self.events.reset_rand_robot_state.params[
             "asset_cfg"
-        ].joint_names = self.robot_cfg.regex_joints_arm
-        if self.env_cfg.domain == env_utils.Domain.ORBIT:
+        ].joint_names = self.robot.regex_joints_arm
+        if self.domain == Domain.ORBIT:
             # Fix the orientation of the light such that it fits with the orbital HDR
             self.events.reset_rand_light_rot.params[
                 "orientation_distribution_params"

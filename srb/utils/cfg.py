@@ -7,18 +7,16 @@ import inspect
 import os
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Dict, Iterable, Mapping, get_type_hints
+from typing import Any, Dict, Iterable, Mapping, Tuple, get_type_hints
 
-import gymnasium as gym
+import gymnasium
+import hydra
 import yaml
-from omni.isaac.lab.envs import DirectRLEnvCfg, ManagerBasedRLEnvCfg
-from omni.isaac.lab.envs.utils.spaces import (
-    replace_env_cfg_spaces_with_strings,
-    replace_strings_with_env_cfg_spaces,
-)
+from hydra.core.config_store import ConfigStore
+from omegaconf import DictConfig, OmegaConf
 from pydantic import BaseModel
 
-from srb.core.envs import BaseEnvCfg
+from srb._typing import AnyEnvCfg
 from srb.utils import logging
 from srb.utils.dict import (
     replace_slices_with_strings,
@@ -26,16 +24,10 @@ from srb.utils.dict import (
     update_class_from_dict,
     update_dict,
 )
-
-try:
-    import hydra
-    from hydra.core.config_store import ConfigStore
-    from omegaconf import DictConfig, OmegaConf
-except ImportError:
-    raise ImportError(
-        "Hydra is not installed. Please install it by running 'pip install hydra-core'."
-    )
-
+from srb.utils.spaces import (
+    replace_env_cfg_spaces_with_strings,
+    replace_strings_with_env_cfg_spaces,
+)
 
 SUPPORTED_FRAMEWORKS = {
     "dreamer": {"multi_algo": False},
@@ -93,48 +85,15 @@ def _identify_config(root: str, file) -> str | None:
 
 def load_cfg_from_registry(
     task_name: str, entry_point_key: str, unpack_callable: bool = True
-) -> BaseEnvCfg | Dict[str, Any]:
-    """Load default configuration given its entry point from the gym registry.
-
-    This function loads the configuration object from the gym registry for the given task name.
-    It supports both YAML and Python configuration files.
-
-    It expects the configuration to be registered in the gym registry as:
-
-    .. code-block:: python
-
-        gym.register(
-            id="My-Awesome-Task-v0",
-            ...
-            kwargs={"env_entry_point_cfg": "path.to.config:ConfigClass"},
-        )
-
-    The parsed configuration object for above example can be obtained as:
-
-    .. code-block:: python
-
-        from srb.utils.cfg import load_cfg_from_registry,
-
-        cfg = load_cfg_from_registry("My-Awesome-Task-v0", "env_entry_point_cfg")
-
-    Args:
-        task_name: The name of the environment.
-        entry_point_key: The entry point key to resolve the configuration file.
-
-    Returns:
-        The parsed configuration object. This is either a dictionary or a class object.
-
-    Raises:
-        ValueError: If the entry point key is not available in the gym registry for the task.
-    """
+) -> AnyEnvCfg | Dict[str, Any]:
     # Obtain the configuration entry point
-    cfg_entry_point = gym.spec(task_name).kwargs.get(entry_point_key)
+    cfg_entry_point = gymnasium.spec(task_name).kwargs.get(entry_point_key)
     # Check if entry point exists
     if cfg_entry_point is None:
         raise ValueError(
             f"Could not find configuration for the environment: '{task_name}'."
             f" Please check that the gym registry has the entry point: '{entry_point_key}'."
-            f" Found: {gym.spec(task_name).kwargs}."
+            f" Found: {gymnasium.spec(task_name).kwargs}."
         )
     # Parse the default config file
     if isinstance(cfg_entry_point, str) and cfg_entry_point.endswith(".yaml"):
@@ -175,23 +134,7 @@ def parse_task_cfg(
     device: str = "cuda:0",
     num_envs: int | None = None,
     use_fabric: bool | None = None,
-) -> BaseEnvCfg | Dict[str, Any]:
-    """Parse configuration for an environment and override based on inputs.
-
-    Args:
-        task_name: The name of the environment.
-        device: The device to run the simulation on. Defaults to "cuda:0".
-        num_envs: Number of environments to create. Defaults to None, in which case it is left unchanged.
-        use_fabric: Whether to enable/disable fabric interface. If false, all read/write operations go through USD.
-            This slows down the simulation but allows seeing the changes in the USD through the USD stage.
-            Defaults to None, in which case it is left unchanged.
-
-    Returns:
-        The parsed configuration object. This is either a dictionary or a class object.
-
-    Raises:
-        ValueError: If the task name is not provided, i.e. None.
-    """
+) -> AnyEnvCfg | Dict[str, Any]:
     # Create a dictionary to update from
     args_cfg = {"sim": {}, "scene": {}}
 
@@ -299,19 +242,7 @@ def get_last_dir(
 
 def register_task_to_hydra(
     task_name: str, agent_cfg_entry_point: str | None = None
-) -> tuple[ManagerBasedRLEnvCfg | DirectRLEnvCfg, dict]:
-    """Register the task configuration to the Hydra configuration store.
-
-    This function resolves the configuration file for the environment and agent based on the task's name.
-    It then registers the configurations to the Hydra configuration store.
-
-    Args:
-        task_name: The name of the task.
-        agent_cfg_entry_point: The entry point key to resolve the agent's configuration file.
-
-    Returns:
-        A tuple containing the parsed environment and agent configuration objects.
-    """
+) -> Tuple[AnyEnvCfg, Dict[str, Any]]:
     # load the configurations
     env_cfg = load_cfg_from_registry(task_name, "task_cfg")
     # replace gymnasium spaces with strings because OmegaConf does not support them.
@@ -340,19 +271,6 @@ def register_task_to_hydra(
 def hydra_task_config(
     task_name: str, agent_cfg_entry_point: str | None = None
 ) -> Callable:
-    """Decorator to handle the Hydra configuration for a task.
-
-    This decorator registers the task to Hydra and updates the environment and agent configurations from Hydra parsed
-    command line arguments.
-
-    Args:
-        task_name: The name of the task.
-        agent_cfg_entry_point: The entry point key to resolve the agent's configuration file.
-
-    Returns:
-        The decorated function with the envrionment's and agent's configurations updated from command line arguments.
-    """
-
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -397,22 +315,7 @@ def hydra_task_config(
     return decorator
 
 
-# TODO: Clean-up
-
-
 def reconstruct_object(obj: Any, updates: Mapping[str, Any]) -> Any:
-    """
-    Reconstruct an object, applying updates. Handles various types, including functions.
-
-    Args:
-        obj: The object to reconstruct.
-        updates: Dictionary of updates.
-        visited: Set of visited object IDs to detect circular references.
-
-    Returns:
-        A new object instance with applied updates, or the original callable for functions.
-    """
-
     try:
         if isinstance(obj, BaseModel):
             try:

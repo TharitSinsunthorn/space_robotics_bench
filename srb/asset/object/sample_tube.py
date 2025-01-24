@@ -1,6 +1,11 @@
-from srb.core import sim as sim_utils
 from srb.core.asset import Object, RigidObjectCfg
-from srb.core.sim import UsdFileCfg
+from srb.core.sim import (
+    CollisionPropertiesCfg,
+    MassPropertiesCfg,
+    MeshCollisionPropertiesCfg,
+    RigidBodyPropertiesCfg,
+    UsdFileCfg,
+)
 from srb.utils.path import SRB_ASSETS_DIR_SRB_OBJECT
 
 
@@ -13,11 +18,11 @@ class SampleTube(Object):
                 .joinpath("sample_tube.usdc")
                 .as_posix()
             ),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
+            collision_props=CollisionPropertiesCfg(),
+            mesh_collision_props=MeshCollisionPropertiesCfg(
                 mesh_approximation="convexDecomposition"
             ),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
-            mass_props=sim_utils.MassPropertiesCfg(density=1500.0),
+            rigid_props=RigidBodyPropertiesCfg(),
+            mass_props=MassPropertiesCfg(density=1500.0),
         ),
     )

@@ -9,14 +9,14 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence, Tuple
 
-from omni.isaac.lab.app import AppLauncher
+from srb.core.app import AppLauncher
 
 if TYPE_CHECKING:
     from omni.isaac.kit import SimulationApp
 
-    from srb.core.envs import BaseEnv
+    from srb.core.envs import DirectEnv
     from srb.core.interfaces.gui import GuiInterface
-    from srb.core.interfaces.ros2 import ROS2
+    from srb.core.interfaces.ros2 import ROS2Interface
     from srb.core.teleop_devices import CombinedTeleopInterface
 
 # TODO: Clean-up args with enums, add choices, ...
@@ -60,7 +60,7 @@ def agent_main(
     # Launch Isaac Sim
     launcher = AppLauncher(launcher_args=kwargs)
 
-    import srb.task as _  # noqa: F401
+    from srb import task as _  # noqa: F401
     from srb.core.teleop_devices import EventKeyboardTeleopInterface
     from srb.utils import logging
     from srb.utils.cfg import create_logdir_path, hydra_task_config
@@ -162,7 +162,7 @@ def agent_main(
 
 
 def random_agent(
-    env: "BaseEnv",
+    env: "DirectEnv",
     sim_app: "SimulationApp",
     **kwargs,
 ):
@@ -187,7 +187,7 @@ def random_agent(
 
 
 def zero_agent(
-    env: "BaseEnv",
+    env: "DirectEnv",
     sim_app: "SimulationApp",
     **kwargs,
 ):
@@ -212,7 +212,7 @@ def zero_agent(
 
 
 def teleop_agent(
-    env: "BaseEnv",
+    env: "DirectEnv",
     sim_app: "SimulationApp",
     headless: bool,
     teleop_device: Sequence[str],
@@ -261,7 +261,7 @@ def teleop_agent(
         node=ros_node,
         pos_sensitivity=pos_sensitivity,
         rot_sensitivity=rot_sensitivity,
-        action_cfg=env.cfg.robot_cfg.action_cfg,
+        action_cfg=env.cfg.robot.action_cfg,
     )
 
     ## Set up reset callback
@@ -287,9 +287,9 @@ def teleop_agent(
 
     ## Create ROS 2 interface
     if "ros2" in integration:
-        from srb.core.interfaces.ros2 import ROS2
+        from srb.core.interfaces.ros2 import ROS2Interface
 
-        ros2_interface = ROS2(env, node=ros_node)
+        ros2_interface = ROS2Interface(env, node=ros_node)
     else:
         ros2_interface = None
 
@@ -306,8 +306,8 @@ def teleop_agent(
 
     ## Determine how to teleoperate the agent and dispatch the appropriate implementation
     env_supports_direct_teleop = (
-        hasattr(env.cfg.robot_cfg.action_cfg.__class__, "map_teleop_actions")
-        and env.cfg.robot_cfg.action_cfg.__class__.map_teleop_actions
+        hasattr(env.cfg.robot.action_cfg.__class__, "map_teleop_actions")
+        and env.cfg.robot.action_cfg.__class__.map_teleop_actions
         is not ActionGroup.map_teleop_actions
     )
 
@@ -320,7 +320,7 @@ def teleop_agent(
             gui_interface=gui_interface,
             **kwargs,
         )
-    elif env.cfg.robot_cfg.action_cfg.supports_policy_teleop():
+    elif env.cfg.robot.action_cfg.supports_policy_teleop():
         if algo:
             _teleop_agent_via_policy(
                 env=env,
@@ -340,22 +340,22 @@ def teleop_agent(
 
 
 def _teleop_agent_direct(
-    env: "BaseEnv",
+    env: "DirectEnv",
     sim_app: "SimulationApp",
     teleop_interface: "CombinedTeleopInterface",
-    ros2_interface: "ROS2 | None",
+    ros2_interface: "ROS2Interface | None",
     gui_interface: "GuiInterface | None",
     disable_control_scheme_inversion: bool,
     **kwargs,
 ):
     import torch
 
-    from srb.core import mdp
     from srb.core.actions import ManipulatorTaskSpaceActionCfg
     from srb.core.managers import SceneEntityCfg
+    from srb.core.mdp import body_incoming_wrench_mean
 
     is_manip_task = isinstance(
-        env.cfg.robot_cfg.action_cfg,
+        env.cfg.robot.action_cfg,
         ManipulatorTaskSpaceActionCfg,
     )
 
@@ -366,7 +366,7 @@ def _teleop_agent_direct(
             twist, event = teleop_interface.advance()
             if is_manip_task and not disable_control_scheme_inversion:
                 twist[:2] *= -1.0
-            actions = env.cfg.robot_cfg.action_cfg.map_teleop_actions(
+            actions = env.cfg.robot.action_cfg.map_teleop_actions(
                 torch.from_numpy(twist).to(device=env.device, dtype=torch.float32),
                 event,
             ).repeat(env.num_envs, 1)
@@ -380,12 +380,12 @@ def _teleop_agent_direct(
                 FT_FEEDBACK_SCALE = torch.tensor([0.16, 0.16, 0.16, 0.0, 0.0, 0.0])
                 ft_feedback_asset_cfg = SceneEntityCfg(
                     "robot",
-                    body_names=env.cfg.robot_cfg.regex_links_hand,
+                    body_names=env.cfg.robot.regex_links_hand,
                 )
                 ft_feedback_asset_cfg.resolve(env.scene)
                 ft_feedback = (
                     FT_FEEDBACK_SCALE
-                    * mdp.body_incoming_wrench_mean(
+                    * body_incoming_wrench_mean(
                         env=env,
                         asset_cfg=ft_feedback_asset_cfg,
                     )[0, ...].cpu()
@@ -416,10 +416,10 @@ def _teleop_agent_direct(
 
 
 def _teleop_agent_via_policy(
-    env: "BaseEnv",
+    env: "DirectEnv",
     sim_app: "SimulationApp",
     teleop_interface: "CombinedTeleopInterface",
-    ros2_interface: "ROS2 | None",
+    ros2_interface: "ROS2Interface | None",
     gui_interface: "GuiInterface | None",
     disable_control_scheme_inversion: bool,
     **kwargs,
@@ -440,7 +440,7 @@ def _teleop_agent_via_policy(
         env.cfg.events.command = None  # type: ignore
 
     is_manip_task = isinstance(
-        env.cfg.robot_cfg.action_cfg,
+        env.cfg.robot.action_cfg,
         ManipulatorTaskSpaceActionCfg,
     )
 
@@ -525,20 +525,20 @@ def _teleop_agent_via_policy(
 
 
 def ros_agent(
-    env: "BaseEnv",
+    env: "DirectEnv",
     sim_app: "SimulationApp",
     **kwargs,
 ):
     import torch
 
-    from srb.core.interfaces.ros2 import ROS2
+    from srb.core.interfaces.ros2 import ROS2Interface
 
     # Disable truncation
     if hasattr(env.cfg, "enable_truncation"):
         env.cfg.enable_truncation = False
 
     ## Create ROS 2 interface
-    ros2_interface = ROS2(env)
+    ros2_interface = ROS2Interface(env)
 
     ## Run the environment with ROS 2 interface
     with torch.inference_mode():
@@ -656,7 +656,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
 
     import importlib
     import inspect
-    from os import path as posixpath
+    from os import path
 
     from rich import print
     from rich.table import Table
@@ -680,7 +680,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
         category.add(RegisteredEntity.ROBOT)
 
     if RegisteredEntity.ENV in category:
-        import srb.task as srb_tasks
+        from srb import task as srb_tasks
 
     # Print table for assets
     if (
@@ -698,7 +698,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
         table.add_column("Path", justify="left", style="white")
         i = 0
         if RegisteredEntity.OBJECT in category:
-            import srb.asset.object as srb_objects
+            from srb.asset import object as srb_objects
 
             asset_type = AssetType.OBJECT
             asset_classes = AssetRegistry.registry.get(asset_type, ())
@@ -718,7 +718,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                         Path(inspect.getabsfile(srb_objects)).parent
                     )
                 except ValueError:
-                    asset_module_relpath = posixpath.join("EXT", asset_module_path.name)
+                    asset_module_relpath = path.join("EXT", asset_module_path.name)
                 table.add_row(
                     str(i),
                     str(asset_type),
@@ -732,7 +732,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                     end_section=(j + 1) == len(asset_classes),
                 )
         if RegisteredEntity.TERRAIN in category:
-            import srb.asset.terrain as srb_terrains
+            from srb.asset import terrain as srb_terrains
 
             asset_type = AssetType.TERRAIN
             asset_classes = AssetRegistry.registry.get(asset_type, ())
@@ -752,7 +752,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                         Path(inspect.getabsfile(srb_terrains)).parent
                     )
                 except ValueError:
-                    asset_module_relpath = posixpath.join("EXT", asset_module_path.name)
+                    asset_module_relpath = path.join("EXT", asset_module_path.name)
                 table.add_row(
                     str(i),
                     str(asset_type),
@@ -766,7 +766,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                     end_section=(j + 1) == len(asset_classes),
                 )
         if RegisteredEntity.ROBOT in category:
-            import srb.asset.robot as srb_robots
+            from srb.asset import robot as srb_robots
 
             asset_type = AssetType.ROBOT
             for asset_subtype, asset_classes in RobotRegistry.items():
@@ -788,9 +788,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                             Path(inspect.getabsfile(srb_robots)).parent
                         )
                     except ValueError:
-                        asset_module_relpath = posixpath.join(
-                            "EXT", asset_module_path.name
-                        )
+                        asset_module_relpath = path.join("EXT", asset_module_path.name)
                     table.add_row(
                         str(i),
                         str(asset_type),
@@ -834,7 +832,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                     Path(inspect.getabsfile(srb_tasks)).parent
                 )
             except ValueError:
-                env_module_relpath = posixpath.join("EXT", env_module_path.name)
+                env_module_relpath = path.join("EXT", env_module_path.name)
             entrypoint_module = importlib.import_module(entrypoint_module)
             entrypoint_class = getattr(entrypoint_module, entrypoint_class)
             entrypoint_parent = entrypoint_class.__bases__[0]

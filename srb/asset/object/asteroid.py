@@ -1,20 +1,25 @@
-from simforge_foundry import model as sf_model
+import simforge_foundry
 
-from srb.core import sim as sim_utils
 from srb.core.asset import Object, RigidObjectCfg
-from srb.core.sim import SimforgeAssetCfg
+from srb.core.sim import (
+    CollisionPropertiesCfg,
+    MassPropertiesCfg,
+    MeshCollisionPropertiesCfg,
+    RigidBodyPropertiesCfg,
+    SimforgeAssetCfg,
+)
 
 
 class Asteroid(Object):
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/object",
         spawn=SimforgeAssetCfg(
-            assets=[sf_model.Asteroid()],
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            mesh_collision_props=sim_utils.MeshCollisionPropertiesCfg(
+            assets=[simforge_foundry.Asteroid()],
+            collision_props=CollisionPropertiesCfg(),
+            mesh_collision_props=MeshCollisionPropertiesCfg(
                 mesh_approximation="convexDecomposition"
             ),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
-            mass_props=sim_utils.MassPropertiesCfg(density=2000.0),
+            rigid_props=RigidBodyPropertiesCfg(),
+            mass_props=MassPropertiesCfg(density=2000.0),
         ),
     )

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Tuple
 from omni.isaac.lab.sim.spawners.wrappers import MultiAssetSpawnerCfg, spawn_multi_asset
 from pxr import Usd
 
-from srb.core import sim as sim_utils
+from srb.core.sim import CapsuleCfg, ConeCfg, CuboidCfg, CylinderCfg, SphereCfg
 
 if TYPE_CHECKING:
     from srb.core.sim.spawners.multi_shape.cfg import MultiShapeSpawnerCfg
@@ -35,14 +35,14 @@ def spawn_multi_shape(
     # Collect shape spawner configs
     assets_cfg = []
     if not cfg.shapes or "cuboid" in cfg.shapes:
-        assets_cfg.append(sim_utils.CuboidCfg(size=cfg.scale, **shape_cfg_kwargs))
+        assets_cfg.append(CuboidCfg(size=cfg.scale, **shape_cfg_kwargs))
     if not cfg.shapes or "sphere" in cfg.shapes:
         assets_cfg.append(
-            sim_utils.SphereCfg(radius=cfg.radius or cfg.scale[0], **shape_cfg_kwargs)
+            SphereCfg(radius=cfg.radius or cfg.scale[0], **shape_cfg_kwargs)
         )
     if not cfg.shapes or "cylinder" in cfg.shapes:
         assets_cfg.append(
-            sim_utils.CylinderCfg(
+            CylinderCfg(
                 radius=cfg.radius or cfg.scale[0],
                 height=cfg.height or cfg.scale[1],
                 axis=cfg.axis,
@@ -51,7 +51,7 @@ def spawn_multi_shape(
         )
     if not cfg.shapes or "capsule" in cfg.shapes:
         assets_cfg.append(
-            sim_utils.CapsuleCfg(
+            CapsuleCfg(
                 radius=cfg.radius or cfg.scale[0],
                 height=cfg.height or cfg.scale[1],
                 axis=cfg.axis,
@@ -60,7 +60,7 @@ def spawn_multi_shape(
         )
     if not cfg.shapes or "cone" in cfg.shapes:
         assets_cfg.append(
-            sim_utils.ConeCfg(
+            ConeCfg(
                 radius=cfg.radius or cfg.scale[0],
                 height=cfg.height or cfg.scale[1],
                 axis=cfg.axis,

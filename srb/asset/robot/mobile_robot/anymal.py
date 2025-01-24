@@ -1,11 +1,13 @@
-# from omni.isaac.lab.assets.articulation import ArticulationCfg
-# from srb.core import sim as sim_utils
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.assets.articulation import ArticulationCfg
+from omni.isaac.lab.sim import UsdFileCfg
 from omni.isaac.lab_assets import ANYDRIVE_3_LSTM_ACTUATOR_CFG
 
 from srb.core.actions import JointPositionActionCfg, LocomotionJointSpaceActionCfg
-from srb.core.asset import Frame, LeggedRobot
+from srb.core.asset import ArticulationCfg, Frame, LeggedRobot
+from srb.core.sim import (
+    ArticulationRootPropertiesCfg,
+    MultiAssetSpawnerCfg,
+    RigidBodyPropertiesCfg,
+)
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
 
@@ -13,13 +15,13 @@ class AnymalB(LeggedRobot):
     ## Model
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
-        spawn=sim_utils.UsdFileCfg(
+        spawn=UsdFileCfg(
             usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
             .joinpath("anymal_b")
             .joinpath("anymal_b.usd")
             .as_posix(),
             activate_contact_sensors=True,
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=False,
                 retain_accelerations=False,
                 linear_damping=0.0,
@@ -28,7 +30,7 @@ class AnymalB(LeggedRobot):
                 max_angular_velocity=1000.0,
                 max_depenetration_velocity=1.0,
             ),
-            articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+            articulation_props=ArticulationRootPropertiesCfg(
                 enabled_self_collisions=True,
                 solver_position_iteration_count=4,
                 solver_velocity_iteration_count=0,
@@ -63,13 +65,13 @@ class AnymalC(LeggedRobot):
     ## Model
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
-        spawn=sim_utils.UsdFileCfg(
+        spawn=UsdFileCfg(
             usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
             .joinpath("anymal_c")
             .joinpath("anymal_c.usd")
             .as_posix(),
             activate_contact_sensors=True,
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=False,
                 retain_accelerations=False,
                 linear_damping=0.0,
@@ -78,7 +80,7 @@ class AnymalC(LeggedRobot):
                 max_angular_velocity=1000.0,
                 max_depenetration_velocity=1.0,
             ),
-            articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+            articulation_props=ArticulationRootPropertiesCfg(
                 enabled_self_collisions=True,
                 solver_position_iteration_count=4,
                 solver_velocity_iteration_count=0,
@@ -113,13 +115,13 @@ class AnymalD(LeggedRobot):
     ## Model
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
-        spawn=sim_utils.UsdFileCfg(
+        spawn=UsdFileCfg(
             usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
             .joinpath("anymal_d")
             .joinpath("anymal_d.usd")
             .as_posix(),
             activate_contact_sensors=True,
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=False,
                 retain_accelerations=False,
                 linear_damping=0.0,
@@ -128,7 +130,7 @@ class AnymalD(LeggedRobot):
                 max_angular_velocity=1000.0,
                 max_depenetration_velocity=1.0,
             ),
-            articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+            articulation_props=ArticulationRootPropertiesCfg(
                 enabled_self_collisions=True,
                 solver_position_iteration_count=4,
                 solver_velocity_iteration_count=0,
@@ -163,17 +165,17 @@ class AnymalMulti(LeggedRobot):
     ## Model
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
-        spawn=sim_utils.MultiAssetSpawnerCfg(
+        spawn=MultiAssetSpawnerCfg(
             random_choice=False,
             assets_cfg=[
                 # NOTE: AnymalB seems to be incompatible with AnymalC and AnymalD
-                # sim_utils.UsdFileCfg(
+                # UsdFileCfg(
                 #     usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
                 #     .joinpath("anymal_b")
                 #     .joinpath("anymal_b.usd")
                 #     .as_posix(),
                 #     activate_contact_sensors=True,
-                #     rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                #     rigid_props=RigidBodyPropertiesCfg(
                 #         disable_gravity=False,
                 #         retain_accelerations=False,
                 #         linear_damping=0.0,
@@ -182,19 +184,19 @@ class AnymalMulti(LeggedRobot):
                 #         max_angular_velocity=1000.0,
                 #         max_depenetration_velocity=1.0,
                 #     ),
-                #     articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+                #     articulation_props=ArticulationRootPropertiesCfg(
                 #         enabled_self_collisions=True,
                 #         solver_position_iteration_count=4,
                 #         solver_velocity_iteration_count=0,
                 #     ),
                 # ),
-                sim_utils.UsdFileCfg(
+                UsdFileCfg(
                     usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
                     .joinpath("anymal_c")
                     .joinpath("anymal_c.usd")
                     .as_posix(),
                     activate_contact_sensors=True,
-                    rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                    rigid_props=RigidBodyPropertiesCfg(
                         disable_gravity=False,
                         retain_accelerations=False,
                         linear_damping=0.0,
@@ -203,19 +205,19 @@ class AnymalMulti(LeggedRobot):
                         max_angular_velocity=1000.0,
                         max_depenetration_velocity=1.0,
                     ),
-                    articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+                    articulation_props=ArticulationRootPropertiesCfg(
                         enabled_self_collisions=True,
                         solver_position_iteration_count=4,
                         solver_velocity_iteration_count=0,
                     ),
                 ),
-                sim_utils.UsdFileCfg(
+                UsdFileCfg(
                     usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
                     .joinpath("anymal_d")
                     .joinpath("anymal_d.usd")
                     .as_posix(),
                     activate_contact_sensors=True,
-                    rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                    rigid_props=RigidBodyPropertiesCfg(
                         disable_gravity=False,
                         retain_accelerations=False,
                         linear_damping=0.0,
@@ -224,7 +226,7 @@ class AnymalMulti(LeggedRobot):
                         max_angular_velocity=1000.0,
                         max_depenetration_velocity=1.0,
                     ),
-                    articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+                    articulation_props=ArticulationRootPropertiesCfg(
                         enabled_self_collisions=True,
                         solver_position_iteration_count=4,
                         solver_velocity_iteration_count=0,
@@ -232,7 +234,7 @@ class AnymalMulti(LeggedRobot):
                 ),
             ],
             activate_contact_sensors=True,
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=False,
                 retain_accelerations=False,
                 linear_damping=0.0,

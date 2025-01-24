@@ -1,9 +1,9 @@
 from typing import Dict, Sequence, Tuple
 
 import torch
-from omni.isaac.lab.utils import configclass
 
 from srb.env import BaseAerialRoboticsEnv, BaseAerialRoboticsEnvCfg
+from srb.utils import configclass
 
 ##############
 ### Config ###

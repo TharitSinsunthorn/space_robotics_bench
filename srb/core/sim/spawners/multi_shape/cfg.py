@@ -1,14 +1,13 @@
 from collections.abc import Callable
 from typing import Literal, Sequence, Tuple
 
-from omni.isaac.lab.utils import configclass
-
-from srb.core import sim as sim_utils
+from srb.core.sim import ShapeCfg
 from srb.core.sim.spawners.multi_shape.impl import spawn_multi_shape
+from srb.utils import configclass
 
 
 @configclass
-class MultiShapeSpawnerCfg(sim_utils.ShapeCfg):
+class MultiShapeSpawnerCfg(ShapeCfg):
     func: Callable = spawn_multi_shape
 
     shapes: Sequence[Literal["cuboid", "sphere", "cylinder", "capsule", "cone"]] = ()

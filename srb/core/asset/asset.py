@@ -136,7 +136,7 @@ class Asset(BaseModel):
                                         f'Updated input "{k}" to "{v}" for {BlGeometry.__name__} operation "{op.__class__.__name__}" of "{asset.__class__.__name__}"'
                                     )
                             if not _set:
-                                logging.debug(
+                                logging.trace(
                                     f'Input "{k}" of type "{type(k)}" not updated for "{asset.__class__.__name__}"'
                                 )
                     case _model if isinstance(asset, BlModel):
@@ -170,7 +170,7 @@ class Asset(BaseModel):
                                     f'Updated input "{k}" to "{v}" for "{asset.__class__.__name__}"'
                                 )
                             if not _set:
-                                logging.debug(
+                                logging.trace(
                                     f'Input "{k}" of type "{type(k)}" not updated for "{asset.__class__.__name__}"'
                                 )
                     case _:
@@ -185,7 +185,7 @@ class Asset(BaseModel):
                 if hasattr(spawner, k) and isinstance(getattr(spawner, k), type(v)):
                     setattr(spawner, k, v)
                 if not _set:
-                    logging.debug(
+                    logging.trace(
                         f'Input "{k}" of type "{type(k)}" not updated for "{spawner.__class__.__name__}"'
                     )
         else:
@@ -198,7 +198,7 @@ class Asset(BaseModel):
                         f'Updated input "{k}" to "{v}" for "{spawner.__class__.__name__}"'
                     )
                 if not _set:
-                    logging.debug(
+                    logging.trace(
                         f'Input "{k}" of type "{type(k)}" not updated for "{spawner.__class__.__name__}"'
                     )
 

@@ -1,12 +1,11 @@
-from omni.isaac.lab.sensors import ContactSensor
-
 from srb.core.asset import Articulation
-from srb.core.envs import BaseEnv
+from srb.core.envs import DirectEnv
+from srb.core.sensors import ContactSensor
 
 from .cfg import BaseLocomotionEnvCfg
 
 
-class BaseLocomotionEnv(BaseEnv):
+class BaseLocomotionEnv(DirectEnv):
     cfg: BaseLocomotionEnvCfg
 
     def __init__(self, cfg: BaseLocomotionEnvCfg, **kwargs):

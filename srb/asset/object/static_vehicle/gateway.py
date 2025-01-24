@@ -1,6 +1,6 @@
-from srb.core import sim as sim_utils
 from srb.core.asset import AssetBaseCfg, Frame, StaticVehicle, Transform
-from srb.utils import math as math_utils
+from srb.core.sim import CollisionPropertiesCfg, UsdFileCfg
+from srb.utils.math import quat_from_rpy
 from srb.utils.path import SRB_ASSETS_DIR_SRB_VEHICLE
 
 
@@ -8,11 +8,11 @@ class Gateway(StaticVehicle):
     ## Model
     asset_cfg: AssetBaseCfg = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/vehicle",
-        spawn=sim_utils.UsdFileCfg(
+        spawn=UsdFileCfg(
             usd_path=SRB_ASSETS_DIR_SRB_VEHICLE.joinpath("gateway")
             .joinpath("gateway.usdc")
             .as_posix(),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
+            collision_props=CollisionPropertiesCfg(),
         ),
     )
 
@@ -22,7 +22,7 @@ class Gateway(StaticVehicle):
         prim_relpath="camera_base",
         offset=Transform(
             translation=(0.21, 0.0, 0.0),
-            rotation=math_utils.quat_from_rpy(0.0, 15.0, 0.0),
+            rotation=quat_from_rpy(0.0, 15.0, 0.0),
         ),
     )
     frame_cargo_bay: Frame = Frame(

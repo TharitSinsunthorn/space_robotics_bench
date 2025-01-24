@@ -1,14 +1,11 @@
 from dataclasses import MISSING
 from typing import Tuple
 
-from omni.isaac.lab.envs import ViewerCfg
-from omni.isaac.lab.scene import InteractiveSceneCfg
-from omni.isaac.lab.sensors import CameraCfg
-from omni.isaac.lab.sensors.camera.camera_cfg import PinholeCameraCfg
-from omni.isaac.lab.utils import configclass
-
-import srb.core.asset as asset_utils
-from srb.utils import math as math_utils
+from srb.core.asset import MobileRobot
+from srb.core.envs import InteractiveSceneCfg, ViewerCfg
+from srb.core.sensors import CameraCfg, PinholeCameraCfg
+from srb.utils import configclass
+from srb.utils.math import quat_from_rpy
 
 
 @configclass
@@ -17,7 +14,7 @@ class VisualMobileRoboticsEnvExtCfg:
     agent_rate: int = MISSING
     scene: InteractiveSceneCfg = MISSING
     viewer: ViewerCfg = MISSING
-    robot_cfg: asset_utils.MobileRobot = MISSING
+    robot_cfg: MobileRobot = MISSING
 
     ## Enabling flags
     enable_camera_scene: bool = True
@@ -42,7 +39,7 @@ class VisualMobileRoboticsEnvExtCfg:
                 offset=CameraCfg.OffsetCfg(
                     convention="world",
                     pos=(0.0, 7.5, 5.0),
-                    rot=math_utils.quat_from_rpy(0.0, 30.0, -90.0),
+                    rot=quat_from_rpy(0.0, 30.0, -90.0),
                 ),
                 spawn=PinholeCameraCfg(
                     clipping_range=(0.01, 20.0 - 0.01),

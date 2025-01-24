@@ -1,12 +1,12 @@
 from typing import Dict, List, Sequence, Tuple
 
 import torch
-from omni.isaac.lab.managers import EventTermCfg
-from omni.isaac.lab.utils import configclass
 
-from srb.core.envs import BaseEnv
+from srb.core.envs import DirectEnv
+from srb.core.managers import EventTermCfg
 from srb.env import BaseLocomotionEnv, BaseLocomotionEnvCfg, BaseLocomotionEnvEventCfg
-from srb.utils import math as math_utils
+from srb.utils import configclass
+from srb.utils.math import matrix_from_quat, rotmat_to_rot6d, sample_uniform
 
 ##############
 ### Config ###
@@ -14,11 +14,11 @@ from srb.utils import math as math_utils
 
 
 def change_locomotion_command(
-    env: BaseEnv, env_ids: torch.Tensor | None, magnitude: float = 1.0
+    env: DirectEnv, env_ids: torch.Tensor | None, magnitude: float = 1.0
 ):
     if env_ids is None:
         env_ids = torch.arange(env.cfg.scene.num_envs, device=env.device)
-    env._command[env_ids] = math_utils.sample_uniform(  # type: ignore
+    env._command[env_ids] = sample_uniform(  # type: ignore
         -magnitude, magnitude, (len(env_ids), 3), device=env.device
     )
 
@@ -39,9 +39,6 @@ class TaskCfg(BaseLocomotionEnvCfg):
             mode="interval",
             is_global_time=True,
             interval_range_s=(0.5, 5.0),  # time_s = num_steps * (decimation * dt)
-            params={
-                "magnitude": 2.0,
-            },
         )
 
     events = EventCfg()
@@ -77,7 +74,7 @@ class Task(BaseLocomotionEnv):
     def _reset_idx(self, env_ids: Sequence[int]):
         super()._reset_idx(env_ids)
 
-        # self._command[env_ids] = math_utils.sample_uniform(
+        # self._command[env_ids] = sample_uniform(
         #     -1.0, 1.0, (len(env_ids), 3), device=self.device
         # )
         # self._command[env_ids] = torch.tensor(
@@ -188,7 +185,7 @@ def _compute_intermediate_state(
     remaining_time = 1 - (episode_length_buf / max_episode_length).unsqueeze(-1)
 
     # Robot '6D' rotation
-    robot_root_rotmat_w = math_utils.matrix_from_quat(root_quat_w)
+    robot_root_rotmat_w = matrix_from_quat(root_quat_w)
 
     # # Height scanner
     # heightmap = (
@@ -342,7 +339,7 @@ def _construct_observations(
     num_envs = remaining_time.size(0)
 
     # End-effector pose (position and '6D' rotation)
-    robot_root_rot6d_w = math_utils.rotmat_to_rot6d(robot_root_rotmat_w)
+    robot_root_rot6d_w = rotmat_to_rot6d(robot_root_rotmat_w)
 
     # Wrench
     robot_feet_incoming_force_full = robot_feet_incoming_force.view(num_envs, -1)

@@ -1,10 +1,10 @@
-from typing import List, Mapping, Set, Tuple
+from typing import Any, Dict, List, Mapping, Set, Tuple
 
 from omni.isaac.lab.utils.dict import *  # noqa: F403
 from omni.isaac.lab.utils.dict import string_to_slice
 
 
-def replace_slices_with_strings(data: dict) -> dict:
+def replace_slices_with_strings(data: Dict[Any, Any]) -> Dict[Any, Any]:
     """Replace slice objects with their string representations in a dictionary.
 
     Args:
@@ -27,7 +27,7 @@ def replace_slices_with_strings(data: dict) -> dict:
         return data
 
 
-def replace_strings_with_slices(data: dict) -> dict:
+def replace_strings_with_slices(data: Dict[Any, Any]) -> Dict[Any, Any]:
     """Replace string representations of slices with slice objects in a dictionary.
 
     Args:

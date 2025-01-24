@@ -1,11 +1,14 @@
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.actuators import ImplicitActuatorCfg
-from omni.isaac.lab.assets.articulation import ArticulationCfg
+from omni.isaac.lab.sim import UsdFileCfg
 
-import srb.core.asset as asset_utils
 from srb.core.actions import WheeledRoverActionCfg, WheeledRoverActionGroupCfg
-from srb.core.asset import Frame, WheeledRobot
-from srb.utils import math as math_utils
+from srb.core.actuators import ImplicitActuatorCfg
+from srb.core.asset import ArticulationCfg, Frame, Transform, WheeledRobot
+from srb.core.sim import (
+    ArticulationRootPropertiesCfg,
+    CollisionPropertiesCfg,
+    RigidBodyPropertiesCfg,
+)
+from srb.utils.math import quat_from_rpy
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
 
@@ -13,20 +16,20 @@ class Perseverance(WheeledRobot):
     ## Model
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
-        spawn=sim_utils.UsdFileCfg(
+        spawn=UsdFileCfg(
             usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("perseverance")
             .joinpath("perseverance.usdc")
             .as_posix(),
-            collision_props=sim_utils.CollisionPropertiesCfg(
+            collision_props=CollisionPropertiesCfg(
                 contact_offset=0.02, rest_offset=0.005
             ),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            rigid_props=RigidBodyPropertiesCfg(
                 max_linear_velocity=1.5,
                 max_angular_velocity=1000.0,
                 max_depenetration_velocity=1.0,
                 disable_gravity=False,
             ),
-            articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+            articulation_props=ArticulationRootPropertiesCfg(
                 enabled_self_collisions=False,
                 solver_position_iteration_count=16,
                 solver_velocity_iteration_count=4,
@@ -96,10 +99,10 @@ class Perseverance(WheeledRobot):
     frame_base: Frame = Frame(prim_relpath="body")
     frame_camera_front: Frame = Frame(
         prim_relpath="body/camera_front",
-        offset=asset_utils.Transform(
+        offset=Transform(
             # translation=(-0.3437, -0.8537, 1.9793),  # Left Navcam
             translation=(-0.7675, -0.8537, 1.9793),  # Right Navcam
-            rotation=math_utils.quat_from_rpy(0.0, 15.0, -90.0),
+            rotation=quat_from_rpy(0.0, 15.0, -90.0),
         ),
     )
 

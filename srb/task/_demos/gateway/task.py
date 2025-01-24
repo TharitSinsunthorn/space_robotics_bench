@@ -2,14 +2,12 @@ import sys
 from typing import Dict, Sequence, Tuple
 
 import torch
-from omni.isaac.lab.envs import ViewerCfg
-from omni.isaac.lab.utils import configclass
 
-import srb.core.envs as env_utils
 from srb import asset
 from srb.core.asset import Articulation
-from srb.core.envs import BaseEnv
+from srb.core.envs import DirectEnv, Domain, ViewerCfg
 from srb.env import BaseManipulationEnv, BaseManipulationEnvCfg
+from srb.utils import configclass
 
 ##############
 ### Config ###
@@ -26,28 +24,28 @@ class TaskCfg(BaseManipulationEnvCfg):
     )
 
     def __post_init__(self):
-        if self.env_cfg.domain != env_utils.Domain.ORBIT:
+        if self.domain != Domain.ORBIT:
             print(
-                f"[WARN] Environment requires ORBIT scenario ({self.env_cfg.domain} ignored)",
+                f"[WARN] Environment requires ORBIT scenario ({self.domain} ignored)",
                 file=sys.stderr,
             )
-            self.env_cfg.domain = env_utils.Domain.ORBIT
-        if self.env_cfg.assets.terrain.variant != env_utils.AssetVariant.NONE:
+            self.domain = Domain.ORBIT
+        if self.terrain is not None:
             print(
-                f"[WARN] Environment requires NONE terrain ({self.env_cfg.assets.terrain.variant} ignored)",
+                f"[WARN] Environment requires NONE terrain ({self.terrain} ignored)",
                 file=sys.stderr,
             )
-            self.env_cfg.assets.terrain.variant = env_utils.AssetVariant.NONE
+            self.terrain = None
 
         super().__post_init__()
 
         ## Scene
         self.scene.env_spacing = 42.0
-        self.robot_cfg = asset.Canadarm3Large()
-        self.scene.robot = self.robot_cfg.asset_cfg
+        self.robot = asset.Canadarm3Large()
+        self.scene.robot = self.robot.asset_cfg
 
         ## Actions
-        self.actions = self.robot_cfg.action_cfg
+        self.actions = self.robot.action_cfg
 
         ## Sensors
         self.scene.tf_robot_ee = None
@@ -56,7 +54,7 @@ class TaskCfg(BaseManipulationEnvCfg):
         ## Events
         self.events.reset_rand_robot_state.params[
             "asset_cfg"
-        ].joint_names = self.robot_cfg.regex_joints_arm
+        ].joint_names = self.robot.regex_joints_arm
 
 
 ############
@@ -69,7 +67,7 @@ class Task(BaseManipulationEnv):
 
     def __init__(self, cfg: TaskCfg, **kwargs):
         # super().__init__(cfg, **kwargs)
-        BaseEnv.__init__(self, cfg, **kwargs)
+        DirectEnv.__init__(self, cfg, **kwargs)
 
         ## Get handles to scene assets
         self._robot: Articulation = self.scene["robot"]

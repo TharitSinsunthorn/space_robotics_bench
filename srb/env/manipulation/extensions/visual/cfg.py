@@ -1,14 +1,11 @@
 from dataclasses import MISSING
 from typing import Tuple
 
-from omni.isaac.lab.envs import ViewerCfg
-from omni.isaac.lab.scene import InteractiveSceneCfg
-from omni.isaac.lab.sensors import CameraCfg
-from omni.isaac.lab.sensors.camera.camera_cfg import PinholeCameraCfg
-from omni.isaac.lab.utils import configclass
-
-import srb.core.asset as asset_utils
-from srb.utils import math as math_utils
+from srb.core.asset import Manipulator, StaticVehicle
+from srb.core.envs import InteractiveSceneCfg, ViewerCfg
+from srb.core.sensors import CameraCfg, PinholeCameraCfg
+from srb.utils import configclass
+from srb.utils.math import quat_from_rpy
 
 
 @configclass
@@ -17,8 +14,8 @@ class VisualManipulationEnvExtCfg:
     agent_rate: int = MISSING
     scene: InteractiveSceneCfg = MISSING
     viewer: ViewerCfg = MISSING
-    robot_cfg: asset_utils.Manipulator = MISSING
-    vehicle_cfg: asset_utils.StaticVehicle | None = None
+    robot_cfg: Manipulator = MISSING
+    vehicle: StaticVehicle | None = None
 
     ## Enabling flags
     enable_camera_scene: bool = False
@@ -44,7 +41,7 @@ class VisualManipulationEnvExtCfg:
                 offset=CameraCfg.OffsetCfg(
                     convention="world",
                     pos=(1.2, 0.0, 0.8),
-                    rot=math_utils.quat_from_rpy(0.0, 30.0, 180.0),
+                    rot=quat_from_rpy(0.0, 30.0, 180.0),
                 ),
                 spawn=PinholeCameraCfg(
                     clipping_range=(0.01, 4.0 - 0.01),
@@ -68,13 +65,13 @@ class VisualManipulationEnvExtCfg:
                 "update_period": framerate,
                 "data_types": ["rgb", "distance_to_camera"],
             }
-            if self.vehicle_cfg and self.vehicle_cfg.frame_camera_base:
+            if self.vehicle and self.vehicle.frame_camera_base:
                 self.scene.camera_base = CameraCfg(
-                    prim_path=f"{self.scene.vehicle.prim_path}/{self.vehicle_cfg.frame_camera_base.prim_relpath}",
+                    prim_path=f"{self.scene.vehicle.prim_path}/{self.vehicle.frame_camera_base.prim_relpath}",
                     offset=CameraCfg.OffsetCfg(
                         convention="world",
-                        pos=self.vehicle_cfg.frame_camera_base.offset.translation,
-                        rot=self.vehicle_cfg.frame_camera_base.offset.rotation,
+                        pos=self.vehicle.frame_camera_base.offset.translation,
+                        rot=self.vehicle.frame_camera_base.offset.rotation,
                     ),
                     **camera_base_kwargs,
                 )

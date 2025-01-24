@@ -1,9 +1,7 @@
-from omni.isaac.lab.envs import ManagerBasedRLEnv
+from omni.isaac.lab.envs import ManagerBasedRLEnv as __ManagerBasedRLEnv
+
+from srb.core.envs.base.managed.cfg import ManagedEnvCfg
 
 
-class BaseEnvManaged(ManagerBasedRLEnv):
-    """
-    Extended version of :class:`omni.isaac.lab.envs.ManagerBasedRLEnv`.
-    """
-
-    pass
+class ManagedEnv(__ManagerBasedRLEnv):
+    cfg: ManagedEnvCfg

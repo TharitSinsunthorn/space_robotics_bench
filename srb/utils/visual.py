@@ -1,24 +1,24 @@
 from typing import Tuple
 
-import srb.core.envs as env_utils
-from srb.core import sim as sim_utils
+from srb.core.envs import BaseEnvCfg, Domain
+from srb.core.sim import PreviewSurfaceCfg
 
 
 def contrastive_color_from_env_cfg(
-    env_cfg: env_utils.EnvironmentConfig,
+    env_cfg: BaseEnvCfg,
 ) -> Tuple[float, float, float]:
     match env_cfg.domain:
-        case env_utils.Domain.ASTEROID | env_utils.Domain.MOON:
+        case Domain.ASTEROID | Domain.MOON:
             return (0.8, 0.8, 0.8)
-        case env_utils.Domain.EARTH | env_utils.Domain.MARS | env_utils.Domain.ORBIT:
+        case Domain.EARTH | Domain.MARS | Domain.ORBIT:
             return (0.1, 0.1, 0.1)
         case _:
             return (0.7071, 0.7071, 0.7071)
 
 
 def preview_surface_from_env_cfg(
-    env_cfg: env_utils.EnvironmentConfig,
-) -> sim_utils.PreviewSurfaceCfg:
-    return sim_utils.PreviewSurfaceCfg(
+    env_cfg: BaseEnvCfg,
+) -> PreviewSurfaceCfg:
+    return PreviewSurfaceCfg(
         diffuse_color=contrastive_color_from_env_cfg(env_cfg),
     )

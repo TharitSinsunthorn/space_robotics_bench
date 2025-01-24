@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import torch
-from omni.isaac.lab.utils import configclass
+
+from srb.utils import configclass
+
+# TODO: Add registry (so that it can be overridden as env.robot.action="another_registered_action_group")
 
 
 @configclass

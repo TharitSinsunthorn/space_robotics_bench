@@ -1,12 +1,11 @@
-import omni.isaac.lab.sim as sim_utils
-from omni.isaac.lab.actuators import ImplicitActuatorCfg
-from omni.isaac.lab.assets.articulation import ArticulationCfg
+from omni.isaac.lab.sim import UsdFileCfg
 from torch import pi
 
-import srb.core.asset as asset_utils
 from srb.core.actions import MultiCopterActionCfg, MultiCopterActionGroupCfg
-from srb.core.asset import Frame, MultiCopter
-from srb.utils import math as math_utils
+from srb.core.actuators import ImplicitActuatorCfg
+from srb.core.asset import ArticulationCfg, Frame, MultiCopter, Transform
+from srb.core.sim import ArticulationRootPropertiesCfg, RigidBodyPropertiesCfg
+from srb.utils.math import quat_from_rpy
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
 
@@ -14,16 +13,16 @@ class Ingenuity(MultiCopter):
     ## Model
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
-        spawn=sim_utils.UsdFileCfg(
+        spawn=UsdFileCfg(
             usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("ingenuity")
             .joinpath("ingenuity.usdc")
             .as_posix(),
-            articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+            articulation_props=ArticulationRootPropertiesCfg(
                 enabled_self_collisions=False,
                 solver_position_iteration_count=8,
                 solver_velocity_iteration_count=1,
             ),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=True,
                 max_depenetration_velocity=5.0,
             ),
@@ -61,9 +60,9 @@ class Ingenuity(MultiCopter):
     frame_base: Frame = Frame(prim_relpath="body")
     frame_camera_bottom: Frame = Frame(
         prim_relpath=f"{frame_base}/camera_bottom",
-        offset=asset_utils.Transform(
+        offset=Transform(
             translation=(0.045, 0.0, 0.1275),
-            rotation=math_utils.quat_from_rpy(0.0, 90.0, 0.0),
+            rotation=quat_from_rpy(0.0, 90.0, 0.0),
         ),
     )
 

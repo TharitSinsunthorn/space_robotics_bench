@@ -3,23 +3,32 @@ from typing import Dict, List, Sequence, Tuple
 
 import torch
 from omni.isaac.core.prims.xform_prim_view import XFormPrimView
-from omni.isaac.lab.sensors import ContactSensor, ContactSensorCfg
-from omni.isaac.lab.utils import configclass
 from pydantic import BaseModel
 
-import srb.core.envs as env_utils
 from srb import asset
-from srb.core import sim as sim_utils
 from srb.core.asset import RigidObject, RigidObjectCfg
+from srb.core.envs import AssetVariant, BaseEnvCfg
 from srb.core.managers import EventTermCfg, SceneEntityCfg
 from srb.core.markers import VisualizationMarkers, VisualizationMarkersCfg
+from srb.core.mdp import (
+    reset_root_state_uniform,
+    reset_root_state_uniform_poisson_disk_2d,
+)
+from srb.core.sensors import ContactSensor, ContactSensorCfg
+from srb.core.sim import PreviewSurfaceCfg
 from srb.env import (
     BaseManipulationEnv,
     BaseManipulationEnvCfg,
     BaseManipulationEnvEventCfg,
-    mdp,
 )
-from srb.utils import math as math_utils
+from srb.utils import configclass
+from srb.utils.math import (
+    combine_frame_transforms,
+    matrix_from_quat,
+    rotmat_to_rot6d,
+    scale_transform,
+    subtract_frame_transforms,
+)
 
 from ..peg_in_hole.task import peg_and_hole_cfg
 
@@ -29,6 +38,8 @@ from ..peg_in_hole.task import peg_and_hole_cfg
 
 
 class PanelCfg(BaseModel, arbitrary_types_allowed=True):
+    asset_cfg: RigidObjectCfg
+
     ## Geometry
     offset_pos: Tuple[float, float, float] = (0.0, 0.0, 0.15)
 
@@ -52,7 +63,7 @@ class TaskCfg(BaseManipulationEnvCfg):
         markers={
             "target": asset.object.SolarPanel().asset_cfg.spawn.replace(
                 visible=False,
-                visual_material=sim_utils.PreviewSurfaceCfg(
+                visual_material=PreviewSurfaceCfg(
                     emissive_color=(0.2, 0.2, 0.2),
                     opacity=0.1,
                     diffuse_color=(0.0, 0.0, 0.0),
@@ -71,19 +82,19 @@ class TaskCfg(BaseManipulationEnvCfg):
     events = EventCfg()
 
     def __post_init__(self):
-        if self.env_cfg.assets.object.variant != env_utils.AssetVariant.DATASET:
+        if self.obj != AssetVariant.DATASET:
             print(
-                f"[WARN] Environment requires DATASET object ({self.env_cfg.assets.object.variant} ignored)",
+                f"[WARN] Environment requires DATASET object ({self.obj} ignored)",
                 file=sys.stderr,
             )
-            self.env_cfg.assets.object.variant = env_utils.AssetVariant.DATASET
+            self.obj = AssetVariant.DATASET
 
         super().__post_init__()
 
         ## Scene
         self.problem_cfgs = [
             peg_and_hole_cfg(
-                self.env_cfg,
+                self,
                 seed=self.seed,
                 prim_path_peg=f"{{ENV_REGEX_NS}}/peg{i}",
                 prim_path_hole=f"{{ENV_REGEX_NS}}/hole{i}",
@@ -120,7 +131,7 @@ class TaskCfg(BaseManipulationEnvCfg):
             )
 
         self.panel_cfg = self._panel_cfg(
-            self.env_cfg,
+            self,
             init_state=RigidObjectCfg.InitialStateCfg(pos=(0.55, 0.0, 0.015)),
         )
         self.scene.panel = self.panel_cfg.asset_cfg
@@ -132,7 +143,7 @@ class TaskCfg(BaseManipulationEnvCfg):
 
         ## Sensors
         self.scene.contacts_robot_hand_obj = ContactSensorCfg(
-            prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.regex_links_hand}",
+            prim_path=f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}",
             update_period=0.0,
             # Note: This causes error 'Filter pattern did not match the correct number of entries'
             #       However, it seems to function properly anyway...
@@ -145,7 +156,7 @@ class TaskCfg(BaseManipulationEnvCfg):
         ## Events
         self.events.reset_rand_panel_state = self.panel_cfg.state_randomizer
         self.events.reset_rand_object_state_multi = EventTermCfg(
-            func=mdp.reset_root_state_uniform_poisson_disk_2d,
+            func=reset_root_state_uniform_poisson_disk_2d,
             mode="reset",
             params={
                 "asset_cfgs": [SceneEntityCfg(f"object{i}") for i in range(4)],
@@ -177,7 +188,7 @@ class TaskCfg(BaseManipulationEnvCfg):
 
     @staticmethod
     def _panel_cfg(
-        env_cfg: env_utils.EnvironmentConfig,
+        env_cfg: BaseEnvCfg,
         *,
         init_state: RigidObjectCfg.InitialStateCfg,
         asset_cfg: SceneEntityCfg = SceneEntityCfg("panel"),
@@ -207,7 +218,7 @@ class TaskCfg(BaseManipulationEnvCfg):
             asset_cfg=cfg,
             offset_pos=offset_pos,
             state_randomizer=EventTermCfg(
-                func=mdp.reset_root_state_uniform,
+                func=reset_root_state_uniform,
                 mode="reset",
                 params={
                     "asset_cfg": asset_cfg,
@@ -241,10 +252,10 @@ class Task(BaseManipulationEnv):
 
         ## Pre-compute metrics used in hot loops
         self._robot_arm_joint_indices, _ = self._robot.find_joints(
-            self.cfg.robot_cfg.regex_joints_arm
+            self.cfg.robot.regex_joints_arm
         )
         self._robot_hand_joint_indices, _ = self._robot.find_joints(
-            self.cfg.robot_cfg.regex_joints_hand
+            self.cfg.robot.regex_joints_hand
         )
         self._max_episode_length = self.max_episode_length
         self._obj_com_offset = torch.stack(
@@ -488,7 +499,7 @@ def _compute_intermediate_state(
     remaining_time = 1 - (episode_length_buf / max_episode_length).unsqueeze(-1)
 
     # Robot joint positions
-    joint_pos_normalized = math_utils.scale_transform(
+    joint_pos_normalized = scale_transform(
         joint_pos,
         soft_joint_pos_limits[:, :, 0],
         soft_joint_pos_limits[:, :, 1],
@@ -499,10 +510,10 @@ def _compute_intermediate_state(
     )
 
     # End-effector '6D' rotation
-    robot_ee_rotmat_wrt_base = math_utils.matrix_from_quat(robot_ee_quat_wrt_base)
+    robot_ee_rotmat_wrt_base = matrix_from_quat(robot_ee_quat_wrt_base)
 
     # Transformation | Object origin -> Object CoM
-    obj_com_pos_w, obj_com_quat_w = math_utils.combine_frame_transforms(
+    obj_com_pos_w, obj_com_quat_w = combine_frame_transforms(
         t01=obj_pos_w,
         q01=obj_quat_w,
         t12=obj_com_offset[:, :, :3],
@@ -510,12 +521,12 @@ def _compute_intermediate_state(
     )
 
     # Transformation | Object origin -> Peg ends
-    _peg_end0_pos_w, _ = math_utils.combine_frame_transforms(
+    _peg_end0_pos_w, _ = combine_frame_transforms(
         t01=obj_pos_w,
         q01=obj_quat_w,
         t12=peg_offset_pos_ends[:, :, 0],
     )
-    _peg_end1_pos_w, _ = math_utils.combine_frame_transforms(
+    _peg_end1_pos_w, _ = combine_frame_transforms(
         t01=obj_pos_w,
         q01=obj_quat_w,
         t12=peg_offset_pos_ends[:, :, 1],
@@ -523,7 +534,7 @@ def _compute_intermediate_state(
     peg_ends_pos_w = torch.stack([_peg_end0_pos_w, _peg_end1_pos_w], dim=1)
 
     # Transformation | Panel origin -> Panel CoM
-    panel_com_pos_w, panel_com_quat_w = math_utils.combine_frame_transforms(
+    panel_com_pos_w, panel_com_quat_w = combine_frame_transforms(
         t01=panel_pos_w,
         q01=panel_quat_w,
         t12=panel_com_offset[:, :3],
@@ -531,66 +542,58 @@ def _compute_intermediate_state(
     )
 
     # Transformation | End-effector -> Panel CoM
-    panel_com_pos_wrt_robot_ee, panel_com_quat_wrt_robot_ee = (
-        math_utils.subtract_frame_transforms(
-            t01=robot_ee_pos_w,
-            q01=robot_ee_quat_w,
-            t02=panel_com_pos_w,
-            q02=panel_com_quat_w,
-        )
+    panel_com_pos_wrt_robot_ee, panel_com_quat_wrt_robot_ee = subtract_frame_transforms(
+        t01=robot_ee_pos_w,
+        q01=robot_ee_quat_w,
+        t02=panel_com_pos_w,
+        q02=panel_com_quat_w,
     )
-    panel_com_rotmat_wrt_robot_ee = math_utils.matrix_from_quat(
-        panel_com_quat_wrt_robot_ee
-    )
+    panel_com_rotmat_wrt_robot_ee = matrix_from_quat(panel_com_quat_wrt_robot_ee)
 
     # Transformation | Panel CoM -> Panel Target
     panel_target_pos_wrt_panel_com, panel_target_quat_wrt_panel_com = (
-        math_utils.subtract_frame_transforms(
+        subtract_frame_transforms(
             t01=panel_com_pos_w,
             q01=panel_com_quat_w,
             t02=panel_target_pos_w,
             q02=panel_target_quat_w,
         )
     )
-    panel_target_rotmat_wrt_panel_com = math_utils.matrix_from_quat(
+    panel_target_rotmat_wrt_panel_com = matrix_from_quat(
         panel_target_quat_wrt_panel_com
     )
 
     # Transformation | Target origin -> Hole entrance
-    hole_entrance_pos_w, _ = math_utils.combine_frame_transforms(
+    hole_entrance_pos_w, _ = combine_frame_transforms(
         t01=target_pos_w,
         q01=target_quat_w,
         t12=hole_offset_pos_entrance,
     )
 
     # Transformation | Target origin -> Hole bottom
-    hole_bottom_pos_w, _ = math_utils.combine_frame_transforms(
+    hole_bottom_pos_w, _ = combine_frame_transforms(
         t01=target_pos_w,
         q01=target_quat_w,
         t12=hole_offset_pos_bottom,
     )
 
     # Transformation | End-effector -> Object CoM
-    obj_com_pos_wrt_robot_ee, obj_com_quat_wrt_robot_ee = (
-        math_utils.subtract_frame_transforms(
-            t01=robot_ee_pos_w.unsqueeze(1).repeat(1, 4, 1),
-            q01=robot_ee_quat_w.unsqueeze(1).repeat(1, 4, 1),
-            t02=obj_com_pos_w,
-            q02=obj_com_quat_w,
-        )
+    obj_com_pos_wrt_robot_ee, obj_com_quat_wrt_robot_ee = subtract_frame_transforms(
+        t01=robot_ee_pos_w.unsqueeze(1).repeat(1, 4, 1),
+        q01=robot_ee_quat_w.unsqueeze(1).repeat(1, 4, 1),
+        t02=obj_com_pos_w,
+        q02=obj_com_quat_w,
     )
-    obj_com_rotmat_wrt_robot_ee = math_utils.matrix_from_quat(obj_com_quat_wrt_robot_ee)
+    obj_com_rotmat_wrt_robot_ee = matrix_from_quat(obj_com_quat_wrt_robot_ee)
 
     # Transformation | Peg ends -> Hole entrance
-    _hole_entrance_pos_wrt_peg_end0, hole_quat_wrt_peg = (
-        math_utils.subtract_frame_transforms(
-            t01=peg_ends_pos_w[:, 0],
-            q01=obj_quat_w,
-            t02=hole_entrance_pos_w,
-            q02=target_quat_w,
-        )
+    _hole_entrance_pos_wrt_peg_end0, hole_quat_wrt_peg = subtract_frame_transforms(
+        t01=peg_ends_pos_w[:, 0],
+        q01=obj_quat_w,
+        t02=hole_entrance_pos_w,
+        q02=target_quat_w,
     )
-    _hole_entrance_pos_wrt_peg_end1, _ = math_utils.subtract_frame_transforms(
+    _hole_entrance_pos_wrt_peg_end1, _ = subtract_frame_transforms(
         t01=peg_ends_pos_w[:, 1],
         q01=obj_quat_w,
         t02=hole_entrance_pos_w,
@@ -598,15 +601,15 @@ def _compute_intermediate_state(
     hole_entrance_pos_wrt_peg_ends = torch.stack(
         [_hole_entrance_pos_wrt_peg_end0, _hole_entrance_pos_wrt_peg_end1], dim=1
     )
-    hole_rotmat_wrt_peg = math_utils.matrix_from_quat(hole_quat_wrt_peg)
+    hole_rotmat_wrt_peg = matrix_from_quat(hole_quat_wrt_peg)
 
     # Transformation | Peg ends -> Hole bottom
-    _hole_bottom_pos_wrt_peg_end0, _ = math_utils.subtract_frame_transforms(
+    _hole_bottom_pos_wrt_peg_end0, _ = subtract_frame_transforms(
         t01=peg_ends_pos_w[:, 0],
         q01=obj_quat_w,
         t02=hole_bottom_pos_w,
     )
-    _hole_bottom_pos_wrt_peg_end1, _ = math_utils.subtract_frame_transforms(
+    _hole_bottom_pos_wrt_peg_end1, _ = subtract_frame_transforms(
         t01=peg_ends_pos_w[:, 1],
         q01=obj_quat_w,
         t02=hole_bottom_pos_w,
@@ -861,24 +864,22 @@ def _construct_observations(
     robot_joint_pos_hand_mean = robot_joint_pos_hand.mean(dim=-1, keepdim=True)
 
     # End-effector pose (position and '6D' rotation)
-    robot_ee_rot6d = math_utils.rotmat_to_rot6d(robot_ee_rotmat_wrt_base)
+    robot_ee_rot6d = rotmat_to_rot6d(robot_ee_rotmat_wrt_base)
 
     # Wrench
     robot_hand_wrench_full = robot_hand_wrench.view(num_envs, -1)
     robot_hand_wrench_mean = robot_hand_wrench.mean(dim=1)
 
     # Transformation | End-effector -> Object CoM
-    obj_com_rot6d_wrt_robot_ee = math_utils.rotmat_to_rot6d(obj_com_rotmat_wrt_robot_ee)
+    obj_com_rot6d_wrt_robot_ee = rotmat_to_rot6d(obj_com_rotmat_wrt_robot_ee)
 
     # Transformation | Object -> Target
-    hole_rot6d_wrt_peg = math_utils.rotmat_to_rot6d(hole_rotmat_wrt_peg)
+    hole_rot6d_wrt_peg = rotmat_to_rot6d(hole_rotmat_wrt_peg)
 
     # Transformation | End-effector -> Panel Target
-    panel_com_rot6d_wrt_robot_ee = math_utils.rotmat_to_rot6d(
-        panel_com_rotmat_wrt_robot_ee
-    )
+    panel_com_rot6d_wrt_robot_ee = rotmat_to_rot6d(panel_com_rotmat_wrt_robot_ee)
     # Transformation | Panel CoM -> Panel Target
-    panel_target_rot6d_wrt_panel_com = math_utils.rotmat_to_rot6d(
+    panel_target_rot6d_wrt_panel_com = rotmat_to_rot6d(
         panel_target_rotmat_wrt_panel_com
     )
 

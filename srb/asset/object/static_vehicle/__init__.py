@@ -1,26 +1,27 @@
-import srb.core.asset as asset_utils
-from srb.core.envs import env_cfg
+from srb.core.asset import StaticVehicle
+from srb.core.envs import Domain
+from srb.env.manipulation import BaseManipulationEnvCfg
 
 from .construction_rover import ConstructionRover
 from .gateway import Gateway
 
 
 def vehicle_from_cfg(
-    cfg: env_cfg.EnvironmentConfig,
+    cfg: BaseManipulationEnvCfg,
     *,
     prim_path: str = "{ENV_REGEX_NS}/vehicle",
     **kwargs,
-) -> asset_utils.StaticVehicle | None:
-    match cfg.assets.vehicle.variant:
-        case env_cfg.AssetVariant.NONE:
+) -> StaticVehicle | None:
+    match cfg.vehicle:
+        case None:
             return None
 
         case _:
             match cfg.domain:
-                case env_cfg.Domain.MOON | env_cfg.Domain.MARS:
+                case Domain.MOON | Domain.MARS:
                     asset = ConstructionRover(**kwargs)
 
-                case env_cfg.Domain.ORBIT:
+                case Domain.ORBIT:
                     asset = Gateway(**kwargs)
 
             asset.asset_cfg.prim_path = prim_path

@@ -1,10 +1,10 @@
 import threading
 from queue import Queue
 
-import numpy as np
+import numpy
 from pxr import Gf
 
-from srb.core.envs import BaseEnv
+from srb.core.envs import DirectEnv
 from srb.env import BaseAerialRoboticsEnv, BaseManipulationEnv, BaseMobileRoboticsEnv
 from srb.utils.ros2 import enable_ros2_bridge
 
@@ -18,7 +18,7 @@ from std_msgs.msg import Bool, Empty, Float64  # noqa: E402
 class GuiInterface:
     def __init__(
         self,
-        env: BaseEnv
+        env: DirectEnv
         | BaseAerialRoboticsEnv
         | BaseManipulationEnv
         | BaseMobileRoboticsEnv,
@@ -68,8 +68,8 @@ class GuiInterface:
 
         physics_scene = self._env.unwrapped.sim._physics_context._physics_scene
 
-        gravity = np.asarray(self._env.unwrapped.sim.cfg.gravity)
-        gravity_magnitude = np.linalg.norm(gravity)
+        gravity = numpy.asarray(self._env.unwrapped.sim.cfg.gravity)
+        gravity_magnitude = numpy.linalg.norm(gravity)
 
         # Avoid division by zero
         if gravity_magnitude != 0.0:

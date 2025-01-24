@@ -1,9 +1,9 @@
 from typing import Dict
 
 import torch
-from omni.isaac.lab.utils import configclass
 
 from srb.env import VisualManipulationEnvExt, VisualManipulationEnvExtCfg
+from srb.utils import configclass
 
 from .task import Task, TaskCfg
 

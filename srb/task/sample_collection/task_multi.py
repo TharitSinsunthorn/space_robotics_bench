@@ -1,15 +1,22 @@
 from typing import Dict, List, Sequence, Tuple
 
 import torch
-from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
-from omni.isaac.lab.sensors import ContactSensor
-from omni.isaac.lab.utils import configclass
 
-import srb.core.envs as env_utils
 from srb.core.asset import RigidObject, RigidObjectCfg
+from srb.core.envs import AssetVariant
+from srb.core.managers import EventTermCfg, SceneEntityCfg
 from srb.core.markers import VisualizationMarkers
-from srb.env import BaseManipulationEnv, mdp
-from srb.utils import math as math_utils
+from srb.core.mdp import reset_root_state_uniform_poisson_disk_2d
+from srb.core.sensors import ContactSensor
+from srb.env import BaseManipulationEnv
+from srb.utils import configclass
+from srb.utils.math import (
+    combine_frame_transforms,
+    matrix_from_quat,
+    rotmat_to_rot6d,
+    scale_transform,
+    subtract_frame_transforms,
+)
 
 from .task import TaskCfg, sample_cfg
 
@@ -30,11 +37,11 @@ class MultiTaskCfg(TaskCfg):
         self.episode_length_s *= self.num_problems_per_env
 
         ## Scene
-        self.object_cfg = [
+        self.object = [
             sample_cfg(
-                self.env_cfg,
-                seed=self.seed,
-                num_assets=self.scene.num_envs + (i * self.scene.num_envs),
+                self,
+                seed=self.seed + (i * self.scene.num_envs),
+                num_assets=self.scene.num_envs,
                 prim_path=f"{{ENV_REGEX_NS}}/sample{i}",
                 asset_cfg=SceneEntityCfg(f"object{i}"),
                 init_state=RigidObjectCfg.InitialStateCfg(pos=(0.55, 0.0, 0.0)),
@@ -43,7 +50,7 @@ class MultiTaskCfg(TaskCfg):
             for i in range(self.num_problems_per_env)
         ]
         self.scene.object = None
-        for i, cfg in enumerate(self.object_cfg):
+        for i, cfg in enumerate(self.object):
             setattr(self.scene, f"object{i}", cfg.asset_cfg)
 
         ## Sensors
@@ -57,23 +64,18 @@ class MultiTaskCfg(TaskCfg):
 
         ## Events
         self.events.reset_rand_object_state = EventTermCfg(
-            func=mdp.reset_root_state_uniform_poisson_disk_2d,
+            func=reset_root_state_uniform_poisson_disk_2d,
             mode="reset",
             params={
                 "asset_cfgs": [
                     SceneEntityCfg(f"object{i}")
                     for i in range(self.num_problems_per_env)
                 ],
-                "pose_range": self.object_cfg[0].state_randomizer.params["pose_range"],
-                "velocity_range": self.object_cfg[0].state_randomizer.params[
+                "pose_range": self.object[0].state_randomizer.params["pose_range"],
+                "velocity_range": self.object[0].state_randomizer.params[
                     "velocity_range"
                 ],
-                "radius": (
-                    0.225
-                    if self.env_cfg.assets.object.variant
-                    == env_utils.AssetVariant.DATASET
-                    else 0.06
-                ),
+                "radius": (0.225 if self.object == AssetVariant.DATASET else 0.06),
             },
         )
 
@@ -99,10 +101,10 @@ class MultiTask(BaseManipulationEnv):
 
         ## Pre-compute metrics used in hot loops
         self._robot_arm_joint_indices, _ = self._robot.find_joints(
-            self.cfg.robot_cfg.regex_joints_arm
+            self.cfg.robot.regex_joints_arm
         )
         self._robot_hand_joint_indices, _ = self._robot.find_joints(
-            self.cfg.robot_cfg.regex_joints_hand
+            self.cfg.robot.regex_joints_hand
         )
         self._max_episode_length = self.max_episode_length
         self._obj_com_offset = torch.stack(
@@ -281,7 +283,7 @@ def _compute_intermediate_state(
     remaining_time = 1 - (episode_length_buf / max_episode_length).unsqueeze(-1)
 
     # Robot joint positions
-    joint_pos_normalized = math_utils.scale_transform(
+    joint_pos_normalized = scale_transform(
         joint_pos,
         soft_joint_pos_limits[:, :, 0],
         soft_joint_pos_limits[:, :, 1],
@@ -292,10 +294,10 @@ def _compute_intermediate_state(
     )
 
     # End-effector '6D' rotation
-    robot_ee_rotmat_wrt_base = math_utils.matrix_from_quat(robot_ee_quat_wrt_base)
+    robot_ee_rotmat_wrt_base = matrix_from_quat(robot_ee_quat_wrt_base)
 
     # Transformation | Object origin -> Object CoM
-    obj_com_pos_w, obj_com_quat_w = math_utils.combine_frame_transforms(
+    obj_com_pos_w, obj_com_quat_w = combine_frame_transforms(
         t01=obj_pos_w,
         q01=obj_quat_w,
         t12=obj_com_offset[:, :, :3],
@@ -303,26 +305,22 @@ def _compute_intermediate_state(
     )
 
     # Transformation | End-effector -> Object CoM
-    obj_com_pos_wrt_robot_ee, obj_com_quat_wrt_robot_ee = (
-        math_utils.subtract_frame_transforms(
-            t01=robot_ee_pos_w.unsqueeze(1).repeat(1, obj_pos_w.shape[1], 1),
-            q01=robot_ee_quat_w.unsqueeze(1).repeat(1, obj_pos_w.shape[1], 1),
-            t02=obj_com_pos_w,
-            q02=obj_com_quat_w,
-        )
+    obj_com_pos_wrt_robot_ee, obj_com_quat_wrt_robot_ee = subtract_frame_transforms(
+        t01=robot_ee_pos_w.unsqueeze(1).repeat(1, obj_pos_w.shape[1], 1),
+        q01=robot_ee_quat_w.unsqueeze(1).repeat(1, obj_pos_w.shape[1], 1),
+        t02=obj_com_pos_w,
+        q02=obj_com_quat_w,
     )
-    obj_com_rotmat_wrt_robot_ee = math_utils.matrix_from_quat(obj_com_quat_wrt_robot_ee)
+    obj_com_rotmat_wrt_robot_ee = matrix_from_quat(obj_com_quat_wrt_robot_ee)
 
     # Transformation | Object CoM -> Target
-    target_pos_wrt_obj_com, target_quat_wrt_obj_com = (
-        math_utils.subtract_frame_transforms(
-            t01=obj_com_pos_w,
-            q01=obj_com_quat_w,
-            t02=target_pos_w,
-            q02=target_quat_w,
-        )
+    target_pos_wrt_obj_com, target_quat_wrt_obj_com = subtract_frame_transforms(
+        t01=obj_com_pos_w,
+        q01=obj_com_quat_w,
+        t02=target_pos_w,
+        q02=target_quat_w,
     )
-    target_rotmat_wrt_obj_com = math_utils.matrix_from_quat(target_quat_wrt_obj_com)
+    target_rotmat_wrt_obj_com = matrix_from_quat(target_quat_wrt_obj_com)
 
     ## Rewards
     # Penalty: Action rate
@@ -458,17 +456,17 @@ def _construct_observations(
     robot_joint_pos_hand_mean = robot_joint_pos_hand.mean(dim=-1, keepdim=True)
 
     # End-effector pose (position and '6D' rotation)
-    robot_ee_rot6d = math_utils.rotmat_to_rot6d(robot_ee_rotmat_wrt_base)
+    robot_ee_rot6d = rotmat_to_rot6d(robot_ee_rotmat_wrt_base)
 
     # Wrench
     robot_hand_wrench_full = robot_hand_wrench.view(num_envs, -1)
     robot_hand_wrench_mean = robot_hand_wrench.mean(dim=1)
 
     # Transformation | End-effector -> Object CoM
-    obj_com_rot6d_wrt_robot_ee = math_utils.rotmat_to_rot6d(obj_com_rotmat_wrt_robot_ee)
+    obj_com_rot6d_wrt_robot_ee = rotmat_to_rot6d(obj_com_rotmat_wrt_robot_ee)
 
     # Transformation | Object CoM -> Target
-    target_rot6d_wrt_obj_com = math_utils.rotmat_to_rot6d(target_rotmat_wrt_obj_com)
+    target_rot6d_wrt_obj_com = rotmat_to_rot6d(target_rotmat_wrt_obj_com)
 
     return {
         "state": torch.cat(

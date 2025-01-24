@@ -2,8 +2,7 @@ import threading
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Sequence
 
-import numpy as np
-from omni.isaac.lab.devices import DeviceBase
+import numpy
 
 from srb.core.actions import (
     ManipulatorTaskSpaceActionCfg,
@@ -11,7 +10,7 @@ from srb.core.actions import (
     SpacecraftActionGroupCfg,
     WheeledRoverActionGroupCfg,
 )
-from srb.core.teleop_devices import Se3Gamepad
+from srb.core.teleop_devices import DeviceBase, Se3Gamepad
 from srb.core.teleop_devices.keyboard import KeyboardTeleopInterface
 from srb.core.teleop_devices.spacemouse import SpacemouseTeleopInterface
 
@@ -158,11 +157,11 @@ class CombinedTeleopInterface(DeviceBase):
             ]:
                 interface.add_callback(key=key, func=func)
 
-    def advance(self) -> tuple[np.ndarray, bool]:
+    def advance(self) -> tuple[numpy.ndarray, bool]:
         raw_actions = [interface.advance() for interface in self.interfaces]
 
-        twist = self.gain * np.sum(
-            np.stack([a[0] for a in raw_actions], axis=0), axis=0
+        twist = self.gain * numpy.sum(
+            numpy.stack([a[0] for a in raw_actions], axis=0), axis=0
         )
 
         for i, prev_gripper_cmd in enumerate(self._prev_gripper_cmds):
@@ -173,7 +172,7 @@ class CombinedTeleopInterface(DeviceBase):
 
         return twist, self._close_gripper
 
-    def set_ft_feedback(self, ft_feedback: np.ndarray):
+    def set_ft_feedback(self, ft_feedback: numpy.ndarray):
         for interface in self.ft_feedback_interfaces:
             interface.set_ft_feedback(ft_feedback)
 

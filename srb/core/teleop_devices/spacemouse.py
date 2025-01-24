@@ -4,7 +4,7 @@ import time
 from collections.abc import Callable
 from typing import List
 
-import numpy as np
+import numpy
 import pyspacemouse
 from scipy.spatial.transform import Rotation
 
@@ -25,8 +25,8 @@ class SpacemouseTeleopInterface(DeviceBase):
 
         # Command buffers
         self._close_gripper = False
-        self._delta_pos = np.zeros(3)  # (x, y, z)
-        self._delta_rot = np.zeros(3)  # (roll, pitch, yaw)
+        self._delta_pos = numpy.zeros(3)  # (x, y, z)
+        self._delta_rot = numpy.zeros(3)  # (roll, pitch, yaw)
         self._additional_callbacks = {}
 
         # Open the device
@@ -63,8 +63,8 @@ class SpacemouseTeleopInterface(DeviceBase):
 
     def reset(self):
         self._close_gripper = False
-        self._delta_pos = np.zeros(3)
-        self._delta_rot = np.zeros(3)
+        self._delta_pos = numpy.zeros(3)
+        self._delta_rot = numpy.zeros(3)
 
     def add_callback(self, key: str, func: Callable):
         if key not in ["L", "R", "LR"]:
@@ -73,9 +73,9 @@ class SpacemouseTeleopInterface(DeviceBase):
             )
         self._additional_callbacks[key] = func
 
-    def advance(self) -> tuple[np.ndarray, bool]:
+    def advance(self) -> tuple[numpy.ndarray, bool]:
         rot_vec = Rotation.from_euler("XYZ", self._delta_rot).as_rotvec()
-        return np.concatenate([self._delta_pos, rot_vec]), self._close_gripper
+        return numpy.concatenate([self._delta_pos, rot_vec]), self._close_gripper
 
     def _run_device(self):
         while True:
@@ -83,14 +83,14 @@ class SpacemouseTeleopInterface(DeviceBase):
             time.sleep(self.sleep_rate)
 
     def _cb_dof(self, state: pyspacemouse.SpaceNavigator):
-        self._delta_pos = np.array(
+        self._delta_pos = numpy.array(
             [
                 state.y * self.pos_sensitivity,
                 -state.x * self.pos_sensitivity,
                 state.z * self.pos_sensitivity,
             ]
         )
-        self._delta_rot = np.array(
+        self._delta_rot = numpy.array(
             [
                 -state.roll * self.rot_sensitivity,
                 -state.pitch * self.rot_sensitivity,

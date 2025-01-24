@@ -2,12 +2,12 @@ import time
 from pathlib import Path
 from typing import Literal, Sequence
 
-import numpy as np
+import numpy
 from omni.isaac.kit import SimulationApp
 from rl_zoo3 import ALGOS
 from stable_baselines3.common.callbacks import tqdm
 
-from srb.core.envs import BaseEnv
+from srb.core.envs import DirectEnv
 from srb.integrations.sb3.exp_manager import ExperimentManager
 from srb.integrations.sb3.wrapper import Sb3EnvWrapper
 from srb.utils.cfg import (
@@ -24,7 +24,7 @@ OFF_POLICY_ALGOS: Sequence[str] = ("qrdqn", "dqn", "ddpg", "sac", "her", "td3", 
 def run(
     workflow: Literal["train", "eval"],
     algo: str,
-    env: BaseEnv,
+    env: DirectEnv,
     sim_app: SimulationApp,
     env_id: str,
     env_cfg: dict,
@@ -149,7 +149,7 @@ def run(
             )
 
             # Initialize the runner
-            episode_start = np.ones((env.num_envs,), dtype=bool)
+            episode_start = numpy.ones((env.num_envs,), dtype=bool)
             lstm_states = None
 
             obs = env.reset()

@@ -3,7 +3,7 @@ from typing import Tuple
 from simforge import TexResConfig
 
 from srb.core.asset import RigidObjectCfg
-from srb.core.envs import env_cfg
+from srb.core.envs import AssetVariant, BaseEnvCfg, Domain
 
 from .asteroid import Asteroid  # noqa: F401
 from .cubesat_debris import CubesatDebris  # noqa: F401
@@ -17,7 +17,7 @@ from .static_vehicle import *  # noqa: F403
 
 
 def rigid_object_from_cfg(
-    cfg: env_cfg.EnvironmentConfig,
+    cfg: BaseEnvCfg,
     *,
     seed: int,
     num_assets: int,
@@ -26,30 +26,30 @@ def rigid_object_from_cfg(
     texture_resolution: TexResConfig | None = None,
     **kwargs,
 ) -> RigidObjectCfg:
-    match cfg.assets.object.variant:
-        case env_cfg.AssetVariant.PRIMITIVE:
+    match cfg.obj:
+        case AssetVariant.PRIMITIVE:
             asset_cfg = RandomShape(scale=scale).asset_cfg
 
-        case env_cfg.AssetVariant.DATASET:
+        case AssetVariant.DATASET:
             match cfg.domain:
-                case env_cfg.Domain.MARS:
+                case Domain.MARS:
                     asset_cfg = SampleTube().asset_cfg
                 case _:
                     asset_cfg = ShortProfilePeg().asset_cfg
 
-        case env_cfg.AssetVariant.PROCEDURAL:
+        case AssetVariant.PROCEDURAL:
             match cfg.domain:
-                case env_cfg.Domain.ORBIT:
+                case Domain.ORBIT:
                     asset_cfg = CubesatDebris(
                         scale=scale, texture_resolution=texture_resolution
                     ).asset_cfg
 
-                case env_cfg.Domain.MOON:
+                case Domain.MOON:
                     asset_cfg = LunarRock(
                         scale=scale, texture_resolution=texture_resolution
                     ).asset_cfg
 
-                case env_cfg.Domain.MARS:
+                case Domain.MARS:
                     asset_cfg = MarsRock(
                         scale=scale, texture_resolution=texture_resolution
                     ).asset_cfg

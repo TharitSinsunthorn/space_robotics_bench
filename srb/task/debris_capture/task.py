@@ -2,22 +2,28 @@ import sys
 from typing import Dict, List, Sequence, Tuple
 
 import torch
-from omni.isaac.lab.managers import EventTermCfg, SceneEntityCfg
-from omni.isaac.lab.sensors import ContactSensor, ContactSensorCfg
-from omni.isaac.lab.utils import configclass
 from pydantic import BaseModel
 from simforge import TexResConfig
 
 from srb import asset
 from srb.core.asset import RigidObject, RigidObjectCfg
-from srb.core.envs import env_cfg
+from srb.core.envs import BaseEnvCfg, Domain
+from srb.core.managers import EventTermCfg, SceneEntityCfg
+from srb.core.mdp import reset_root_state_uniform
+from srb.core.sensors import ContactSensor, ContactSensorCfg
 from srb.env import (
     BaseManipulationEnv,
     BaseManipulationEnvCfg,
     BaseManipulationEnvEventCfg,
-    mdp,
 )
-from srb.utils import math as math_utils
+from srb.utils import configclass
+from srb.utils.math import (
+    combine_frame_transforms,
+    matrix_from_quat,
+    rotmat_to_rot6d,
+    scale_transform,
+    subtract_frame_transforms,
+)
 
 ##############
 ### Config ###
@@ -49,18 +55,18 @@ class TaskCfg(BaseManipulationEnvCfg):
     events = EventCfg()
 
     def __post_init__(self):
-        if self.env_cfg.domain != env_cfg.Domain.ORBIT:
+        if self.domain is not Domain.ORBIT:
             print(
-                f"[WARN] Environment requires ORBIT scenario ({self.env_cfg.domain} ignored)",
+                f"[WARN] Environment requires ORBIT scenario ({self.domain} ignored)",
                 file=sys.stderr,
             )
-            self.env_cfg.domain = env_cfg.Domain.ORBIT
-        if self.env_cfg.assets.terrain.variant != env_cfg.AssetVariant.NONE:
+            self.domain = Domain.ORBIT
+        if self.terrain is not None:
             print(
-                f"[WARN] Environment requires NONE terrain ({self.env_cfg.assets.terrain.variant} ignored)",
+                f"[WARN] Environment requires NONE terrain ({self.terrain} ignored)",
                 file=sys.stderr,
             )
-            self.env_cfg.assets.terrain.variant = env_cfg.AssetVariant.NONE
+            self.terrain = None
 
         super().__post_init__()
 
@@ -68,18 +74,18 @@ class TaskCfg(BaseManipulationEnvCfg):
         self.sim.gravity = (0.0, 0.0, 0.0)
 
         ## Scene
-        self.object_cfg = self._object_cfg(
-            self.env_cfg,
+        self.object = self._object(
+            self,
             seed=self.seed,
             num_assets=self.scene.num_envs,
             init_state=RigidObjectCfg.InitialStateCfg(pos=(1.0, 0.0, 0.5)),
             activate_contact_sensors=True,
         )
-        self.scene.object = self.object_cfg.asset_cfg
+        self.scene.object = self.object.asset_cfg
 
         ## Sensors
         self.scene.contacts_robot_hand_obj = ContactSensorCfg(
-            prim_path=f"{self.scene.robot.prim_path}/{self.robot_cfg.regex_links_hand}",
+            prim_path=f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}",
             update_period=0.0,
             # Note: This causes error 'Filter pattern did not match the correct number of entries'
             #       However, it seems to function properly anyway...
@@ -87,15 +93,15 @@ class TaskCfg(BaseManipulationEnvCfg):
         )
 
         ## Events
-        self.events.reset_rand_object_state = self.object_cfg.state_randomizer
+        self.events.reset_rand_object_state = self.object.state_randomizer
 
     ########################
     ### Helper Functions ###
     ########################
 
     @staticmethod
-    def _object_cfg(
-        cfg: env_cfg.EnvironmentConfig,
+    def _object(
+        cfg: BaseEnvCfg,
         *,
         seed: int,
         num_assets: int,
@@ -120,7 +126,7 @@ class TaskCfg(BaseManipulationEnvCfg):
         return DebrisCfg(
             asset_cfg=debris_cfg,
             state_randomizer=EventTermCfg(
-                func=mdp.reset_root_state_uniform,
+                func=reset_root_state_uniform,
                 mode="reset",
                 params={
                     "asset_cfg": asset_cfg,
@@ -164,10 +170,10 @@ class Task(BaseManipulationEnv):
 
         ## Pre-compute metrics used in hot loops
         self._robot_arm_joint_indices, _ = self._robot.find_joints(
-            self.cfg.robot_cfg.regex_joints_arm
+            self.cfg.robot.regex_joints_arm
         )
         self._robot_hand_joint_indices, _ = self._robot.find_joints(
-            self.cfg.robot_cfg.regex_joints_hand
+            self.cfg.robot.regex_joints_hand
         )
         self._max_episode_length = self.max_episode_length
         self._obj_com_offset = self._object.data._root_physx_view.get_coms().to(
@@ -292,7 +298,7 @@ def _compute_intermediate_state(
     remaining_time = 1 - (episode_length_buf / max_episode_length).unsqueeze(-1)
 
     # Robot joint positions
-    joint_pos_normalized = math_utils.scale_transform(
+    joint_pos_normalized = scale_transform(
         joint_pos,
         soft_joint_pos_limits[:, :, 0],
         soft_joint_pos_limits[:, :, 1],
@@ -303,10 +309,10 @@ def _compute_intermediate_state(
     )
 
     # End-effector '6D' rotation
-    robot_ee_rotmat_wrt_base = math_utils.matrix_from_quat(robot_ee_quat_wrt_base)
+    robot_ee_rotmat_wrt_base = matrix_from_quat(robot_ee_quat_wrt_base)
 
     # Transformation | Object origin -> Object CoM
-    obj_com_pos_w, obj_com_quat_w = math_utils.combine_frame_transforms(
+    obj_com_pos_w, obj_com_quat_w = combine_frame_transforms(
         t01=obj_pos_w,
         q01=obj_quat_w,
         t12=obj_com_offset[:, :3],
@@ -314,15 +320,13 @@ def _compute_intermediate_state(
     )
 
     # Transformation | End-effector -> Object CoM
-    obj_com_pos_wrt_robot_ee, obj_com_quat_wrt_robot_ee = (
-        math_utils.subtract_frame_transforms(
-            t01=robot_ee_pos_w,
-            q01=robot_ee_quat_w,
-            t02=obj_com_pos_w,
-            q02=obj_com_quat_w,
-        )
+    obj_com_pos_wrt_robot_ee, obj_com_quat_wrt_robot_ee = subtract_frame_transforms(
+        t01=robot_ee_pos_w,
+        q01=robot_ee_quat_w,
+        t02=obj_com_pos_w,
+        q02=obj_com_quat_w,
     )
-    obj_com_rotmat_wrt_robot_ee = math_utils.matrix_from_quat(obj_com_quat_wrt_robot_ee)
+    obj_com_rotmat_wrt_robot_ee = matrix_from_quat(obj_com_quat_wrt_robot_ee)
 
     ## Rewards
     # Penalty: Action rate
@@ -442,14 +446,14 @@ def _construct_observations(
     robot_joint_pos_hand_mean = robot_joint_pos_hand.mean(dim=-1, keepdim=True)
 
     # End-effector pose (position and '6D' rotation)
-    robot_ee_rot6d = math_utils.rotmat_to_rot6d(robot_ee_rotmat_wrt_base)
+    robot_ee_rot6d = rotmat_to_rot6d(robot_ee_rotmat_wrt_base)
 
     # Wrench
     robot_hand_wrench_full = robot_hand_wrench.view(num_envs, -1)
     robot_hand_wrench_mean = robot_hand_wrench.mean(dim=1)
 
     # Transformation | End-effector -> Object CoM
-    obj_com_rot6d_wrt_robot_ee = math_utils.rotmat_to_rot6d(obj_com_rotmat_wrt_robot_ee)
+    obj_com_rot6d_wrt_robot_ee = rotmat_to_rot6d(obj_com_rotmat_wrt_robot_ee)
 
     return {
         "state": torch.cat(

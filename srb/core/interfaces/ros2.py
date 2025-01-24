@@ -4,7 +4,7 @@ from collections.abc import Callable
 from queue import Queue
 from typing import Any, Dict, Tuple
 
-import numpy as np
+import numpy
 import torch
 
 from srb.core.actions import (
@@ -12,7 +12,7 @@ from srb.core.actions import (
     MultiCopterActionGroupCfg,
     WheeledRoverActionGroupCfg,
 )
-from srb.core.envs import BaseEnv
+from srb.core.envs import DirectEnv
 from srb.env import BaseAerialRoboticsEnv, BaseManipulationEnv, BaseMobileRoboticsEnv
 from srb.utils.ros2 import enable_ros2_bridge
 from srb.utils.str import convert_to_snake_case
@@ -47,7 +47,7 @@ from tf2_ros import TransformBroadcaster  # noqa: E402
 # TODO: Map each actiongroup to a specific topic type
 
 
-class ROS2:
+class ROS2Interface:
     OBSERVATION_MAPPING = {
         "image_scene_rgb": ("camera_scene/image_raw", Image),
         "image_scene_depth": ("camera_scene/depth/image_raw", Image),
@@ -63,7 +63,7 @@ class ROS2:
 
     def __init__(
         self,
-        env: BaseEnv
+        env: DirectEnv
         | BaseAerialRoboticsEnv
         | BaseManipulationEnv
         | BaseMobileRoboticsEnv,
@@ -165,7 +165,7 @@ class ROS2:
 
     def reset(self):
         self._env.reset()
-        self._actions = np.zeros(
+        self._actions = numpy.zeros(
             (self._env.unwrapped.num_envs, self._env.unwrapped.cfg.num_actions)
         )
 
@@ -180,7 +180,7 @@ class ROS2:
             request(**kwargs)
 
     def _setup_actions(self):
-        self._actions = np.zeros(
+        self._actions = numpy.zeros(
             (self._env.unwrapped.num_envs, self._env.unwrapped.cfg.num_actions)
         )
 
@@ -201,7 +201,7 @@ class ROS2:
                 cb_name: str, env_id: int | None = None
             ) -> Callable:
                 def cb_single(self, msg: Twist):
-                    self._actions[env_id, :6] = np.array(
+                    self._actions[env_id, :6] = numpy.array(
                         [
                             msg.linear.x,
                             msg.linear.y,
@@ -213,7 +213,7 @@ class ROS2:
                     )
 
                 def cb_all(self, msg: Twist):
-                    self._actions[:, :6] = np.array(
+                    self._actions[:, :6] = numpy.array(
                         [
                             msg.linear.x,
                             msg.linear.y,
@@ -298,12 +298,12 @@ class ROS2:
                 cb_name: str, env_id: int | None = None
             ) -> Callable:
                 def cb_single(self, msg: Twist):
-                    self._actions[env_id] = np.array(
+                    self._actions[env_id] = numpy.array(
                         [msg.linear.x, msg.linear.y, msg.linear.z, msg.angular.z]
                     )
 
                 def cb_all(self, msg: Twist):
-                    self._actions[:] = np.array(
+                    self._actions[:] = numpy.array(
                         [msg.linear.x, msg.linear.y, msg.linear.z, msg.angular.z]
                     )
 
@@ -344,10 +344,10 @@ class ROS2:
                 cb_name: str, env_id: int | None = None
             ) -> Callable:
                 def cb_single(self, msg: Twist):
-                    self._actions[env_id] = np.array([msg.linear.x, msg.angular.z])
+                    self._actions[env_id] = numpy.array([msg.linear.x, msg.angular.z])
 
                 def cb_all(self, msg: Twist):
-                    self._actions[:] = np.array([msg.linear.x, msg.angular.z])
+                    self._actions[:] = numpy.array([msg.linear.x, msg.angular.z])
 
                 cb = cb_single if env_id else cb_all
                 cb_name = f"cb_{convert_to_snake_case(cb_name)}{env_id or ''}"
@@ -467,7 +467,7 @@ class ROS2:
                 width=tensor.shape[1],
                 height=tensor.shape[0],
                 step=tensor.shape[1] * 3,
-                data=(255.0 * tensor).cpu().numpy().astype(np.uint8).tobytes(),
+                data=(255.0 * tensor).cpu().numpy().astype(numpy.uint8).tobytes(),
                 is_bigendian=0,
                 encoding="rgb8" if tensor.shape[2] == 3 else "mono8",
             )

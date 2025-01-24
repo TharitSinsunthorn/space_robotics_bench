@@ -1,12 +1,11 @@
-from omni.isaac.lab.sensors import ContactSensor, FrameTransformer
-
 from srb.core.asset import Articulation
-from srb.core.envs import BaseEnv
+from srb.core.envs import DirectEnv
+from srb.core.sensors import ContactSensor, FrameTransformer
 
 from .cfg import BaseManipulationEnvCfg
 
 
-class BaseManipulationEnv(BaseEnv):
+class BaseManipulationEnv(DirectEnv):
     cfg: BaseManipulationEnvCfg
 
     def __init__(self, cfg: BaseManipulationEnvCfg, **kwargs):

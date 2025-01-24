@@ -1,13 +1,13 @@
-from srb.core import sim as sim_utils
 from srb.core.asset import AssetBaseCfg
-from srb.core.envs import env_cfg
+from srb.core.envs import BaseEnvCfg, Domain
+from srb.core.sim import DomeLightCfg
 from srb.utils import rtx_settings
 from srb.utils.nucleus import ISAAC_NUCLEUS_DIR
 from srb.utils.path import SRB_ASSETS_DIR_SRB_HDRI
 
 
 def sky_from_cfg(
-    cfg: env_cfg.EnvironmentConfig,
+    cfg: BaseEnvCfg,
     *,
     prim_path: str = "/World/sky",
     **kwargs,
@@ -40,9 +40,9 @@ def sky_from_cfg(
     # )
 
     match cfg.domain:
-        case env_cfg.Domain.EARTH:
+        case Domain.EARTH:
             texture_file = f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr"
-        case env_cfg.Domain.MARS:
+        case Domain.MARS:
             # Move elsewhere
             rtx_settings.simple_fog(
                 color=(0.8, 0.4, 0.2),
@@ -54,7 +54,7 @@ def sky_from_cfg(
             texture_file = SRB_ASSETS_DIR_SRB_HDRI.joinpath(
                 "martian_sky_day.hdr"
             ).as_posix()
-        case env_cfg.Domain.ORBIT:
+        case Domain.ORBIT:
             texture_file = SRB_ASSETS_DIR_SRB_HDRI.joinpath(
                 "low_lunar_orbit.jpg"
             ).as_posix()
@@ -63,7 +63,7 @@ def sky_from_cfg(
         return None
     return AssetBaseCfg(
         prim_path=prim_path,
-        spawn=sim_utils.DomeLightCfg(
+        spawn=DomeLightCfg(
             intensity=0.25 * cfg.domain.light_intensity,
             texture_file=texture_file,
             **kwargs,

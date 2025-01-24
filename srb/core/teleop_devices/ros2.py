@@ -2,7 +2,7 @@ import os
 import threading
 from collections.abc import Callable
 
-import numpy as np
+import numpy
 
 from srb.core.teleop_devices import DeviceBase
 from srb.utils.ros2 import enable_ros2_bridge
@@ -48,8 +48,8 @@ class ROS2TeleopInterface(DeviceBase, Node):
 
         # Command buffers
         self._close_gripper = False
-        self._delta_pos = np.zeros(3)  # (x, y, z)
-        self._delta_rot = np.zeros(3)  # (roll, pitch, yaw)
+        self._delta_pos = numpy.zeros(3)  # (x, y, z)
+        self._delta_rot = numpy.zeros(3)  # (roll, pitch, yaw)
 
         # Run a thread for listening to device
         if not node:
@@ -89,8 +89,8 @@ class ROS2TeleopInterface(DeviceBase, Node):
 
     def reset(self):
         self._close_gripper = False
-        self._delta_pos = np.zeros(3)
-        self._delta_rot = np.zeros(3)
+        self._delta_pos = numpy.zeros(3)
+        self._delta_rot = numpy.zeros(3)
         self.command_queue = []
         self.feedback_queue = []
         self.last_command = None
@@ -99,9 +99,9 @@ class ROS2TeleopInterface(DeviceBase, Node):
     def add_callback(self, key: str, func: Callable):
         raise NotImplementedError
 
-    def advance(self) -> tuple[np.ndarray, bool]:
+    def advance(self) -> tuple[numpy.ndarray, bool]:
         commands = (
-            np.concatenate([self._delta_pos, self._delta_rot]),
+            numpy.concatenate([self._delta_pos, self._delta_rot]),
             self._close_gripper,
         )
 
@@ -127,4 +127,4 @@ class ROS2TeleopInterface(DeviceBase, Node):
                 if self.last_command is not None:
                     return self.last_command
                 else:
-                    return np.zeros(6), commands[1]
+                    return numpy.zeros(6), commands[1]

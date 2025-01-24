@@ -6,12 +6,12 @@ import elements
 import embodied
 import numpy
 import portal
-import ruamel.yaml as yaml
 from dreamerv3 import agent as dreamer_agent
 from dreamerv3 import main as dreamer_main
 from omni.isaac.kit import SimulationApp
+from ruamel import yaml
 
-from srb.core.envs import BaseEnv
+from srb.core.envs import DirectEnv
 from srb.integrations.dreamer.eval import eval_only
 from srb.integrations.dreamer.train import train
 from srb.integrations.dreamer.wrapper import EmbodiedEnvWrapper
@@ -20,10 +20,12 @@ from srb.utils.cfg import create_logdir_path, get_last_run_logdir_path
 ALGO_NAME = "dreamer"
 UPSTREAM_CONFIG_PATH = Path(dreamer_agent.__file__).parent.joinpath("configs.yaml")
 
+# TODO: Seed from env.seed (for all integrations)
+
 
 def run(
     workflow: Literal["train", "eval"],
-    env: BaseEnv,
+    env: DirectEnv,
     sim_app: SimulationApp,
     env_id: str,
     env_cfg: dict,
