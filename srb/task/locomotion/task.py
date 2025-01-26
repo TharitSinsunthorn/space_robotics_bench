@@ -2,9 +2,13 @@ from typing import Dict, List, Sequence, Tuple
 
 import torch
 
-from srb.core.envs import DirectEnv
+from srb.core.envs import (
+    BaseLocomotionEnv,
+    BaseLocomotionEnvCfg,
+    BaseLocomotionEnvEventCfg,
+    DirectEnv,
+)
 from srb.core.managers import EventTermCfg
-from srb.env import BaseLocomotionEnv, BaseLocomotionEnvCfg, BaseLocomotionEnvEventCfg
 from srb.utils import configclass
 from srb.utils.math import matrix_from_quat, rotmat_to_rot6d, sample_uniform
 

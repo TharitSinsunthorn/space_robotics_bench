@@ -2,7 +2,7 @@ from typing import Dict
 
 import torch
 
-from srb.env import VisualMobileRoboticsEnvExt, VisualMobileRoboticsEnvExtCfg
+from srb.core.envs import VisualMobileRoboticsEnvExt, VisualMobileRoboticsEnvExtCfg
 from srb.utils import configclass
 
 from .task import Task, TaskCfg

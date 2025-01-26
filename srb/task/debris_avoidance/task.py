@@ -6,10 +6,13 @@ from pydantic import BaseModel
 
 from srb import asset
 from srb.core.asset import RigidObjectCfg
-from srb.core.envs import Domain
+from srb.core.envs import (
+    BaseSpacecraftRoboticsEnv,
+    BaseSpacecraftRoboticsEnvCfg,
+    Domain,
+)
 from srb.core.managers import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform_poisson_disk_3d
-from srb.env import BaseSpacecraftRoboticsEnv, BaseSpacecraftRoboticsEnvCfg
 from srb.utils import configclass
 
 ##############

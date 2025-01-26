@@ -7,7 +7,13 @@ from pydantic import BaseModel
 
 from srb import asset
 from srb.core.asset import RigidObject, RigidObjectCfg
-from srb.core.envs import AssetVariant, BaseEnvCfg
+from srb.core.envs import (
+    AssetVariant,
+    BaseEnvCfg,
+    BaseManipulationEnv,
+    BaseManipulationEnvCfg,
+    BaseManipulationEnvEventCfg,
+)
 from srb.core.managers import EventTermCfg, SceneEntityCfg
 from srb.core.markers import VisualizationMarkers, VisualizationMarkersCfg
 from srb.core.mdp import (
@@ -16,11 +22,7 @@ from srb.core.mdp import (
 )
 from srb.core.sensors import ContactSensor, ContactSensorCfg
 from srb.core.sim import PreviewSurfaceCfg
-from srb.env import (
-    BaseManipulationEnv,
-    BaseManipulationEnvCfg,
-    BaseManipulationEnvEventCfg,
-)
+from srb.task.peg_in_hole.task import peg_and_hole_cfg
 from srb.utils import configclass
 from srb.utils.math import (
     combine_frame_transforms,
@@ -29,8 +31,6 @@ from srb.utils.math import (
     scale_transform,
     subtract_frame_transforms,
 )
-
-from ..peg_in_hole.task import peg_and_hole_cfg
 
 ##############
 ### Config ###

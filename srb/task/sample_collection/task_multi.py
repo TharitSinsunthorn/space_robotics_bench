@@ -3,12 +3,11 @@ from typing import Dict, List, Sequence, Tuple
 import torch
 
 from srb.core.asset import RigidObject, RigidObjectCfg
-from srb.core.envs import AssetVariant
+from srb.core.envs import AssetVariant, BaseManipulationEnv
 from srb.core.managers import EventTermCfg, SceneEntityCfg
 from srb.core.markers import VisualizationMarkers
 from srb.core.mdp import reset_root_state_uniform_poisson_disk_2d
 from srb.core.sensors import ContactSensor
-from srb.env import BaseManipulationEnv
 from srb.utils import configclass
 from srb.utils.math import (
     combine_frame_transforms,

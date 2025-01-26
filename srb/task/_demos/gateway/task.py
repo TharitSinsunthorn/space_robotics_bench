@@ -5,8 +5,13 @@ import torch
 
 from srb import asset
 from srb.core.asset import Articulation
-from srb.core.envs import DirectEnv, Domain, ViewerCfg
-from srb.env import BaseManipulationEnv, BaseManipulationEnvCfg
+from srb.core.envs import (
+    BaseManipulationEnv,
+    BaseManipulationEnvCfg,
+    DirectEnv,
+    Domain,
+    ViewerCfg,
+)
 from srb.utils import configclass
 
 ##############

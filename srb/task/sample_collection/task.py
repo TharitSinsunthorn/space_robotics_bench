@@ -6,17 +6,19 @@ from simforge import TexResConfig
 
 from srb import asset
 from srb.core.asset import RigidObject, RigidObjectCfg
-from srb.core.envs import AssetVariant, BaseEnvCfg, Domain
+from srb.core.envs import (
+    AssetVariant,
+    BaseEnvCfg,
+    BaseManipulationEnv,
+    BaseManipulationEnvCfg,
+    BaseManipulationEnvEventCfg,
+    Domain,
+)
 from srb.core.managers import EventTermCfg, SceneEntityCfg
 from srb.core.markers import VisualizationMarkers, VisualizationMarkersCfg
 from srb.core.mdp import reset_root_state_uniform
 from srb.core.sensors import ContactSensor, ContactSensorCfg
 from srb.core.sim import PreviewSurfaceCfg, SphereCfg
-from srb.env import (
-    BaseManipulationEnv,
-    BaseManipulationEnvCfg,
-    BaseManipulationEnvEventCfg,
-)
 from srb.utils import configclass
 from srb.utils.math import (
     combine_frame_transforms,

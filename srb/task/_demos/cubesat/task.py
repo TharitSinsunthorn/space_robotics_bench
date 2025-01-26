@@ -3,8 +3,11 @@ from typing import Dict, Sequence, Tuple
 
 import torch
 
-from srb.core.envs import Domain
-from srb.env import BaseSpacecraftRoboticsEnv, BaseSpacecraftRoboticsEnvCfg
+from srb.core.envs import (
+    BaseSpacecraftRoboticsEnv,
+    BaseSpacecraftRoboticsEnvCfg,
+    Domain,
+)
 from srb.utils import configclass
 
 ##############

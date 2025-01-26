@@ -2,7 +2,7 @@ from typing import Dict, Sequence, Tuple
 
 import torch
 
-from srb.env import BaseAerialRoboticsEnv, BaseAerialRoboticsEnvCfg
+from srb.core.envs import BaseAerialRoboticsEnv, BaseAerialRoboticsEnvCfg
 from srb.utils import configclass
 
 ##############
