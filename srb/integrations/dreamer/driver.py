@@ -1,7 +1,7 @@
 import elements
 from embodied import Driver
 
-from srb.core.envs import DirectEnv
+from srb.core.env import DirectEnv
 
 
 class DriverParallelEnv(Driver):

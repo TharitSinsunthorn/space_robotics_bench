@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence, Type
 
-from srb.core.actions import MultiCopterActionGroupCfg
+from srb.core.action import MultiCopterActionGroupCfg
 from srb.core.asset import Frame
 from srb.core.asset.robot.mobile_robot.mobile_robot import (
     MobileRobot,

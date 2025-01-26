@@ -7,7 +7,7 @@ from omni.isaac.kit import SimulationApp
 from rl_zoo3 import ALGOS
 from stable_baselines3.common.callbacks import tqdm
 
-from srb.core.envs import DirectEnv
+from srb.core.env import DirectEnv
 from srb.integrations.sb3.exp_manager import ExperimentManager
 from srb.integrations.sb3.wrapper import Sb3EnvWrapper
 from srb.utils.cfg import (

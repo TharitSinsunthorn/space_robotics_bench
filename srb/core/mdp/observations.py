@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING
 import torch
 
 from srb.core.asset import Articulation
-from srb.core.managers import SceneEntityCfg
+from srb.core.manager import SceneEntityCfg
 
 if TYPE_CHECKING:
-    from srb.core.envs import DirectEnv
+    from srb.core.env import DirectEnv
 
 
 def body_incoming_wrench_mean(

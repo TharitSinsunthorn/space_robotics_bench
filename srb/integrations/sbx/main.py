@@ -8,7 +8,7 @@ from gymnasium.core import ObservationWrapper, ObsType, WrapperObsType
 from rl_zoo3 import exp_manager
 from sbx import DDPG, DQN, PPO, SAC, TD3, TQC, CrossQ
 
-from srb.core.envs import DirectEnv
+from srb.core.env import DirectEnv
 from srb.integrations.sb3 import main as sb3
 
 sb3.FRAMEWORK_NAME = "sbx"

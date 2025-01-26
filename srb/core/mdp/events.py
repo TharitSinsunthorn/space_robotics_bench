@@ -4,7 +4,7 @@ import torch
 from omni.isaac.core.prims.xform_prim_view import XFormPrimView
 
 from srb.core.asset import Articulation, RigidObject
-from srb.core.managers import SceneEntityCfg
+from srb.core.manager import SceneEntityCfg
 from srb.utils.math import quat_from_euler_xyz, quat_mul, sample_uniform
 from srb.utils.sampling import (
     sample_poisson_disk_2d_looped,
@@ -12,7 +12,7 @@ from srb.utils.sampling import (
 )
 
 if TYPE_CHECKING:
-    from srb.core.envs import DirectEnv
+    from srb.core.env import DirectEnv
 
 
 def reset_xform_orientation_uniform(

@@ -7,7 +7,7 @@ import numpy
 import torch
 from elements import Space
 
-from srb.core.envs import DirectEnv
+from srb.core.env import DirectEnv
 
 
 class EmbodiedEnvWrapper(embodied.Env):

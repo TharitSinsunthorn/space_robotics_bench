@@ -9,7 +9,7 @@ from stable_baselines3.common.vec_env.base_vec_env import (
     VecEnvStepReturn,
 )
 
-from srb.core.envs import DirectEnv
+from srb.core.env import DirectEnv
 
 
 class Sb3EnvWrapper(VecEnv):

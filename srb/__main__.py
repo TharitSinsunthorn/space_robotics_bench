@@ -14,10 +14,10 @@ from srb.core.app import AppLauncher
 if TYPE_CHECKING:
     from omni.isaac.kit import SimulationApp
 
-    from srb.core.envs import DirectEnv
-    from srb.core.interfaces.gui import GuiInterface
-    from srb.core.interfaces.ros2 import ROS2Interface
-    from srb.core.teleop_devices import CombinedTeleopInterface
+    from srb.core.env import DirectEnv
+    from srb.interfaces.gui import GuiInterface
+    from srb.interfaces.ros2 import ROS2Interface
+    from srb.interfaces.teleop import CombinedTeleopInterface
 
 # TODO: Clean-up args with enums, add choices, ...
 
@@ -60,8 +60,8 @@ def agent_main(
     # Launch Isaac Sim
     launcher = AppLauncher(launcher_args=kwargs)
 
-    from srb import task as _  # noqa: F401
-    from srb.core.teleop_devices import EventKeyboardTeleopInterface
+    from srb import tasks as _  # noqa: F401
+    from srb.interfaces.teleop import EventKeyboardTeleopInterface
     from srb.utils import logging
     from srb.utils.cfg import create_logdir_path, hydra_task_config
     from srb.utils.isaacsim import hide_ui
@@ -228,8 +228,8 @@ def teleop_agent(
 
     import threading
 
-    from srb.core.actions import ActionGroup
-    from srb.core.teleop_devices import CombinedTeleopInterface
+    from srb.core.action import ActionGroup
+    from srb.interfaces.teleop import CombinedTeleopInterface
 
     if find_spec("rich"):
         from rich import print
@@ -279,7 +279,7 @@ def teleop_agent(
 
     ## Create GUI interface
     if "gui" in integration:
-        from srb.core.interfaces.gui import GuiInterface
+        from srb.interfaces.gui import GuiInterface
 
         gui_interface = GuiInterface(env, node=ros_node)
     else:
@@ -287,7 +287,7 @@ def teleop_agent(
 
     ## Create ROS 2 interface
     if "ros2" in integration:
-        from srb.core.interfaces.ros2 import ROS2Interface
+        from srb.interfaces.ros2 import ROS2Interface
 
         ros2_interface = ROS2Interface(env, node=ros_node)
     else:
@@ -350,8 +350,8 @@ def _teleop_agent_direct(
 ):
     import torch
 
-    from srb.core.actions import ManipulatorTaskSpaceActionCfg
-    from srb.core.managers import SceneEntityCfg
+    from srb.core.action import ManipulatorTaskSpaceActionCfg
+    from srb.core.manager import SceneEntityCfg
     from srb.core.mdp import body_incoming_wrench_mean
 
     is_manip_task = isinstance(
@@ -433,7 +433,7 @@ def _teleop_agent_via_policy(
         WrapperObsType,
     )
 
-    from srb.core.actions import ManipulatorTaskSpaceActionCfg
+    from srb.core.action import ManipulatorTaskSpaceActionCfg
 
     # Disable command randomization
     if hasattr(env.cfg.events, "command"):
@@ -531,7 +531,7 @@ def ros_agent(
 ):
     import torch
 
-    from srb.core.interfaces.ros2 import ROS2Interface
+    from srb.interfaces.ros2 import ROS2Interface
 
     # Disable truncation
     if hasattr(env.cfg, "enable_truncation"):
@@ -680,7 +680,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
         category.add(RegisteredEntity.ROBOT)
 
     if RegisteredEntity.ENV in category:
-        from srb import task as srb_tasks
+        from srb import tasks as srb_tasks
 
     # Print table for assets
     if (
@@ -698,7 +698,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
         table.add_column("Path", justify="left", style="white")
         i = 0
         if RegisteredEntity.OBJECT in category:
-            from srb.asset import object as srb_objects
+            from srb.assets import object as srb_objects
 
             asset_type = AssetType.OBJECT
             asset_classes = AssetRegistry.registry.get(asset_type, ())
@@ -732,7 +732,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                     end_section=(j + 1) == len(asset_classes),
                 )
         if RegisteredEntity.TERRAIN in category:
-            from srb.asset import terrain as srb_terrains
+            from srb.assets import terrain as srb_terrains
 
             asset_type = AssetType.TERRAIN
             asset_classes = AssetRegistry.registry.get(asset_type, ())
@@ -766,7 +766,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                     end_section=(j + 1) == len(asset_classes),
                 )
         if RegisteredEntity.ROBOT in category:
-            from srb.asset import robot as srb_robots
+            from srb.assets import robot as srb_robots
 
             asset_type = AssetType.ROBOT
             for asset_subtype, asset_classes in RobotRegistry.items():

@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from srb.core.envs import BaseEnvCfg, Domain
+from srb.core.env import BaseEnvCfg, Domain
 from srb.core.sim import PreviewSurfaceCfg
 
 

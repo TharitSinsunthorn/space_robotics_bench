@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence, Type
 
-from srb.core.actions import ManipulatorTaskSpaceActionCfg
+from srb.core.action import ManipulatorTaskSpaceActionCfg
 from srb.core.asset.common import Frame
 from srb.core.asset.robot.manipulator.manipulator import (
     Manipulator,

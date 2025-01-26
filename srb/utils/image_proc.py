@@ -2,7 +2,7 @@ from typing import Dict, Tuple
 
 import torch
 
-from srb.core.sensors import Camera
+from srb.core.sensor import Camera
 
 
 def extract_images(camera: Camera) -> Dict[str, torch.Tensor]:
