@@ -3,8 +3,6 @@ from srb.utils.importer import import_recursively
 from srb.utils.isaacsim import is_isaacsim_initialized
 from srb.utils.registry import get_srb_tasks
 
-# TODO: Decide if this is needed
-
 if is_isaacsim_initialized():
     import_recursively(__name__)
     logging.debug(

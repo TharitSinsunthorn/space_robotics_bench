@@ -2,7 +2,7 @@ from typing import Dict, Sequence, Tuple
 
 import torch
 
-from srb.core.env import BaseAerialRoboticsEnv, BaseAerialRoboticsEnvCfg
+from srb.core.env import AerialEnv, AerialEnvCfg
 from srb.utils import configclass
 
 ##############
@@ -11,7 +11,7 @@ from srb.utils import configclass
 
 
 @configclass
-class TaskCfg(BaseAerialRoboticsEnvCfg):
+class TaskCfg(AerialEnvCfg):
     def __post_init__(self):
         super().__post_init__()
 
@@ -21,7 +21,7 @@ class TaskCfg(BaseAerialRoboticsEnvCfg):
 ############
 
 
-class Task(BaseAerialRoboticsEnv):
+class Task(AerialEnv):
     cfg: TaskCfg
 
     def __init__(self, cfg: TaskCfg, **kwargs):

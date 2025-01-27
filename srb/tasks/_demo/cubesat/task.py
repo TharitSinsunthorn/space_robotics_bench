@@ -3,7 +3,7 @@ from typing import Dict, Sequence, Tuple
 
 import torch
 
-from srb.core.env import BaseSpacecraftRoboticsEnv, BaseSpacecraftRoboticsEnvCfg, Domain
+from srb.core.env import Domain, SpacecraftEnv, SpacecraftEnvCfg
 from srb.utils import configclass
 
 ##############
@@ -12,7 +12,7 @@ from srb.utils import configclass
 
 
 @configclass
-class TaskCfg(BaseSpacecraftRoboticsEnvCfg):
+class TaskCfg(SpacecraftEnvCfg):
     def __post_init__(self):
         if self.domain != Domain.ORBIT:
             print(
@@ -35,7 +35,7 @@ class TaskCfg(BaseSpacecraftRoboticsEnvCfg):
 ############
 
 
-class Task(BaseSpacecraftRoboticsEnv):
+class Task(SpacecraftEnv):
     cfg: TaskCfg
 
     def __init__(self, cfg: TaskCfg, **kwargs):

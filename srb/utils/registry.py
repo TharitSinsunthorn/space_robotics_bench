@@ -1,4 +1,4 @@
-from typing import Any, List, Literal, Mapping
+from typing import Any, List, Literal, Mapping, Type
 
 import gymnasium
 
@@ -17,7 +17,7 @@ def register_srb_tasks(
         ],
     ],
     *,
-    default_entry_point: gymnasium.Env | None = None,
+    default_entry_point: Type[gymnasium.Env] | None = None,
     default_task_cfg: Any | None = None,
     default_cfg_dir: str | None = SRB_HYPERPARAMS_DIR.as_posix(),
 ):

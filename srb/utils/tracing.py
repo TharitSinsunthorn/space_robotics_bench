@@ -1,5 +1,5 @@
-import importlib
 from functools import cache
+from importlib import import_module
 from importlib.util import find_spec
 from os import environ
 
@@ -13,15 +13,16 @@ def with_rich() -> bool:
 
     from rich import traceback
 
-    suppress = []
-    for mod in (
-        "numpy",
-        "omegaconf",
-        "pydantic",
-        "torch",
-    ):
+    # isort: split
+
+    import numpy
+    import pydantic
+    import torch
+
+    optional_suppress = []
+    for mod in ("omegaconf",):
         try:
-            suppress.append(importlib.import_module(mod))
+            optional_suppress.append(import_module(mod))
         except Exception:
             pass
 
@@ -32,7 +33,7 @@ def with_rich() -> bool:
             or environ.get("SF_RICH_TRACEBACK_LOCALS", "false")
         ).lower()
         in ("true", "1"),
-        suppress=suppress,
+        suppress=(numpy, pydantic, torch, *optional_suppress),
     )
 
     return True

@@ -2,7 +2,7 @@ from typing import Dict, Sequence, Tuple
 
 import torch
 
-from srb.core.env import BaseMobileRoboticsEnv, BaseMobileRoboticsEnvCfg
+from srb.core.env import MobileRoboticsEnv, MobileRoboticsEnvCfg
 from srb.utils import configclass
 
 ##############
@@ -11,7 +11,7 @@ from srb.utils import configclass
 
 
 @configclass
-class TaskCfg(BaseMobileRoboticsEnvCfg):
+class TaskCfg(MobileRoboticsEnvCfg):
     def __post_init__(self):
         super().__post_init__()
 
@@ -21,7 +21,7 @@ class TaskCfg(BaseMobileRoboticsEnvCfg):
 ############
 
 
-class Task(BaseMobileRoboticsEnv):
+class Task(MobileRoboticsEnv):
     cfg: TaskCfg
 
     def __init__(self, cfg: TaskCfg, **kwargs):

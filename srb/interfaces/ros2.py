@@ -12,12 +12,7 @@ from srb.core.action import (
     MultiCopterActionGroupCfg,
     WheeledRoverActionGroupCfg,
 )
-from srb.core.env import (
-    BaseAerialRoboticsEnv,
-    BaseManipulationEnv,
-    BaseMobileRoboticsEnv,
-    DirectEnv,
-)
+from srb.core.env import AerialEnv, DirectEnv, ManipulationEnv, MobileRoboticsEnv
 from srb.utils.ros2 import enable_ros2_bridge
 from srb.utils.str import convert_to_snake_case
 
@@ -67,10 +62,7 @@ class ROS2Interface:
 
     def __init__(
         self,
-        env: DirectEnv
-        | BaseAerialRoboticsEnv
-        | BaseManipulationEnv
-        | BaseMobileRoboticsEnv,
+        env: DirectEnv | AerialEnv | ManipulationEnv | MobileRoboticsEnv,
         node: Node | None = None,
         force_multienv: bool = True,
     ):
@@ -188,9 +180,7 @@ class ROS2Interface:
             (self._env.unwrapped.num_envs, self._env.unwrapped.cfg.num_actions)
         )
 
-        robot_name = self._env.unwrapped.cfg.robot_cfg.asset_cfg.prim_path.split("/")[
-            -1
-        ]
+        robot_name = self._env.unwrapped.cfg.robot.asset_cfg.prim_path.split("/")[-1]
 
         qos_profile = QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,

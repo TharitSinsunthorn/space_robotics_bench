@@ -9,8 +9,6 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence, Tuple
 
-from srb.core.app import AppLauncher
-
 if TYPE_CHECKING:
     from omni.isaac.kit import SimulationApp
 
@@ -19,7 +17,7 @@ if TYPE_CHECKING:
     from srb.interfaces.ros2 import ROS2Interface
     from srb.interfaces.teleop import CombinedTeleopInterface
 
-# TODO: Clean-up args with enums, add choices, ...
+# TODO: Clean-up args (argparse and functions) with enums, add choices, ...
 
 
 def main():
@@ -27,6 +25,11 @@ def main():
         subcommand: Literal["agent", "gui", "ls"],
         **kwargs,
     ):
+        if not find_spec("omni"):
+            raise ImportError(
+                "The Space Robotics Bench requires an environment with NVIDIA Omniverse and Isaac Sim installed."
+            )
+
         match subcommand:
             case "agent":
                 agent_main(**kwargs)
@@ -40,6 +43,16 @@ def main():
 
 ### Agent ###
 def agent_main(
+    agent_subcommand: Literal[
+        "zero",
+        "rand",
+        "teleop",
+        "ros",
+        "train",
+        "eval",
+        "collect",
+        "learn",
+    ],
     env_id: str,
     video,
     video_length,
@@ -47,14 +60,13 @@ def agent_main(
     disable_ui: bool,
     **kwargs,
 ):
+    from srb.core.app import AppLauncher
     from srb.utils.path import SRB_APPS_DIR
 
     # Preprocess kwargs
+    kwargs["enable_cameras"] = video or env_id.endswith("_visual")
     kwargs["experience"] = SRB_APPS_DIR.joinpath(
         f'srb.{"headless." if kwargs["headless"] else ""}{"rendering." if video or kwargs["enable_cameras"] else ""}kit'
-    )
-    kwargs["enable_cameras"] = (
-        kwargs["enable_cameras"] or video or env_id.endswith("_visual")
     )
 
     # Launch Isaac Sim
@@ -90,19 +102,19 @@ def agent_main(
 
         # Add wrapper for video recording
         if video:
-            logdir = Path(create_logdir_path(kwargs["agent_subcommand"], env_id))
+            logdir = Path(create_logdir_path(agent_subcommand, env_id))
             video_kwargs = {
                 "video_folder": logdir.joinpath("videos"),
                 "step_trigger": lambda step: step % video_interval == 0,
                 "video_length": video_length,
                 "disable_logger": True,
             }
-            logging.info("Recording videos during training.")
+            logging.info("Recording videos during training")
             print(video_kwargs)
             env = gymnasium.wrappers.RecordVideo(env, **video_kwargs)
 
         # Add keyboard callbacks
-        if not kwargs["headless"] and kwargs["agent_subcommand"] not in [
+        if not kwargs["headless"] and agent_subcommand not in [
             "teleop",
             "collect",
             "train",
@@ -110,19 +122,7 @@ def agent_main(
             _cb_keyboard = EventKeyboardTeleopInterface({"L": env.reset})
 
         # Run the implementation
-        def agent_impl(
-            agent_subcommand: Literal[
-                "zero",
-                "rand",
-                "teleop",
-                "ros",
-                "train",
-                "eval",
-                "collect",
-                "learn",
-            ],
-            **kwargs,
-        ):
+        def agent_impl(**kwargs):
             kwargs.update(
                 {
                     "env_id": env_id,
@@ -642,6 +642,7 @@ def launch_gui(release: bool):
 
 ### List ###
 def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
+    from srb.core.app import AppLauncher
     from srb.utils.path import SRB_APPS_DIR
 
     if not find_spec("rich"):
@@ -824,7 +825,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
             entrypoint_module, entrypoint_class = str(entrypoint_str).split(":")
             env_module_path = Path(
                 inspect.getabsfile(
-                    importlib.import_module(entrypoint_module.rsplit(".", 1)[0])
+                    importlib.import_module(entrypoint_module.rsplit("", 1)[0])
                 )
             )
             try:
@@ -967,19 +968,19 @@ def parse_cli_args() -> argparse.Namespace:
             "--video",
             action="store_true",
             default=False,
-            help="Record videos.",
+            help="Record videos",
         )
         video_recording_group.add_argument(
             "--video_length",
             type=int,
             default=1000,
-            help="Length of the recorded video (in steps).",
+            help="Length of the recorded video (in steps)",
         )
         video_recording_group.add_argument(
             "--video_interval",
             type=int,
             default=10000,
-            help="Interval between video recordings (in steps).",
+            help="Interval between video recordings (in steps)",
         )
 
         experience_group = _agent_parser.add_argument_group("Experience")
@@ -987,10 +988,36 @@ def parse_cli_args() -> argparse.Namespace:
             "--disable_ui",
             action="store_true",
             default=False,
-            help="Disable most of the Isaac Sim UI and set it to fullscreen.",
+            help="Disable most of the Isaac Sim UI and set it to fullscreen",
         )
 
-        AppLauncher.add_app_launcher_args(_agent_parser)
+        launcher_group = _agent_parser.add_argument_group("Launcher")
+        launcher_group.add_argument(
+            "--headless",
+            action="store_true",
+            default=False,
+            help="Run the simulation without display output",
+        )
+        launcher_group.add_argument(
+            "--livestream",
+            type=int,
+            default=-1,
+            choices={0, 1, 2},
+            help="Force enable livestreaming. Mapping corresponds to that for the `LIVESTREAM` environment variable (0: Disabled, 1: Native, 2: WebRTC)",
+        )
+        launcher_group.add_argument(
+            "--device",
+            type=str,
+            default="cuda:0",
+            choices=["cpu", "cuda", "cuda:0", "cuda:1", "cuda:2", "cuda:3"],
+            help="Compute device to use for simulation",
+        )
+        launcher_group.add_argument(
+            "--kit_args",
+            type=str,
+            default="",
+            help="CLI args for the Omniverse Kit as a string separated by a space delimiter (e.g., '--ext-folder=/path/to/ext1 --ext-folder=/path/to/ext2')",
+        )
 
     for _agent_parser in (
         teleop_agent_parser,
@@ -1009,19 +1036,19 @@ def parse_cli_args() -> argparse.Namespace:
             "--pos_sensitivity",
             type=float,
             default=10.0,
-            help="Sensitivity factor for translation.",
+            help="Sensitivity factor for translation",
         )
         teleop_group.add_argument(
             "--rot_sensitivity",
             type=float,
             default=40.0,
-            help="Sensitivity factor for rotation.",
+            help="Sensitivity factor for rotation",
         )
         teleop_group.add_argument(
             "--disable_control_scheme_inversion",
             action="store_true",
             default=False,
-            help="Flag to disable inverting the control scheme due to view for manipulation-based tasks.",
+            help="Flag to disable inverting the control scheme due to view for manipulation-based tasks",
         )
 
         integrations_group = _agent_parser.add_argument_group("Integrations")
@@ -1088,7 +1115,7 @@ def parse_cli_args() -> argparse.Namespace:
         "--resume",
         action="store_true",
         default=False,
-        help="Continue training the model from the checkpoint of the last run.",
+        help="Continue training the model from the checkpoint of the last run",
     )
 
     # GUI
@@ -1132,6 +1159,11 @@ def parse_cli_args() -> argparse.Namespace:
         import argcomplete
 
         argcomplete.autocomplete(parser)
+
+    # Enable rich traceback (delayed after argcomplete to maintain snappy completion)
+    from srb.utils.tracing import with_rich
+
+    with_rich()
 
     # Allow separation of arguments meant for other purposes
     if "--" in sys.argv:

@@ -1,6 +1,25 @@
-from .cfg import BaseMobileRoboticsEnvCfg, BaseMobileRoboticsEnvEventCfg  # noqa: F401
-from .impl import BaseMobileRoboticsEnv  # noqa: F401
-from .visual import (  # noqa: F401
-    VisualMobileRoboticsEnvExt,
-    VisualMobileRoboticsEnvExtCfg,
+from .base import (  # noqa: F401
+    MobileRoboticsEnv,
+    MobileRoboticsEnvCfg,
+    MobileRoboticsEnvEventCfg,
+    MobileRoboticsEnvVisualExtCfg,
+)
+
+# isort: split
+
+from .aerial import (  # noqa: F401
+    AerialEnv,
+    AerialEnvCfg,
+    AerialEnvEventCfg,
+    AerialEnvVisualExtCfg,
+)
+from .locomotion import (  # noqa: F401
+    LocomotionEnv,
+    LocomotionEnvCfg,
+    LocomotionEnvEventCfg,
+)
+from .spacecraft import (  # noqa: F401
+    SpacecraftEnv,
+    SpacecraftEnvCfg,
+    SpacecraftEnvEventCfg,
 )

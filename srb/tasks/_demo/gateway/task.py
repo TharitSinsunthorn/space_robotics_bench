@@ -6,10 +6,10 @@ import torch
 from srb import assets
 from srb.core.asset import Articulation
 from srb.core.env import (
-    BaseManipulationEnv,
-    BaseManipulationEnvCfg,
     DirectEnv,
     Domain,
+    ManipulationEnv,
+    ManipulationEnvCfg,
     ViewerCfg,
 )
 from srb.utils import configclass
@@ -20,7 +20,7 @@ from srb.utils import configclass
 
 
 @configclass
-class TaskCfg(BaseManipulationEnvCfg):
+class TaskCfg(ManipulationEnvCfg):
     viewer = ViewerCfg(
         lookat=(0.0, 0.0, 2.5),
         eye=(15.0, 0.0, 12.5),
@@ -67,7 +67,7 @@ class TaskCfg(BaseManipulationEnvCfg):
 ############
 
 
-class Task(BaseManipulationEnv):
+class Task(ManipulationEnv):
     cfg: TaskCfg
 
     def __init__(self, cfg: TaskCfg, **kwargs):

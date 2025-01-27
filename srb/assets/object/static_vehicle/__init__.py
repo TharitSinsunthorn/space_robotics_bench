@@ -7,11 +7,11 @@ from .construction_rover import ConstructionRover
 from .gateway import Gateway
 
 if TYPE_CHECKING:
-    from srb.core.env import BaseManipulationEnvCfg
+    from srb.core.env import ManipulationEnvCfg
 
 
 def vehicle_from_cfg(
-    cfg: "BaseManipulationEnvCfg",
+    cfg: "ManipulationEnvCfg",
     *,
     prim_path: str = "{ENV_REGEX_NS}/vehicle",
     **kwargs,

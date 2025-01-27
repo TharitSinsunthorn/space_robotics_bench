@@ -1,7 +1,7 @@
 from omni.isaac.lab.envs import ViewerCfg  # noqa: F401
 from omni.isaac.lab.scene import InteractiveScene, InteractiveSceneCfg  # noqa: F401
 
-from .base import (  # noqa: F401
+from .common import (  # noqa: F401
     AssetVariant,
     BaseEnvCfg,
     DirectEnv,
@@ -11,38 +11,32 @@ from .base import (  # noqa: F401
     Domain,
     ManagedEnv,
     ManagedEnvCfg,
+    VisualExt,
+    VisualExtCfg,
 )
 
 # isort: split
 
-from .aerial import (  # noqa: F401
-    BaseAerialRoboticsEnv,
-    BaseAerialRoboticsEnvCfg,
-    BaseAerialRoboticsEnvEventCfg,
-    VisualAerialRoboticsEnvExt,
-    VisualAerialRoboticsEnvExtCfg,
-)
-from .locomotion import (  # noqa: F401
-    BaseLocomotionEnv,
-    BaseLocomotionEnvCfg,
-    BaseLocomotionEnvEventCfg,
-)
 from .manipulation import (  # noqa: F401
-    BaseManipulationEnv,
-    BaseManipulationEnvCfg,
-    BaseManipulationEnvEventCfg,
-    VisualManipulationEnvExt,
-    VisualManipulationEnvExtCfg,
+    ManipulationEnv,
+    ManipulationEnvCfg,
+    ManipulationEnvEventCfg,
+    ManipulationEnvVisualExtCfg,
 )
 from .mobile import (  # noqa: F401
-    BaseMobileRoboticsEnv,
-    BaseMobileRoboticsEnvCfg,
-    BaseMobileRoboticsEnvEventCfg,
-    VisualMobileRoboticsEnvExt,
-    VisualMobileRoboticsEnvExtCfg,
+    AerialEnv,
+    AerialEnvCfg,
+    AerialEnvEventCfg,
+    AerialEnvVisualExtCfg,
+    LocomotionEnv,
+    LocomotionEnvCfg,
+    LocomotionEnvEventCfg,
+    MobileRoboticsEnv,
+    MobileRoboticsEnvCfg,
+    MobileRoboticsEnvEventCfg,
+    MobileRoboticsEnvVisualExtCfg,
+    SpacecraftEnv,
+    SpacecraftEnvCfg,
+    SpacecraftEnvEventCfg,
 )
-from .spacecraft import (  # noqa: F401
-    BaseSpacecraftRoboticsEnv,
-    BaseSpacecraftRoboticsEnvCfg,
-    BaseSpacecraftRoboticsEnvEventCfg,
-)
+from .mobile_manipulation import *  # noqa: F403
