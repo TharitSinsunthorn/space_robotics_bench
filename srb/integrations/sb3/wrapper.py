@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence
 
 import gymnasium
 import numpy
@@ -9,12 +9,12 @@ from stable_baselines3.common.vec_env.base_vec_env import (
     VecEnvStepReturn,
 )
 
-from srb._typing import AnyEnv
-from srb.core.env import DirectEnv
+if TYPE_CHECKING:
+    from srb._typing import AnyEnv
 
 
 class Sb3EnvWrapper(VecEnv):
-    def __init__(self, env: AnyEnv):
+    def __init__(self, env: "AnyEnv"):
         # Initialize the wrapper
         self.env = env
         # Collect common information
@@ -55,7 +55,7 @@ class Sb3EnvWrapper(VecEnv):
         return cls.__name__
 
     @property
-    def unwrapped(self) -> DirectEnv:
+    def unwrapped(self) -> "AnyEnv":
         return self.env.unwrapped  # type: ignore
 
     def get_episode_rewards(self) -> Sequence[float]:

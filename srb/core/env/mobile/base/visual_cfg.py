@@ -8,6 +8,8 @@ from .cfg import MobileRoboticsEnvCfg
 
 @configclass
 class MobileRoboticsEnvVisualExtCfg(MobileRoboticsEnvCfg, VisualExtCfg):
+    rerender_on_reset: bool = True
+
     def __post_init__(self):
         MobileRoboticsEnvCfg.__post_init__(self)
 

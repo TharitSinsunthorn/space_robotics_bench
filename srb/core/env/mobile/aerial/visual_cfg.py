@@ -8,6 +8,8 @@ from .cfg import AerialEnvCfg
 
 @configclass
 class AerialEnvVisualExtCfg(AerialEnvCfg, VisualExtCfg):
+    rerender_on_reset: bool = True
+
     def __post_init__(self):
         AerialEnvCfg.__post_init__(self)
 

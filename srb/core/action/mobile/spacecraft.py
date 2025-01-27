@@ -5,19 +5,19 @@ from typing import TYPE_CHECKING
 import torch
 
 from srb.core.action.action_group import ActionGroup
-from srb.core.asset import Articulation
 from srb.core.manager import ActionTerm, ActionTermCfg
 from srb.utils import configclass
 
 if TYPE_CHECKING:
-    from srb.core.env import DirectEnv
+    from srb._typing import AnyEnv
+    from srb.core.asset import Articulation, RigidObject
 
 
 class SpacecraftAction(ActionTerm):
     cfg: "SpacecraftActionCfg"
-    _asset: Articulation
+    _asset: "Articulation | RigidObject"
 
-    def __init__(self, cfg: "SpacecraftActionCfg", env: "DirectEnv"):
+    def __init__(self, cfg: "SpacecraftActionCfg", env: "AnyEnv"):
         super().__init__(cfg, env)
 
     @property

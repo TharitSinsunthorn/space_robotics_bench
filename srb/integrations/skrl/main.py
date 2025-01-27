@@ -1,22 +1,24 @@
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from omni.isaac.kit import SimulationApp
 from skrl.utils.runner.torch import Runner
 
-from srb._typing import AnyEnv, AnyEnvCfg
 from srb.integrations.skrl.wrapper import SkrlEnvWrapper
 from srb.utils.cfg import create_logdir_path, get_last_file, get_last_run_logdir_path
+
+if TYPE_CHECKING:
+    from srb._typing import AnyEnv, AnyEnvCfg
 
 FRAMEWORK_NAME = "skrl"
 
 
 def run(
     workflow: Literal["train", "eval"],
-    env: AnyEnv,
+    env: "AnyEnv",
     sim_app: SimulationApp,
     env_id: str,
-    env_cfg: AnyEnvCfg,
+    env_cfg: "AnyEnvCfg",
     agent_cfg: dict,
     model: str,
     continue_training: bool | None = None,

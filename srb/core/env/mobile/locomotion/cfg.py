@@ -170,7 +170,8 @@ class LocomotionEnvCfg(DirectEnvCfg):
         self.scene.light = assets.sunlight_from_cfg(self)
         self.scene.sky = assets.sky_from_cfg(self)
         # self.robot = asset.legged_robot_from_env_cfg(self)
-        self.robot = assets.AnymalMulti()
+        if isinstance(self.robot, AssetVariant):
+            self.robot = assets.AnymalMulti()
         self.scene.robot = self.robot.asset_cfg
         self.scene.terrain = assets.terrain_from_cfg(
             self,

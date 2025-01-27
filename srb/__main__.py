@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence, Tup
 if TYPE_CHECKING:
     from omni.isaac.kit import SimulationApp
 
-    from srb.core.env import DirectEnv
+    from srb._typing import AnyEnv
     from srb.interfaces.gui import GuiInterface
     from srb.interfaces.ros2 import ROS2Interface
     from srb.interfaces.teleop import CombinedTeleopInterface
@@ -162,7 +162,7 @@ def agent_main(
 
 
 def random_agent(
-    env: "DirectEnv",
+    env: "AnyEnv",
     sim_app: "SimulationApp",
     **kwargs,
 ):
@@ -187,7 +187,7 @@ def random_agent(
 
 
 def zero_agent(
-    env: "DirectEnv",
+    env: "AnyEnv",
     sim_app: "SimulationApp",
     **kwargs,
 ):
@@ -212,7 +212,7 @@ def zero_agent(
 
 
 def teleop_agent(
-    env: "DirectEnv",
+    env: "AnyEnv",
     sim_app: "SimulationApp",
     headless: bool,
     teleop_device: Sequence[str],
@@ -340,7 +340,7 @@ def teleop_agent(
 
 
 def _teleop_agent_direct(
-    env: "DirectEnv",
+    env: "AnyEnv",
     sim_app: "SimulationApp",
     teleop_interface: "CombinedTeleopInterface",
     ros2_interface: "ROS2Interface | None",
@@ -416,7 +416,7 @@ def _teleop_agent_direct(
 
 
 def _teleop_agent_via_policy(
-    env: "DirectEnv",
+    env: "AnyEnv",
     sim_app: "SimulationApp",
     teleop_interface: "CombinedTeleopInterface",
     ros2_interface: "ROS2Interface | None",
@@ -525,7 +525,7 @@ def _teleop_agent_via_policy(
 
 
 def ros_agent(
-    env: "DirectEnv",
+    env: "AnyEnv",
     sim_app: "SimulationApp",
     **kwargs,
 ):
@@ -620,6 +620,8 @@ def launch_gui(release: bool):
     from srb.utils.path import SRB_DIR
 
     try:
+        import string
+
         args = [
             "cargo",
             "run",
@@ -632,7 +634,10 @@ def launch_gui(release: bool):
         ] + (["--release"] if release else [])
         logging.info(
             "Launching GUI of the Space Robotics Bench with the following command: "
-            + " ".join((f'"{arg}"' if " " in arg else arg) for arg in args)
+            + " ".join(
+                (f'"{arg}"' if any(c in string.whitespace for c in arg) else arg)
+                for arg in args
+            )
         )
         subprocess.run(args, check=True)
     except subprocess.CalledProcessError as e:
@@ -662,8 +667,6 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
     from rich import print
     from rich.table import Table
 
-    from srb.core.asset import AssetRegistry, AssetType, RobotRegistry
-    from srb.utils.registry import get_srb_tasks
     from srb.utils.str import convert_to_snake_case
 
     # Standardize category
@@ -673,7 +676,11 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
         else set(map(RegisteredEntity.from_str, category))
     )
     if RegisteredEntity.ALL in category:
-        category = {RegisteredEntity.ASSET, RegisteredEntity.ENV}
+        category = {
+            RegisteredEntity.ACTION,
+            RegisteredEntity.ASSET,
+            RegisteredEntity.ENV,
+        }
     if RegisteredEntity.ASSET in category:
         category.remove(RegisteredEntity.ASSET)
         category.add(RegisteredEntity.OBJECT)
@@ -689,6 +696,8 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
         or RegisteredEntity.TERRAIN in category
         or RegisteredEntity.ROBOT in category
     ):
+        from srb.core.asset import AssetRegistry, AssetType
+
         table = Table(title="Assets of the Space Robotics Bench")
         table.add_column("#", justify="right", style="cyan", no_wrap=True)
         table.add_column("Type", justify="center", style="magenta", no_wrap=True)
@@ -768,6 +777,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                 )
         if RegisteredEntity.ROBOT in category:
             from srb.assets import robot as srb_robots
+            from srb.core.asset import RobotRegistry
 
             asset_type = AssetType.ROBOT
             for asset_subtype, asset_classes in RobotRegistry.items():
@@ -804,13 +814,44 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                     )
         print(table)
 
+    # Print table for action groups
+    if RegisteredEntity.ACTION in category:
+        from srb.core import action as srb_actions
+        from srb.core.action import ActionGroupRegistry
+
+        table = Table(title="Action Groups of the Space Robotics Bench")
+        table.add_column("#", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Name", justify="left", style="blue", no_wrap=True)
+        table.add_column("Path", justify="left", style="white")
+
+        for i, action_group_class in enumerate(ActionGroupRegistry.registry, 1):
+            action_group_name = convert_to_snake_case(action_group_class.__name__)
+            action_group_path = Path(
+                inspect.getabsfile(
+                    importlib.import_module(action_group_class.__module__)
+                )
+            )
+            try:
+                action_group_relpath = action_group_path.relative_to(
+                    Path(inspect.getabsfile(srb_actions)).parent
+                )
+            except ValueError:
+                action_group_relpath = path.join("EXT", action_group_path.name)
+            table.add_row(
+                str(i),
+                f"[link=vscode://file/{inspect.getabsfile(action_group_class)}:{inspect.getsourcelines(action_group_class)[1]}]{action_group_name}[/link]",
+                f"[link=vscode://file/{action_group_path}]{action_group_relpath}[/link]",
+            )
+        print(table)
+
     # Print table for environments
     if RegisteredEntity.ENV in category:
         import gymnasium
 
+        from srb.utils.registry import get_srb_tasks
+
         table = Table(title="Environments of the Space Robotics Bench")
         table.add_column("#", justify="right", style="cyan", no_wrap=True)
-        table.add_column("Type", justify="center", style="bold blue", no_wrap=True)
         table.add_column("ID", justify="left", style="blue", no_wrap=True)
         table.add_column("Entrypoint", justify="left", style="green")
         table.add_column("Config", justify="left", style="yellow")
@@ -825,7 +866,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
             entrypoint_module, entrypoint_class = str(entrypoint_str).split(":")
             env_module_path = Path(
                 inspect.getabsfile(
-                    importlib.import_module(entrypoint_module.rsplit("", 1)[0])
+                    importlib.import_module(entrypoint_module.rsplit(".", 1)[0])
                 )
             )
             try:
@@ -841,8 +882,8 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
             cfg_parent = cfg_class.__bases__[0]
             table.add_row(
                 str(i),
-                "demo" if "demo" in entrypoint_module.__name__ else "task",
-                task_id.removeprefix("srb/"),
+                task_id.removeprefix("srb/")
+                + (" (demo)" if "demo" in entrypoint_module.__name__ else ""),
                 f"[link=vscode://file/{inspect.getabsfile(entrypoint_class)}:{inspect.getsourcelines(entrypoint_class)[1]}]{entrypoint_class.__name__}[/link]([red][link=vscode://file/{inspect.getabsfile(entrypoint_parent)}:{inspect.getsourcelines(entrypoint_parent)[1]}]{entrypoint_parent.__name__}[/link][/red])",
                 f"[link=vscode://file/{inspect.getabsfile(cfg_class)}:{inspect.getsourcelines(cfg_class)[1]}]{cfg_class.__name__}[/link]([magenta][link=vscode://file/{inspect.getabsfile(cfg_parent)}:{inspect.getsourcelines(cfg_parent)[1]}]{cfg_parent.__name__}[/link][/magenta])",
                 f"[link=vscode://file/{env_module_path}]{env_module_relpath}[/link]",
@@ -855,6 +896,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
 
 class RegisteredEntity(str, Enum):
     ALL = auto()
+    ACTION = auto()
     ASSET = auto()
     ENV = auto()
     OBJECT = auto()
@@ -1177,9 +1219,14 @@ def parse_cli_args() -> argparse.Namespace:
         arg for arg in other_args if arg.startswith("-") or "=" not in arg
     ]
     if unsupported_args:
+        import string
+
         raise ValueError(
             f'Unsupported CLI argument{"s" if len(unsupported_args) > 1 else ""}: '
-            + ", ".join(f'"{arg}"' if " " in arg else arg for arg in unsupported_args)
+            + ", ".join(
+                f'"{arg}"' if any(c in string.whitespace for c in arg) else arg
+                for arg in unsupported_args
+            )
         )
 
     # Forward other arguments to hydra

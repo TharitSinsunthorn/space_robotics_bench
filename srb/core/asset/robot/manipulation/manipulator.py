@@ -115,7 +115,7 @@ class ManipulatorRegistry:
         return {module.split(".", maxsplit=1)[0] for module in cls.registered_modules()}
 
     @classmethod
-    def by_name(cls, name: str) -> Type[Manipulator] | None:
+    def get_by_name(cls, name: str) -> Type[Manipulator] | None:
         for manipulator in cls.values_inner():
             if convert_to_snake_case(manipulator.__name__) == name:
                 return manipulator

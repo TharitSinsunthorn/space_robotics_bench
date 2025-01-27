@@ -1,12 +1,11 @@
 import sys
-from typing import Dict, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
 
 import torch
 from omni.isaac.core.prims.xform_prim_view import XFormPrimView
 from pydantic import BaseModel
 
 from srb import assets
-from srb._typing import AnyEnvCfg
 from srb.core.asset import RigidObject, RigidObjectCfg
 from srb.core.env import (
     AssetVariant,
@@ -32,6 +31,9 @@ from srb.utils.math import (
     subtract_frame_transforms,
 )
 
+if TYPE_CHECKING:
+    from srb._typing import AnyEnvCfg
+
 ##############
 ### Config ###
 ##############
@@ -53,7 +55,7 @@ class TaskCfg(ManipulationEnvCfg):
     episode_length_s: float = 50.0
 
     ## Task
-    is_finite_horizon: bool = False
+    is_finite_horizon: bool = True
 
     ## Panel
     panel_target_pos = (0.55, 0.0, 0.0)
@@ -188,7 +190,7 @@ class TaskCfg(ManipulationEnvCfg):
 
     @staticmethod
     def _panel_cfg(
-        env_cfg: AnyEnvCfg,
+        env_cfg: "AnyEnvCfg",
         *,
         init_state: RigidObjectCfg.InitialStateCfg,
         asset_cfg: SceneEntityCfg = SceneEntityCfg("panel"),

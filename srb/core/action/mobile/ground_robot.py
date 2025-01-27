@@ -6,12 +6,12 @@ import torch
 
 from srb.core.action import JointPositionActionCfg
 from srb.core.action.action_group import ActionGroup
-from srb.core.asset import Articulation
 from srb.core.manager import ActionTerm, ActionTermCfg
 from srb.utils import configclass
 
 if TYPE_CHECKING:
-    from srb.core.env import DirectEnv
+    from srb._typing import AnyEnv
+    from srb.core.asset import Articulation
 
 
 # TODO: Rename this and move to common or something
@@ -25,9 +25,9 @@ class LocomotionJointSpaceActionCfg(ActionGroup):
 
 class WheeledRoverAction(ActionTerm):
     cfg: "WheeledRoverActionCfg"
-    _asset: Articulation
+    _asset: "Articulation"
 
-    def __init__(self, cfg: "WheeledRoverActionCfg", env: "DirectEnv"):
+    def __init__(self, cfg: "WheeledRoverActionCfg", env: "AnyEnv"):
         super().__init__(cfg, env)
 
         self._steering_joint_indices = self._asset.find_joints(

@@ -6,11 +6,11 @@ from srb.core.asset import Articulation
 from srb.core.manager import SceneEntityCfg
 
 if TYPE_CHECKING:
-    from srb.core.env import DirectEnv
+    from srb._typing import AnyEnv
 
 
 def body_incoming_wrench_mean(
-    env: "DirectEnv", asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+    env: "AnyEnv", asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
 ) -> torch.Tensor:
     """Incoming spatial wrench on bodies of an articulation in the simulation world frame.
 

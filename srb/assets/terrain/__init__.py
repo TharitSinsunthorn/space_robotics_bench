@@ -1,18 +1,20 @@
 import math
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
 from simforge import TexResConfig
 
-from srb._typing import AnyEnvCfg
 from srb.core.asset import AssetBaseCfg
 from srb.core.env import AssetVariant, Domain
 
 from .ground_plane import GroundPlane
 from .planetary_surface import MarsSurface, MoonSurface
 
+if TYPE_CHECKING:
+    from srb._typing import AnyEnvCfg
+
 
 def terrain_from_cfg(
-    cfg: AnyEnvCfg,
+    cfg: "AnyEnvCfg",
     *,
     seed: int,
     num_assets: int,

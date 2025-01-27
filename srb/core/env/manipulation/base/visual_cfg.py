@@ -8,6 +8,8 @@ from .cfg import ManipulationEnvCfg
 
 @configclass
 class ManipulationEnvVisualExtCfg(ManipulationEnvCfg, VisualExtCfg):
+    rerender_on_reset: bool = True
+
     def __post_init__(self):
         ManipulationEnvCfg.__post_init__(self)
 

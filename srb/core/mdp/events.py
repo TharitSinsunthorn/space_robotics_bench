@@ -12,11 +12,11 @@ from srb.utils.sampling import (
 )
 
 if TYPE_CHECKING:
-    from srb.core.env import DirectEnv
+    from srb._typing import AnyEnv
 
 
 def reset_xform_orientation_uniform(
-    env: "DirectEnv",
+    env: "AnyEnv",
     env_ids: torch.Tensor,
     orientation_distribution_params: Dict[str, Tuple[float, float]],
     asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
@@ -40,7 +40,7 @@ def reset_xform_orientation_uniform(
 
 
 def follow_xform_orientation_linear_trajectory(
-    env: "DirectEnv",
+    env: "AnyEnv",
     env_ids: torch.Tensor,
     orientation_step_params: Dict[str, float],
     asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
@@ -61,7 +61,7 @@ def follow_xform_orientation_linear_trajectory(
 
 
 def reset_joints_by_offset(
-    env: "DirectEnv",
+    env: "AnyEnv",
     env_ids: torch.Tensor,
     position_range: tuple[float, float],
     velocity_range: tuple[float, float],
@@ -101,7 +101,7 @@ def reset_joints_by_offset(
 
 
 def reset_root_state_uniform_poisson_disk_2d(
-    env: "DirectEnv",
+    env: "AnyEnv",
     env_ids: torch.Tensor,
     pose_range: dict[str, tuple[float, float]],
     velocity_range: dict[str, tuple[float, float]],
@@ -182,7 +182,7 @@ def reset_root_state_uniform_poisson_disk_2d(
 
 
 def reset_root_state_uniform_poisson_disk_3d(
-    env: "DirectEnv",
+    env: "AnyEnv",
     env_ids: torch.Tensor,
     pose_range: dict[str, tuple[float, float, float]],
     velocity_range: dict[str, tuple[float, float, float]],

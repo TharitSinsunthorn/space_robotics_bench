@@ -1,12 +1,11 @@
 import sys
-from typing import Dict, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
 
 import torch
 from pydantic import BaseModel
 from simforge import TexResConfig
 
 from srb import assets
-from srb._typing import AnyEnvCfg
 from srb.core.asset import RigidObject, RigidObjectCfg
 from srb.core.env import (
     Domain,
@@ -25,6 +24,9 @@ from srb.utils.math import (
     scale_transform,
     subtract_frame_transforms,
 )
+
+if TYPE_CHECKING:
+    from srb._typing import AnyEnvCfg
 
 ##############
 ### Config ###
@@ -45,7 +47,7 @@ class TaskCfg(ManipulationEnvCfg):
     episode_length_s: float = 10.0
 
     ## Task
-    is_finite_horizon: bool = False
+    is_finite_horizon: bool = True
 
     ## Events
     @configclass
@@ -102,7 +104,7 @@ class TaskCfg(ManipulationEnvCfg):
 
     @staticmethod
     def _object(
-        cfg: AnyEnvCfg,
+        cfg: "AnyEnvCfg",
         *,
         seed: int,
         num_assets: int,

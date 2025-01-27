@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
 import torch
 from omni.isaac.core.prims.xform_prim_view import XFormPrimView
@@ -6,7 +6,6 @@ from pydantic import BaseModel, NonNegativeInt
 from simforge import TexResConfig
 
 from srb import assets
-from srb._typing import AnyEnvCfg
 from srb.core.asset import AssetBaseCfg, RigidObject, RigidObjectCfg
 from srb.core.env import (
     AssetVariant,
@@ -25,6 +24,9 @@ from srb.utils.math import (
     scale_transform,
     subtract_frame_transforms,
 )
+
+if TYPE_CHECKING:
+    from srb._typing import AnyEnvCfg
 
 ##############
 ### Config ###
@@ -66,7 +68,7 @@ class PegInHoleCfg(BaseModel):
 
 
 def peg_in_hole_from_cfg(
-    cfg: AnyEnvCfg,
+    cfg: "AnyEnvCfg",
     *,
     seed: int,
     num_assets: int,
@@ -111,7 +113,7 @@ def peg_in_hole_from_cfg(
 
 
 def peg_and_hole_cfg(
-    env_cfg: AnyEnvCfg,
+    env_cfg: "AnyEnvCfg",
     *,
     seed: int,
     init_state: RigidObjectCfg.InitialStateCfg,
@@ -180,7 +182,7 @@ class TaskCfg(ManipulationEnvCfg):
     episode_length_s: float = 10.0
 
     ## Task
-    is_finite_horizon: bool = False
+    is_finite_horizon: bool = True
 
     ## Events
     @configclass

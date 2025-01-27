@@ -115,7 +115,7 @@ class MobileRobotRegistry:
         return {module.split(".", maxsplit=1)[0] for module in cls.registered_modules()}
 
     @classmethod
-    def by_name(cls, name: str) -> Type[MobileRobot] | None:
+    def get_by_name(cls, name: str) -> Type[MobileRobot] | None:
         for mobile_robot in cls.values_inner():
             if convert_to_snake_case(mobile_robot.__name__) == name:
                 return mobile_robot

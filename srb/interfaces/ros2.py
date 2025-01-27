@@ -2,12 +2,11 @@ import json
 import threading
 from collections.abc import Callable
 from queue import Queue
-from typing import Any, Dict, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Tuple
 
 import numpy
 import torch
 
-from srb._typing import AnyEnv
 from srb.core.action import (
     ManipulatorTaskSpaceActionCfg,
     MultiCopterActionGroupCfg,
@@ -42,6 +41,9 @@ from std_msgs.msg import Float32, Header, String  # noqa: E402
 from std_srvs.srv import Empty as EmptySrv  # noqa: E402
 from tf2_ros import TransformBroadcaster  # noqa: E402
 
+if TYPE_CHECKING:
+    from srb._typing import AnyEnv
+
 # TODO: Improve the ROS 2 interface to dynamically include all observations and reward components. Map each actiongroup to a specific topic type
 
 
@@ -61,7 +63,7 @@ class ROS2Interface:
 
     def __init__(
         self,
-        env: AnyEnv,
+        env: "AnyEnv",
         node: Node | None = None,
         force_multienv: bool = True,
     ):

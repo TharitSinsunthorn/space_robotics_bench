@@ -1,12 +1,14 @@
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
-from srb._typing import AnyEnvCfg
 from srb.core.env import Domain
 from srb.core.sim import PreviewSurfaceCfg
 
+if TYPE_CHECKING:
+    from srb._typing import AnyEnvCfg
+
 
 def contrastive_color_from_env_cfg(
-    env_cfg: AnyEnvCfg,
+    env_cfg: "AnyEnvCfg",
 ) -> Tuple[float, float, float]:
     match env_cfg.domain:
         case Domain.ASTEROID | Domain.MOON:
@@ -18,7 +20,7 @@ def contrastive_color_from_env_cfg(
 
 
 def preview_surface_from_env_cfg(
-    env_cfg: AnyEnvCfg,
+    env_cfg: "AnyEnvCfg",
 ) -> PreviewSurfaceCfg:
     return PreviewSurfaceCfg(
         diffuse_color=contrastive_color_from_env_cfg(env_cfg),

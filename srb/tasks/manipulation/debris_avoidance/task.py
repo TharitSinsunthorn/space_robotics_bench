@@ -44,6 +44,9 @@ def asteroid_cfg(
 class TaskCfg(SpacecraftEnvCfg):
     num_problems_per_env: int = 8
 
+    ## Task
+    is_finite_horizon: bool = False
+
     def __post_init__(self):
         if self.domain != Domain.ORBIT:
             print(

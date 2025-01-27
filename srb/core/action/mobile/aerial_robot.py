@@ -5,20 +5,20 @@ from typing import TYPE_CHECKING, Dict
 import torch
 
 from srb.core.action.action_group import ActionGroup
-from srb.core.asset import Articulation
 from srb.core.manager import ActionTerm, ActionTermCfg
 from srb.utils import configclass
 from srb.utils.math import euler_xyz_from_quat, quat_from_euler_xyz
 
 if TYPE_CHECKING:
-    from srb.core.env import DirectEnv
+    from srb._typing import AnyEnv
+    from srb.core.asset import Articulation
 
 
 class MultiCopterAction(ActionTerm):
     cfg: "MultiCopterActionCfg"
-    _asset: Articulation
+    _asset: "Articulation"
 
-    def __init__(self, cfg: "MultiCopterActionCfg", env: "DirectEnv"):
+    def __init__(self, cfg: "MultiCopterActionCfg", env: "AnyEnv"):
         super().__init__(cfg, env)
 
         self._body_index = self._asset.find_bodies(self.cfg.frame_base)[0]

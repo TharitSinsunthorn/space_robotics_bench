@@ -1,8 +1,7 @@
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
 from simforge import TexResConfig
 
-from srb._typing import AnyEnvCfg
 from srb.core.asset import RigidObjectCfg
 from srb.core.env import AssetVariant, Domain
 
@@ -16,9 +15,12 @@ from .shape import RandomShape  # noqa: F401
 from .solar_panel import SolarPanel  # noqa: F401
 from .static_vehicle import *  # noqa: F403
 
+if TYPE_CHECKING:
+    from srb._typing import AnyEnvCfg
+
 
 def rigid_object_from_cfg(
-    cfg: AnyEnvCfg,
+    cfg: "AnyEnvCfg",
     *,
     seed: int,
     num_assets: int,

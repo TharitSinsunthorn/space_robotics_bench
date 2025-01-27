@@ -1,13 +1,26 @@
-import collections.abc
 import datetime
 import enum
 import functools
 import importlib
 import inspect
 import os
+import string
 from collections.abc import Callable
+from dataclasses import is_dataclass
+from importlib.util import find_spec
 from pathlib import Path
-from typing import Any, Dict, Iterable, Mapping, Tuple, get_type_hints
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    Mapping,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+    get_type_hints,
+)
 
 import gymnasium
 import hydra
@@ -15,8 +28,22 @@ import yaml
 from hydra.core.config_store import ConfigStore
 from omegaconf import DictConfig, OmegaConf
 from pydantic import BaseModel
+from simforge import Asset as SimForgeAsset
+from simforge import AssetRegistry as SimForgeAssetRegistry
 
-from srb._typing import AnyEnvCfg
+from srb.core.action import ActionGroup, ActionGroupRegistry
+from srb.core.asset import (
+    Asset,
+    AssetRegistry,
+    Manipulator,
+    ManipulatorRegistry,
+    MobileManipulator,
+    MobileManipulatorRegistry,
+    MobileRobot,
+    MobileRobotRegistry,
+    Robot,
+    RobotRegistry,
+)
 from srb.utils import logging
 from srb.utils.dict import (
     replace_slices_with_strings,
@@ -28,6 +55,9 @@ from srb.utils.spaces import (
     replace_env_cfg_spaces_with_strings,
     replace_strings_with_env_cfg_spaces,
 )
+
+if TYPE_CHECKING:
+    from srb._typing import AnyEnvCfg
 
 SUPPORTED_FRAMEWORKS = {
     "dreamer": {"multi_algo": False},
@@ -85,7 +115,7 @@ def _identify_config(root: str, file) -> str | None:
 
 def load_cfg_from_registry(
     task_name: str, entry_point_key: str, unpack_callable: bool = True
-) -> AnyEnvCfg | Dict[str, Any]:
+) -> "AnyEnvCfg" | Dict[str, Any]:
     # Obtain the configuration entry point
     cfg_entry_point = gymnasium.spec(task_name).kwargs.get(entry_point_key)
     # Check if entry point exists
@@ -134,7 +164,7 @@ def parse_task_cfg(
     device: str = "cuda:0",
     num_envs: int | None = None,
     use_fabric: bool | None = None,
-) -> AnyEnvCfg | Dict[str, Any]:
+) -> "AnyEnvCfg" | Dict[str, Any]:
     # Create a dictionary to update from
     args_cfg = {"sim": {}, "scene": {}}
 
@@ -242,7 +272,7 @@ def get_last_dir(
 
 def register_task_to_hydra(
     task_name: str, agent_cfg_entry_point: str | None = None
-) -> Tuple[AnyEnvCfg, Dict[str, Any]]:
+) -> Tuple["AnyEnvCfg", Dict[str, Any]]:
     # load the configurations
     env_cfg = load_cfg_from_registry(task_name, "task_cfg")
     # replace gymnasium spaces with strings because OmegaConf does not support them.
@@ -316,99 +346,189 @@ def hydra_task_config(
 
 
 def reconstruct_object(obj: Any, updates: Mapping[str, Any]) -> Any:
-    try:
-        if isinstance(obj, BaseModel):
-            try:
-                type_hints = get_type_hints(obj.__class__)
-            except Exception:
-                type_hints = {k: type(v) for k, v in obj.__dict__.items()}
-            new_kwargs = {}
-            for field_name, field_type in type_hints.items():
-                if field_name.startswith("_"):
-                    continue
-                current_value = getattr(obj, field_name, None)
-                update_value = updates.get(field_name, None)
-                if update_value is not None:
-                    new_kwargs[field_name] = reconstruct_object(
-                        current_value, update_value
-                    )
-                else:
-                    new_kwargs[field_name] = current_value
-
-            return obj.__class__(**new_kwargs)
-
-        if isinstance(obj, enum.Enum):
-            if isinstance(updates, str):
-                return obj.__class__[updates.strip().upper()]
-            if isinstance(updates, Mapping) and "_name_" in updates.keys():
-                return obj.__class__[updates["_name_"]]
-            # Handle enums with NONE value
-            if updates is None and hasattr(obj, "NONE"):
-                return obj.__class__.NONE
-
-        # Handle primitive and immutable types (strings, integers, etc.)
-        if isinstance(obj, (str, int, float, bool, type(None))):
-            return updates if updates is not None else obj
-
-        # Handle callable objects (e.g., functions)
-        if callable(obj):
-            # Return the original function if it doesn't require reconstruction
-            return obj
-
-        # Handle mappings (e.g., dictionaries)
-        if isinstance(obj, Mapping):
-            result = obj.__class__(
-                (
-                    key,
-                    reconstruct_object(obj.get(key, None), updates.get(key, None)),
+    ## String-based updates that indirectly represent a type/instance
+    if (
+        not isinstance(obj, str)
+        and isinstance(updates, str)
+        and all(c not in string.whitespace for c in updates)
+    ):
+        if ":" in updates and not callable(obj):
+            ## Object updated via its full module path and name
+            mod_name, attr_name = updates.split(":")
+            if find_spec(mod_name) is None:
+                raise ModuleNotFoundError(f"Module '{mod_name}' not found.")
+            mod = importlib.import_module(mod_name)
+            if not hasattr(mod, attr_name):
+                raise AttributeError(
+                    f"Attribute '{attr_name}' not found in '{mod_name}'."
                 )
+            attr = getattr(mod, attr_name)
+            if isinstance(attr, (Type, Callable)):
+                return attr()
+            else:
+                return attr
+        else:
+            ## Registered class updated via its name
+            if isinstance(obj, Asset):
+                if isinstance(obj, Robot):
+                    # Manipulator
+                    if isinstance(obj, Manipulator):
+                        if manipulator_class := ManipulatorRegistry.get_by_name(
+                            updates
+                        ):
+                            return manipulator_class()  # type: ignore
+                        else:
+                            raise ValueError(
+                                f'Manipulator "{updates}" is not registered'
+                            )
+
+                    # Mobile robot
+                    if isinstance(obj, MobileRobot):
+                        if mobile_robot_class := MobileRobotRegistry.get_by_name(
+                            updates
+                        ):
+                            return mobile_robot_class()  # type: ignore
+                        else:
+                            raise ValueError(
+                                f'Mobile robot "{updates}" is not registered'
+                            )
+
+                    # Mobile manipulator
+                    if isinstance(obj, MobileManipulator):
+                        if (
+                            mobile_manipulator_class
+                            := MobileManipulatorRegistry.get_by_name(updates)
+                        ):
+                            return mobile_manipulator_class()  # type: ignore
+                        else:
+                            raise ValueError(
+                                f'Mobile manipulator "{updates}" is not registered'
+                            )
+
+                    # Other robot
+                    if robot_class := RobotRegistry.get_by_name(updates):
+                        return robot_class()  # type: ignore
+                    else:
+                        raise ValueError(f'Robot "{updates}" is not registered')
+
+                # Other asset
+                if asset_class := AssetRegistry.get_by_name(updates):
+                    return asset_class()  # type: ignore
+                else:
+                    raise ValueError(f'Asset "{updates}" is not registered')
+
+            # Action group
+            if isinstance(obj, ActionGroup):
+                if action_group_class := ActionGroupRegistry.get_by_name(updates):
+                    return action_group_class()
+                else:
+                    raise ValueError(f'Action group "{updates}" is not registered')
+
+            # SimForge asset
+            if isinstance(obj, SimForgeAsset):
+                if asset_class := SimForgeAssetRegistry.get_by_name(updates):
+                    return asset_class()
+                else:
+                    raise ValueError(f'Asset "{updates}" is not registered')
+
+    # Pydantic
+    if isinstance(obj, BaseModel):
+        try:
+            type_hints = get_type_hints(obj.__class__)
+        except Exception:
+            type_hints = {k: type(v) for k, v in obj.__dict__.items()}
+        new_kwargs = {}
+        for field_name, field_type in type_hints.items():
+            if field_name.startswith("_"):
+                continue
+            current_value = getattr(obj, field_name, None)
+            update_value = updates.get(field_name, None)
+            if update_value is not None:
+                new_kwargs[field_name] = reconstruct_object(current_value, update_value)
+            else:
+                new_kwargs[field_name] = current_value
+
+        return obj.__class__(**new_kwargs)
+
+    # Dataclass
+    if is_dataclass(obj):
+        try:
+            type_hints = get_type_hints(obj.__class__)  # type: ignore
+        except Exception:
+            type_hints = {k: type(v) for k, v in obj.__dict__.items()}
+        new_kwargs = {}
+        for field_name, field_type in type_hints.items():
+            if field_name.startswith("_"):
+                continue
+            current_value = getattr(obj, field_name, None)
+            update_value = updates.get(field_name, None)
+            if update_value is not None:
+                new_kwargs[field_name] = reconstruct_object(current_value, update_value)
+            else:
+                new_kwargs[field_name] = current_value
+
+        return obj.__class__(**new_kwargs)  # type: ignore
+
+    # Enum
+    if isinstance(obj, enum.Enum):
+        if isinstance(updates, str):
+            return obj.__class__[updates.strip().upper()]
+        if isinstance(updates, Mapping) and "_name_" in updates.keys():
+            return obj.__class__[updates["_name_"]]
+        if updates is None and hasattr(obj, "NONE"):
+            # Handle enums with "NONE" value
+            return obj.__class__.NONE
+
+    # Dict
+    if isinstance(obj, Dict) and isinstance(updates, Mapping):
+        obj.update(
+            {
+                key: reconstruct_object(obj.get(key, None), updates.get(key, None))
                 for key in set(obj) | set(updates)
-            )
-            return result
-
-        # Handle iterables (e.g., lists, tuples)
-        if isinstance(obj, collections.abc.Iterable) and not isinstance(
-            obj, (str, bytes)
-        ):
-            if not isinstance(updates, Iterable):
-                raise ValueError(
-                    f"Incompatible update type for iterable: {type(updates)}"
-                )
-            result = obj.__class__(
-                reconstruct_object(o, u) for o, u in zip(obj, updates)
-            )
-            return result
-
-        # Handle dataclasses and objects with attributes
-        if hasattr(obj, "__dict__") or hasattr(obj, "__dataclass_fields__"):
-            try:
-                type_hints = get_type_hints(obj.__class__)
-            except Exception:
-                type_hints = {k: type(v) for k, v in obj.__dict__.items()}
-            new_kwargs = {}
-            for field_name, field_type in type_hints.items():
-                if field_name.startswith("_"):
-                    continue
-                current_value = getattr(obj, field_name, None)
-                update_value = updates.get(field_name, None)
-                if update_value is not None:
-                    new_kwargs[field_name] = reconstruct_object(
-                        current_value, update_value
-                    )
-                else:
-                    new_kwargs[field_name] = current_value
-
-            return obj.__class__(**new_kwargs)
-
-        # In case the object doesn't match any of the known types, return it directly
-        return updates if updates is not None else obj
-    except Exception as e:
-        logging.error(
-            f"Reconstruction error\n"
-            f"\tobject type: {type(obj)}\n"
-            f"\tobject value: {obj}\n"
-            f"\tupdates type: {type(updates)}\n"
-            f"\tupdates value: {updates}\n"
-            f"\texception: {e}\n"
+            }
         )
         return obj
+
+    # Set
+    if isinstance(obj, Set) and isinstance(updates, Iterable):
+        obj.update(updates)
+        return obj
+
+    # Mapping
+    if isinstance(obj, Mapping) and isinstance(updates, Mapping):
+        return obj.__class__(
+            (  # type: ignore
+                key,
+                reconstruct_object(obj.get(key, None), updates.get(key, None)),
+            )
+            for key in set(obj) | set(updates)
+        )
+
+    # Sequence
+    if (isinstance(obj, Sequence) and not isinstance(obj, str)) and isinstance(
+        updates, Iterable
+    ):
+        result = obj.__class__(
+            reconstruct_object(o, u)  # type: ignore
+            for o, u in zip(obj, updates)
+        )
+        return result
+
+    # Callable (e.g. function)
+    if callable(obj):
+        return obj
+
+    # Other types
+    if not isinstance(
+        obj,
+        (
+            str,
+            int,
+            float,
+            bool,
+            slice,
+            type(None),
+        ),
+    ):
+        logging.warning(f"Unhandled type: {obj}\nUpdates:{updates}")
+    return updates if updates is not None else obj

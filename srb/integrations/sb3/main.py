@@ -1,13 +1,12 @@
 import time
 from pathlib import Path
-from typing import Literal, Sequence
+from typing import TYPE_CHECKING, Literal, Sequence
 
 import numpy
 from omni.isaac.kit import SimulationApp
 from rl_zoo3 import ALGOS
 from stable_baselines3.common.callbacks import tqdm
 
-from srb._typing import AnyEnv, AnyEnvCfg
 from srb.integrations.sb3.exp_manager import ExperimentManager
 from srb.integrations.sb3.wrapper import Sb3EnvWrapper
 from srb.utils.cfg import (
@@ -17,6 +16,9 @@ from srb.utils.cfg import (
     get_last_run_logdir_path,
 )
 
+if TYPE_CHECKING:
+    from srb._typing import AnyEnv, AnyEnvCfg
+
 FRAMEWORK_NAME = "sb3"
 OFF_POLICY_ALGOS: Sequence[str] = ("qrdqn", "dqn", "ddpg", "sac", "her", "td3", "tqc")
 
@@ -24,10 +26,10 @@ OFF_POLICY_ALGOS: Sequence[str] = ("qrdqn", "dqn", "ddpg", "sac", "her", "td3", 
 def run(
     workflow: Literal["train", "eval"],
     algo: str,
-    env: AnyEnv,
+    env: "AnyEnv",
     sim_app: SimulationApp,
     env_id: str,
-    env_cfg: AnyEnvCfg,
+    env_cfg: "AnyEnvCfg",
     agent_cfg: dict,
     model: str,
     continue_training: bool | None = None,

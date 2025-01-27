@@ -1,6 +1,6 @@
 from functools import partial as bind
 from pathlib import Path
-from typing import Any, Dict, Literal
+from typing import TYPE_CHECKING, Any, Dict, Literal
 
 import elements
 import embodied
@@ -11,11 +11,13 @@ from dreamerv3 import main as dreamer_main
 from omni.isaac.kit import SimulationApp
 from ruamel import yaml
 
-from srb._typing import AnyEnv, AnyEnvCfg
 from srb.integrations.dreamer.eval import eval_only
 from srb.integrations.dreamer.train import train
 from srb.integrations.dreamer.wrapper import EmbodiedEnvWrapper
 from srb.utils.cfg import create_logdir_path, get_last_run_logdir_path
+
+if TYPE_CHECKING:
+    from srb._typing import AnyEnv, AnyEnvCfg
 
 ALGO_NAME = "dreamer"
 UPSTREAM_CONFIG_PATH = Path(dreamer_agent.__file__).parent.joinpath("configs.yaml")
@@ -23,10 +25,10 @@ UPSTREAM_CONFIG_PATH = Path(dreamer_agent.__file__).parent.joinpath("configs.yam
 
 def run(
     workflow: Literal["train", "eval"],
-    env: AnyEnv,
+    env: "AnyEnv",
     sim_app: SimulationApp,
     env_id: str,
-    env_cfg: AnyEnvCfg,
+    env_cfg: "AnyEnvCfg",
     agent_cfg: dict,
     model: str,
     continue_training: bool | None = None,

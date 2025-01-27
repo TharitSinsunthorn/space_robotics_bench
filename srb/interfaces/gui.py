@@ -1,10 +1,10 @@
 import threading
 from queue import Queue
+from typing import TYPE_CHECKING
 
 import numpy
 from pxr import Gf
 
-from srb._typing import AnyEnv
 from srb.utils.ros2 import enable_ros2_bridge
 
 enable_ros2_bridge()
@@ -13,11 +13,14 @@ import rclpy  # noqa: E402
 from rclpy.node import Node  # noqa: E402
 from std_msgs.msg import Bool, Empty, Float64  # noqa: E402
 
+if TYPE_CHECKING:
+    from srb._typing import AnyEnv
+
 
 class GuiInterface:
     def __init__(
         self,
-        env: AnyEnv,
+        env: "AnyEnv",
         node: Node | None = None,
     ):
         self._env = env
