@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Sequence
 import numpy
 
 from srb.core.action import (
+    ActionGroup,
     ManipulatorTaskSpaceActionCfg,
     MultiCopterActionGroupCfg,
     SpacecraftActionGroupCfg,
@@ -17,8 +18,6 @@ from srb.interfaces.teleop.spacemouse import SpacemouseTeleopInterface
 if TYPE_CHECKING:
     from rclpy.node import Node
 
-# TODO: Use enum for devices
-
 
 class CombinedTeleopInterface(DeviceBase):
     def __init__(
@@ -27,10 +26,7 @@ class CombinedTeleopInterface(DeviceBase):
         node: "Node | None" = None,
         pos_sensitivity: float = 1.0,
         rot_sensitivity: float = 1.0,
-        action_cfg: ManipulatorTaskSpaceActionCfg
-        | MultiCopterActionGroupCfg
-        | WheeledRoverActionGroupCfg
-        | None = None,
+        action_cfg: ActionGroup | None = None,
     ):
         if not node and ("ros2" in devices or "haptic" in devices):
             from srb.utils.ros2 import enable_ros2_bridge
@@ -178,9 +174,7 @@ class CombinedTeleopInterface(DeviceBase):
 
     @staticmethod
     def _keyboard_control_scheme(
-        action_cfg: ManipulatorTaskSpaceActionCfg
-        | MultiCopterActionGroupCfg
-        | WheeledRoverActionGroupCfg,
+        action_cfg: ActionGroup,
     ) -> str:
         if isinstance(action_cfg, ManipulatorTaskSpaceActionCfg):
             return """

@@ -9,11 +9,12 @@ from stable_baselines3.common.vec_env.base_vec_env import (
     VecEnvStepReturn,
 )
 
+from srb._typing import AnyEnv
 from srb.core.env import DirectEnv
 
 
 class Sb3EnvWrapper(VecEnv):
-    def __init__(self, env: DirectEnv):
+    def __init__(self, env: AnyEnv):
         # Initialize the wrapper
         self.env = env
         # Collect common information

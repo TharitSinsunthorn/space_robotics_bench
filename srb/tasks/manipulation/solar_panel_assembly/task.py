@@ -6,10 +6,10 @@ from omni.isaac.core.prims.xform_prim_view import XFormPrimView
 from pydantic import BaseModel
 
 from srb import assets
+from srb._typing import AnyEnvCfg
 from srb.core.asset import RigidObject, RigidObjectCfg
 from srb.core.env import (
     AssetVariant,
-    BaseEnvCfg,
     ManipulationEnv,
     ManipulationEnvCfg,
     ManipulationEnvEventCfg,
@@ -188,7 +188,7 @@ class TaskCfg(ManipulationEnvCfg):
 
     @staticmethod
     def _panel_cfg(
-        env_cfg: BaseEnvCfg,
+        env_cfg: AnyEnvCfg,
         *,
         init_state: RigidObjectCfg.InitialStateCfg,
         asset_cfg: SceneEntityCfg = SceneEntityCfg("panel"),

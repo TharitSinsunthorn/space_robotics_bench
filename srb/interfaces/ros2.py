@@ -7,12 +7,12 @@ from typing import Any, Dict, Tuple
 import numpy
 import torch
 
+from srb._typing import AnyEnv
 from srb.core.action import (
     ManipulatorTaskSpaceActionCfg,
     MultiCopterActionGroupCfg,
     WheeledRoverActionGroupCfg,
 )
-from srb.core.env import AerialEnv, DirectEnv, ManipulationEnv, MobileRoboticsEnv
 from srb.utils.ros2 import enable_ros2_bridge
 from srb.utils.str import convert_to_snake_case
 
@@ -42,8 +42,7 @@ from std_msgs.msg import Float32, Header, String  # noqa: E402
 from std_srvs.srv import Empty as EmptySrv  # noqa: E402
 from tf2_ros import TransformBroadcaster  # noqa: E402
 
-# TODO: Improve the ROS 2 interface to dynamically include all observations and reward components
-# TODO: Map each actiongroup to a specific topic type
+# TODO: Improve the ROS 2 interface to dynamically include all observations and reward components. Map each actiongroup to a specific topic type
 
 
 class ROS2Interface:
@@ -62,7 +61,7 @@ class ROS2Interface:
 
     def __init__(
         self,
-        env: DirectEnv | AerialEnv | ManipulationEnv | MobileRoboticsEnv,
+        env: AnyEnv,
         node: Node | None = None,
         force_multienv: bool = True,
     ):

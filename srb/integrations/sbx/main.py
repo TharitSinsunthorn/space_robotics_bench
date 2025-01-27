@@ -8,7 +8,7 @@ from gymnasium.core import ObservationWrapper, ObsType, WrapperObsType
 from rl_zoo3 import exp_manager
 from sbx import DDPG, DQN, PPO, SAC, TD3, TQC, CrossQ
 
-from srb.core.env import DirectEnv
+from srb._typing import AnyEnv
 from srb.integrations.sb3 import main as sb3
 
 sb3.FRAMEWORK_NAME = "sbx"
@@ -25,7 +25,7 @@ rl_zoo3.enjoy.ALGOS = rl_zoo3.ALGOS
 exp_manager.ALGOS = rl_zoo3.ALGOS
 
 
-def run(env: DirectEnv, **kwargs):
+def run(env: AnyEnv, **kwargs):
     # SBX does not support MultiInputPolicy, so merge all obs from dict into a single box
     env = MergeDictObsWrapper(env)  # type: ignore
 

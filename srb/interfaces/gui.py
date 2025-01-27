@@ -4,7 +4,7 @@ from queue import Queue
 import numpy
 from pxr import Gf
 
-from srb.core.env import AerialEnv, DirectEnv, ManipulationEnv, MobileRoboticsEnv
+from srb._typing import AnyEnv
 from srb.utils.ros2 import enable_ros2_bridge
 
 enable_ros2_bridge()
@@ -17,7 +17,7 @@ from std_msgs.msg import Bool, Empty, Float64  # noqa: E402
 class GuiInterface:
     def __init__(
         self,
-        env: DirectEnv | AerialEnv | ManipulationEnv | MobileRoboticsEnv,
+        env: AnyEnv,
         node: Node | None = None,
     ):
         self._env = env

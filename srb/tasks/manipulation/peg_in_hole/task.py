@@ -6,10 +6,10 @@ from pydantic import BaseModel, NonNegativeInt
 from simforge import TexResConfig
 
 from srb import assets
+from srb._typing import AnyEnvCfg
 from srb.core.asset import AssetBaseCfg, RigidObject, RigidObjectCfg
 from srb.core.env import (
     AssetVariant,
-    BaseEnvCfg,
     ManipulationEnv,
     ManipulationEnvCfg,
     ManipulationEnvEventCfg,
@@ -66,7 +66,7 @@ class PegInHoleCfg(BaseModel):
 
 
 def peg_in_hole_from_cfg(
-    cfg: BaseEnvCfg,
+    cfg: AnyEnvCfg,
     *,
     seed: int,
     num_assets: int,
@@ -111,7 +111,7 @@ def peg_in_hole_from_cfg(
 
 
 def peg_and_hole_cfg(
-    env_cfg: BaseEnvCfg,
+    env_cfg: AnyEnvCfg,
     *,
     seed: int,
     init_state: RigidObjectCfg.InitialStateCfg,

@@ -5,10 +5,10 @@ from pydantic import BaseModel
 from simforge import TexResConfig
 
 from srb import assets
+from srb._typing import AnyEnvCfg
 from srb.core.asset import RigidObject, RigidObjectCfg
 from srb.core.env import (
     AssetVariant,
-    BaseEnvCfg,
     Domain,
     ManipulationEnv,
     ManipulationEnvCfg,
@@ -42,7 +42,7 @@ class SampleCfg(BaseModel, arbitrary_types_allowed=True):
 
 
 def sample_cfg(
-    cfg: BaseEnvCfg,
+    cfg: AnyEnvCfg,
     *,
     seed: int,
     num_assets: int,

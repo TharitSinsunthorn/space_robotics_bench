@@ -7,7 +7,7 @@ from omni.isaac.kit import SimulationApp
 from rl_zoo3 import ALGOS
 from stable_baselines3.common.callbacks import tqdm
 
-from srb.core.env import DirectEnv
+from srb._typing import AnyEnv, AnyEnvCfg
 from srb.integrations.sb3.exp_manager import ExperimentManager
 from srb.integrations.sb3.wrapper import Sb3EnvWrapper
 from srb.utils.cfg import (
@@ -24,10 +24,10 @@ OFF_POLICY_ALGOS: Sequence[str] = ("qrdqn", "dqn", "ddpg", "sac", "her", "td3", 
 def run(
     workflow: Literal["train", "eval"],
     algo: str,
-    env: DirectEnv,
+    env: AnyEnv,
     sim_app: SimulationApp,
     env_id: str,
-    env_cfg: dict,
+    env_cfg: AnyEnvCfg,
     agent_cfg: dict,
     model: str,
     continue_training: bool | None = None,
@@ -75,7 +75,7 @@ def run(
     if track:
         import wandb
 
-        run_name = f"{env_id}__{algo}__{int(time.time())}"  # TODO: Add seed
+        run_name = f"{env_id}__{algo}__{int(time.time())}"
         _run = wandb.init(
             name=run_name,
             sync_tensorboard=True,
@@ -110,7 +110,7 @@ def run(
         n_startup_trials=n_startup_trials,
         n_evaluations=n_evaluations,
         truncate_last_trajectory=truncate_last_trajectory,
-        # seed=args.seed, # TODO: Extract from env
+        seed=env_cfg.seed,
         log_interval=log_interval,
         save_replay_buffer=save_replay_buffer,
         verbose=verbose,

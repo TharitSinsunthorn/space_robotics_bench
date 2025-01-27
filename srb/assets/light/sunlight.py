@@ -1,10 +1,10 @@
+from srb._typing import AnyEnvCfg
 from srb.core.asset import AssetBaseCfg
-from srb.core.env import BaseEnvCfg
 from srb.core.sim import DistantLightCfg
 
 
 def sunlight_from_cfg(
-    cfg: BaseEnvCfg,
+    cfg: AnyEnvCfg,
     *,
     prim_path: str = "/World/light",
     **kwargs,

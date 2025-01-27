@@ -7,13 +7,13 @@ import numpy
 import torch
 from elements import Space
 
-from srb.core.env import DirectEnv
+from srb._typing import AnyEnv
 
 
 class EmbodiedEnvWrapper(embodied.Env):
     def __init__(
         self,
-        env: DirectEnv,
+        env: AnyEnv,
         obs_key: str = "image",
         act_key: str = "action",
     ):
@@ -51,7 +51,7 @@ class EmbodiedEnvWrapper(embodied.Env):
         return cls.__name__
 
     @property
-    def unwrapped(self) -> DirectEnv:
+    def unwrapped(self) -> AnyEnv:
         return self.env.unwrapped  # type: ignore
 
     def get_episode_rewards(self) -> List[float]:

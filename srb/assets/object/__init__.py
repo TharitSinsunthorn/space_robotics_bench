@@ -2,8 +2,9 @@ from typing import Tuple
 
 from simforge import TexResConfig
 
+from srb._typing import AnyEnvCfg
 from srb.core.asset import RigidObjectCfg
-from srb.core.env import AssetVariant, BaseEnvCfg, Domain
+from srb.core.env import AssetVariant, Domain
 
 from .asteroid import Asteroid  # noqa: F401
 from .cubesat_debris import CubesatDebris  # noqa: F401
@@ -17,7 +18,7 @@ from .static_vehicle import *  # noqa: F403
 
 
 def rigid_object_from_cfg(
-    cfg: BaseEnvCfg,
+    cfg: AnyEnvCfg,
     *,
     seed: int,
     num_assets: int,

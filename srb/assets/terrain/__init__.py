@@ -3,15 +3,16 @@ from typing import Tuple
 
 from simforge import TexResConfig
 
+from srb._typing import AnyEnvCfg
 from srb.core.asset import AssetBaseCfg
-from srb.core.env import AssetVariant, BaseEnvCfg, Domain
+from srb.core.env import AssetVariant, Domain
 
 from .ground_plane import GroundPlane
 from .planetary_surface import MarsSurface, MoonSurface
 
 
 def terrain_from_cfg(
-    cfg: BaseEnvCfg,
+    cfg: AnyEnvCfg,
     *,
     seed: int,
     num_assets: int,

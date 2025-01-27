@@ -2,12 +2,8 @@ from typing import Dict, List, Sequence, Tuple
 
 import torch
 
-from srb.core.env import (
-    DirectEnv,
-    LocomotionEnv,
-    LocomotionEnvCfg,
-    LocomotionEnvEventCfg,
-)
+from srb._typing import AnyEnv
+from srb.core.env import LocomotionEnv, LocomotionEnvCfg, LocomotionEnvEventCfg
 from srb.core.manager import EventTermCfg
 from srb.utils import configclass
 from srb.utils.math import matrix_from_quat, rotmat_to_rot6d, sample_uniform
@@ -18,7 +14,7 @@ from srb.utils.math import matrix_from_quat, rotmat_to_rot6d, sample_uniform
 
 
 def change_locomotion_command(
-    env: DirectEnv, env_ids: torch.Tensor | None, magnitude: float = 1.0
+    env: AnyEnv, env_ids: torch.Tensor | None, magnitude: float = 1.0
 ):
     if env_ids is None:
         env_ids = torch.arange(env.cfg.scene.num_envs, device=env.device)

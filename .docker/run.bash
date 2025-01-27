@@ -51,7 +51,7 @@ DOCKER_VOLUMES=(
     # Logs
     "${HOME}/.nvidia-omniverse/logs:/root/.nvidia-omniverse/logs:rw"
     "${HOME}/.nvidia-omniverse/logs/isaac-sim:/root/isaac-sim/kit/logs:rw"
-    ## Simforge
+    ## SimForge
     # Cache
     "${HOME}/.cache/simforge:/root/.cache/simforge:rw"
 )

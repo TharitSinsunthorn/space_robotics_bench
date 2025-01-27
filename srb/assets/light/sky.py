@@ -1,5 +1,6 @@
+from srb._typing import AnyEnvCfg
 from srb.core.asset import AssetBaseCfg
-from srb.core.env import BaseEnvCfg, Domain
+from srb.core.env import Domain
 from srb.core.sim import DomeLightCfg
 from srb.utils import rtx_settings
 from srb.utils.nucleus import ISAAC_NUCLEUS_DIR
@@ -7,7 +8,7 @@ from srb.utils.path import SRB_ASSETS_DIR_SRB_HDRI
 
 
 def sky_from_cfg(
-    cfg: BaseEnvCfg,
+    cfg: AnyEnvCfg,
     *,
     prim_path: str = "/World/sky",
     **kwargs,

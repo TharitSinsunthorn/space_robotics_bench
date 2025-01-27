@@ -11,7 +11,7 @@ from dreamerv3 import main as dreamer_main
 from omni.isaac.kit import SimulationApp
 from ruamel import yaml
 
-from srb.core.env import DirectEnv
+from srb._typing import AnyEnv, AnyEnvCfg
 from srb.integrations.dreamer.eval import eval_only
 from srb.integrations.dreamer.train import train
 from srb.integrations.dreamer.wrapper import EmbodiedEnvWrapper
@@ -25,10 +25,10 @@ UPSTREAM_CONFIG_PATH = Path(dreamer_agent.__file__).parent.joinpath("configs.yam
 
 def run(
     workflow: Literal["train", "eval"],
-    env: DirectEnv,
+    env: AnyEnv,
     sim_app: SimulationApp,
     env_id: str,
-    env_cfg: dict,
+    env_cfg: AnyEnvCfg,
     agent_cfg: dict,
     model: str,
     continue_training: bool | None = None,

@@ -4,7 +4,7 @@ from typing import Literal
 from omni.isaac.kit import SimulationApp
 from skrl.utils.runner.torch import Runner
 
-from srb.core.env import DirectEnv
+from srb._typing import AnyEnv, AnyEnvCfg
 from srb.integrations.skrl.wrapper import SkrlEnvWrapper
 from srb.utils.cfg import create_logdir_path, get_last_file, get_last_run_logdir_path
 
@@ -13,10 +13,10 @@ FRAMEWORK_NAME = "skrl"
 
 def run(
     workflow: Literal["train", "eval"],
-    env: DirectEnv,
+    env: AnyEnv,
     sim_app: SimulationApp,
     env_id: str,
-    env_cfg: dict,
+    env_cfg: AnyEnvCfg,
     agent_cfg: dict,
     model: str,
     continue_training: bool | None = None,

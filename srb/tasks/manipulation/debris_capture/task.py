@@ -6,9 +6,9 @@ from pydantic import BaseModel
 from simforge import TexResConfig
 
 from srb import assets
+from srb._typing import AnyEnvCfg
 from srb.core.asset import RigidObject, RigidObjectCfg
 from srb.core.env import (
-    BaseEnvCfg,
     Domain,
     ManipulationEnv,
     ManipulationEnvCfg,
@@ -102,7 +102,7 @@ class TaskCfg(ManipulationEnvCfg):
 
     @staticmethod
     def _object(
-        cfg: BaseEnvCfg,
+        cfg: AnyEnvCfg,
         *,
         seed: int,
         num_assets: int,

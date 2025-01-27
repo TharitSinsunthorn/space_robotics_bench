@@ -1,11 +1,11 @@
 import elements
 from embodied import Driver
 
-from srb.core.env import DirectEnv
+from srb._typing import AnyEnvCfg
 
 
 class DriverParallelEnv(Driver):
-    def __init__(self, env: DirectEnv, num_envs: int, **kwargs):
+    def __init__(self, env: AnyEnvCfg, num_envs: int, **kwargs):
         self.kwargs = kwargs
         self.length = num_envs
         self.env = env
