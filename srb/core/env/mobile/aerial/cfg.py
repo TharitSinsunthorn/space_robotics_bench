@@ -4,7 +4,9 @@ import torch
 from simforge import BakeType
 
 from srb import assets
+from srb.core.asset import AerialRobot
 from srb.core.env import DirectEnvCfg, InteractiveSceneCfg, ViewerCfg
+from srb.core.env.common.enums import AssetVariant
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import (
     reset_root_state_uniform,
@@ -80,6 +82,9 @@ class AerialEnvCfg(DirectEnvCfg):
 
     ## Agent
     agent_rate: float = 1.0 / 50.0
+
+    ## Assets
+    robot: AerialRobot | AssetVariant | None = AssetVariant.DATASET
 
     ## Simulation
     sim = SimulationCfg(

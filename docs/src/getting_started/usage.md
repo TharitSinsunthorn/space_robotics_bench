@@ -1,5 +1,7 @@
 # Basic Usage
 
+<!-- TODO: Rewrite docs -->
+
 After successful [installation](./installation/index.html), you are ready to use the Space Robotics Bench. This page will guide you through controlling robots in various scenarios using a simple teleoperation.
 
 <div class="warning">

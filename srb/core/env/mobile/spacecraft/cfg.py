@@ -3,7 +3,9 @@ import math
 import torch
 
 from srb import assets
+from srb.core.asset import Spacecraft
 from srb.core.env import DirectEnvCfg, InteractiveSceneCfg, ViewerCfg
+from srb.core.env.common.enums import AssetVariant
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import (
     reset_root_state_uniform,
@@ -75,6 +77,9 @@ class SpacecraftEnvCfg(DirectEnvCfg):
 
     ## Agent
     agent_rate: float = 1.0 / 50.0
+
+    ## Assets
+    robot: Spacecraft | AssetVariant | None = AssetVariant.PROCEDURAL
 
     ## Simulation
     sim = SimulationCfg(

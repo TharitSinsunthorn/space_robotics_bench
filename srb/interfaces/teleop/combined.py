@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 class CombinedTeleopInterface(DeviceBase):
     def __init__(
         self,
-        devices: Sequence[str],
+        devices: Sequence[str],  # TODO: Enum
         node: "Node | None" = None,
         pos_sensitivity: float = 1.0,
         rot_sensitivity: float = 1.0,

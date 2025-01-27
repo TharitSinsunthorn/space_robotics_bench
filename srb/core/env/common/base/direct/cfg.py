@@ -37,7 +37,7 @@ class DirectEnvCfg(BaseEnvCfg, __DirectRLEnvCfg):
     enable_truncation: bool = True
 
     ## Ugly hack to gain compatibility with new Isaac Lab
-    # TODO: Fix in a better way
+    # TODO: Fix spaces in a better way (perhaps reimplement the Env class)
     action_space = gymnasium.spaces.Box(low=-1.0, high=1.0, shape=(1,))
     observation_space = gymnasium.spaces.Box(low=-1.0, high=1.0, shape=(1,))
     state_space = gymnasium.spaces.Box(low=-1.0, high=1.0, shape=(1,))

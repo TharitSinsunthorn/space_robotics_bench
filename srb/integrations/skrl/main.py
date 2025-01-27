@@ -45,6 +45,7 @@ def run(
                 logdir = from_checkpoint.parent.joinpath("eval")
 
     # Update agent config
+    agent_cfg["seed"] = env_cfg.seed
     agent_cfg["agent"]["experiment"]["directory"] = logdir.parent
     agent_cfg["agent"]["experiment"]["experiment_name"] = logdir
 

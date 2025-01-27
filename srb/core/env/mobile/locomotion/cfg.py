@@ -4,7 +4,9 @@ import torch
 from simforge import BakeType
 
 from srb import assets
+from srb.core.asset import LeggedRobot
 from srb.core.env import DirectEnvCfg, InteractiveSceneCfg, ViewerCfg
+from srb.core.env.common.enums import AssetVariant
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import (
     push_by_setting_velocity,
@@ -16,8 +18,6 @@ from srb.core.mdp import (
 from srb.core.sensor import ContactSensorCfg
 from srb.core.sim import PhysxCfg, RenderCfg, RigidBodyMaterialCfg, SimulationCfg
 from srb.utils import configclass
-
-# TODO: Fix the RNN error with contiguous memory
 
 
 @configclass
@@ -89,6 +89,9 @@ class LocomotionEnvCfg(DirectEnvCfg):
 
     ## Agent
     agent_rate: float = 1.0 / 50.0
+
+    ## Assets
+    robot: LeggedRobot | AssetVariant | None = AssetVariant.DATASET
 
     ## Simulation
     sim = SimulationCfg(

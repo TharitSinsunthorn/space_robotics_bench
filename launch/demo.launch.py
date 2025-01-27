@@ -14,7 +14,7 @@ Examples:
     ros2 launch srb demo.launch.py task:=sample_collection num_envs:=16
 """
 
-# TODO: Fix
+# TODO: Fix ROS 2 demo launch script
 
 from os import path
 from typing import List

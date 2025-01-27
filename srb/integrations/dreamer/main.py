@@ -20,8 +20,6 @@ from srb.utils.cfg import create_logdir_path, get_last_run_logdir_path
 ALGO_NAME = "dreamer"
 UPSTREAM_CONFIG_PATH = Path(dreamer_agent.__file__).parent.joinpath("configs.yaml")
 
-# TODO: Seed from env.seed (for all integrations)
-
 
 def run(
     workflow: Literal["train", "eval"],
@@ -75,6 +73,7 @@ def run(
     config = config.update(
         {
             **agent_cfg,
+            "seed": env_cfg.seed,
             "task": env_id.replace("/", "_"),
             "logdir": logdir,
             "run.from_checkpoint": from_checkpoint,

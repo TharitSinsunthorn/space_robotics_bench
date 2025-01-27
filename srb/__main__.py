@@ -374,9 +374,9 @@ def _teleop_agent_direct(
             ## Step the environment
             observation, reward, terminated, truncated, info = env.step(actions)
 
-            ## Provide force feedback for manipulation tasks
+            ## Provide force feedback
+            # TODO: Generalize force feedback for all tasks
             if is_manip_task:
-                # TODO: Generalize force feedback for all tasks
                 FT_FEEDBACK_SCALE = torch.tensor([0.16, 0.16, 0.16, 0.0, 0.0, 0.0])
                 ft_feedback_asset_cfg = SceneEntityCfg(
                     "robot",
@@ -1029,7 +1029,7 @@ def parse_cli_args() -> argparse.Namespace:
             type=str,
             nargs="+",
             choices=["keyboard", "gamepad", "joystick", "mouse", "ros2"],
-            default=["keyboard"],  # TODO: Convert to enum
+            default=["keyboard"],  # TODO: Enum
             help="Device for interacting with environment",
         )
         teleop_group.add_argument(
@@ -1057,7 +1057,7 @@ def parse_cli_args() -> argparse.Namespace:
             type=str,
             nargs="*",
             choices=["gui", "ros2"],
-            default=[],  # TODO: Convert to enum
+            default=[],  # TODO: Enum
             help="Sequence of integrations ro enable",
         )
 

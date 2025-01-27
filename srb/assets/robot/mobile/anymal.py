@@ -10,6 +10,8 @@ from srb.core.sim import (
 )
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
+# TODO: Fix the RNN error with contiguous memory
+
 
 class AnymalB(LeggedRobot):
     ## Model

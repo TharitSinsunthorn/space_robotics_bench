@@ -4,7 +4,7 @@ import torch
 from simforge import BakeType
 
 from srb import assets
-from srb.core.asset import StaticVehicle
+from srb.core.asset import Manipulator, StaticVehicle
 from srb.core.env import (
     AssetVariant,
     DirectEnvCfg,
@@ -60,9 +60,6 @@ class ManipulationEnvEventCfg:
     )
 
 
-# TODO: Specify robot
-
-
 @configclass
 class ManipulationEnvCfg(DirectEnvCfg):
     ## Environment
@@ -71,6 +68,10 @@ class ManipulationEnvCfg(DirectEnvCfg):
 
     ## Agent
     agent_rate: float = 1.0 / 50.0
+
+    ## Assets
+    robot: Manipulator | AssetVariant | None = AssetVariant.DATASET
+    vehicle: StaticVehicle | AssetVariant | None = AssetVariant.DATASET
 
     ## Simulation
     sim = SimulationCfg(
@@ -119,9 +120,6 @@ class ManipulationEnvCfg(DirectEnvCfg):
 
     ## Events
     events = ManipulationEnvEventCfg()
-
-    ## TODO: Categorize | Update type
-    vehicle: StaticVehicle | AssetVariant | None = AssetVariant.DATASET
 
     def __post_init__(self):
         super().__post_init__()

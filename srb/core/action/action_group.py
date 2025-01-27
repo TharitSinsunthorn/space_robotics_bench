@@ -4,7 +4,7 @@ import torch
 
 from srb.utils import configclass
 
-# TODO: Add registry (so that it can be overridden as env.robot.action="another_registered_action_group")
+# TODO: Add registry (so that it can be overridden as env.robot.action="another_registered_action_group") + update naming
 
 
 @configclass
