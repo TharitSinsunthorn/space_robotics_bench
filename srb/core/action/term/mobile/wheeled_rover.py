@@ -1,11 +1,8 @@
-from collections.abc import Sequence
 from dataclasses import MISSING
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, List, Sequence, Tuple, Type
 
 import torch
 
-from srb.core.action import JointPositionActionCfg
-from srb.core.action.action_group import ActionGroup
 from srb.core.manager import ActionTerm, ActionTermCfg
 from srb.utils import configclass
 
@@ -14,21 +11,15 @@ if TYPE_CHECKING:
     from srb.core.asset import Articulation
 
 
-# TODO: Rename this and move to common or something
-@configclass
-class LocomotionJointSpaceActionCfg(ActionGroup):
-    joint_pos: JointPositionActionCfg = MISSING
-
-    def supports_policy_teleop(self) -> bool:
-        return True
-
-
-class WheeledRoverAction(ActionTerm):
-    cfg: "WheeledRoverActionCfg"
+class WheeledRoverDriveAction(ActionTerm):
+    cfg: "WheeledRoverDriveActionCfg"
     _asset: "Articulation"
 
-    def __init__(self, cfg: "WheeledRoverActionCfg", env: "AnyEnv"):
-        super().__init__(cfg, env)
+    def __init__(self, cfg: "WheeledRoverDriveActionCfg", env: "AnyEnv"):
+        super().__init__(
+            cfg,
+            env,  # type: ignore
+        )
 
         self._steering_joint_indices = self._asset.find_joints(
             self.cfg.steering_joint_names, preserve_order=True
@@ -59,7 +50,7 @@ class WheeledRoverAction(ActionTerm):
             velocity_lin=self._processed_actions[:, 0],
             velocity_ang=self._processed_actions[:, 1],
             wheelbase=self.cfg.wheelbase,
-            wheelbase_mid=self.cfg.wheelbase_mid,
+            wheelbase_mid=self.cfg.wheelbase_mid or self.cfg.wheelbase[1],
             wheel_radius=self.cfg.wheel_radius,
         )
         self._asset.set_joint_position_target(
@@ -237,27 +228,15 @@ class WheeledRoverAction(ActionTerm):
 
 
 @configclass
-class WheeledRoverActionCfg(ActionTermCfg):
-    class_type: type = WheeledRoverAction
-
-    steering_joint_names: List[str] = MISSING
-    drive_joint_names: List[str] = MISSING
-
-    wheelbase: Tuple[float, float] = MISSING
-    wheelbase_mid: float | None = None
-
-    wheel_radius: float = MISSING
+class WheeledRoverDriveActionCfg(ActionTermCfg):
+    class_type: Type = WheeledRoverDriveAction
 
     scale: float = 1.0
 
-    def __post_init__(self):
-        if self.wheelbase_mid is None:
-            self.wheelbase_mid = self.wheelbase[1]
+    steering_joint_names: List[str] = MISSING  # type: ignore
+    drive_joint_names: List[str] = MISSING  # type: ignore
 
+    wheelbase: Tuple[float, float] = MISSING  # type: ignore
+    wheelbase_mid: float | None = None
 
-@configclass
-class WheeledRoverActionGroupCfg(ActionGroup):
-    drive: WheeledRoverActionCfg = MISSING
-
-    def map_teleop_actions(self, twist: torch.Tensor, event: bool) -> torch.Tensor:
-        return twist[:2]
+    wheel_radius: float = MISSING  # type: ignore

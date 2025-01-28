@@ -8,9 +8,9 @@ import numpy
 import torch
 
 from srb.core.action import (
-    ManipulatorTaskSpaceActionCfg,
-    MultiCopterActionGroupCfg,
-    WheeledRoverActionGroupCfg,
+    MultiCopterBodyVelocity,
+    SingleArmIK_BinaryGripper,
+    WheeledRoverDrive,
 )
 from srb.utils.ros2 import enable_ros2_bridge
 from srb.utils.str import convert_to_snake_case
@@ -190,7 +190,7 @@ class ROS2Interface:
             depth=1,
         )
 
-        if isinstance(self._env.unwrapped.cfg.actions, ManipulatorTaskSpaceActionCfg):
+        if isinstance(self._env.unwrapped.cfg.actions, SingleArmIK_BinaryGripper):
 
             def _create_actions_cb_cmd_vel(
                 cb_name: str, env_id: int | None = None
@@ -287,7 +287,7 @@ class ROS2Interface:
                     ),
                 )
 
-        elif isinstance(self._env.unwrapped.cfg.actions, MultiCopterActionGroupCfg):
+        elif isinstance(self._env.unwrapped.cfg.actions, MultiCopterBodyVelocity):
 
             def _create_actions_cb_cmd_vel(
                 cb_name: str, env_id: int | None = None
@@ -333,7 +333,7 @@ class ROS2Interface:
                     qos_profile,
                 )
 
-        elif isinstance(self._env.unwrapped.cfg.actions, WheeledRoverActionGroupCfg):
+        elif isinstance(self._env.unwrapped.cfg.actions, WheeledRoverDrive):
 
             def _create_actions_cb_cmd_vel(
                 cb_name: str, env_id: int | None = None

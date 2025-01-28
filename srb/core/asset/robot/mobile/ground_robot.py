@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence, Type
 
-from srb.core.action import LocomotionJointSpaceActionCfg, WheeledRoverActionGroupCfg
+from srb.core.action import JointPosition, WheeledRoverDrive
 from srb.core.asset import Frame
 from srb.core.asset.robot.mobile.mobile_robot import MobileRobot, MobileRobotRegistry
 from srb.core.asset.robot.mobile.mobile_robot_type import MobileRobotType
@@ -16,7 +16,7 @@ class GroundRobot(MobileRobot, mobile_robot_entrypoint=MobileRobotType.GROUND):
 
 class WheeledRobot(GroundRobot, mobile_robot_metaclass=True):
     ## Actions
-    action_cfg: WheeledRoverActionGroupCfg
+    action_cfg: WheeledRoverDrive
 
     ## Frames
     frame_camera_front: Frame
@@ -28,4 +28,4 @@ class WheeledRobot(GroundRobot, mobile_robot_metaclass=True):
 
 class LeggedRobot(GroundRobot, mobile_robot_metaclass=True):
     ## Actions
-    action_cfg: LocomotionJointSpaceActionCfg
+    action_cfg: JointPosition

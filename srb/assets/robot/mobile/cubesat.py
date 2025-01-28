@@ -1,6 +1,6 @@
 import simforge_foundry
 
-from srb.core.action import SpacecraftActionCfg, SpacecraftActionGroupCfg
+from srb.core.action import BodyVelocity, BodyVelocityActionCfg
 from srb.core.asset import Frame, RigidObjectCfg, Spacecraft
 from srb.core.sim import (
     CollisionPropertiesCfg,
@@ -30,8 +30,8 @@ class Cubesat(Spacecraft):
     )
 
     ## Actions
-    action_cfg: SpacecraftActionGroupCfg = SpacecraftActionGroupCfg(
-        flight=SpacecraftActionCfg(asset_name="robot", scale=0.1)
+    action_cfg: BodyVelocity = BodyVelocity(
+        vel=BodyVelocityActionCfg(asset_name="robot", scale=0.1)
     )
 
     ## Frames

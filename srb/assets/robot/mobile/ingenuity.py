@@ -1,7 +1,7 @@
 from omni.isaac.lab.sim import UsdFileCfg
 from torch import pi
 
-from srb.core.action import MultiCopterActionCfg, MultiCopterActionGroupCfg
+from srb.core.action import MultiCopterBodyVelocity, MultiCopterBodyVelocityActionCfg
 from srb.core.actuator import ImplicitActuatorCfg
 from srb.core.asset import ArticulationCfg, Frame, MultiCopter, Transform
 from srb.core.sim import ArticulationRootPropertiesCfg, RigidBodyPropertiesCfg
@@ -42,8 +42,8 @@ class Ingenuity(MultiCopter):
     )
 
     ## Actions
-    action_cfg: MultiCopterActionGroupCfg = MultiCopterActionGroupCfg(
-        flight=MultiCopterActionCfg(
+    action_cfg: MultiCopterBodyVelocity = MultiCopterBodyVelocity(
+        vel=MultiCopterBodyVelocityActionCfg(
             asset_name="robot",
             frame_base="body",
             regex_joints_rotors="rotor_joint_[1-2]",

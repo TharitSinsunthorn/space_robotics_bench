@@ -6,10 +6,10 @@ import numpy
 
 from srb.core.action import (
     ActionGroup,
-    ManipulatorTaskSpaceActionCfg,
-    MultiCopterActionGroupCfg,
-    SpacecraftActionGroupCfg,
-    WheeledRoverActionGroupCfg,
+    BodyVelocity,
+    MultiCopterBodyVelocity,
+    SingleArmIK_BinaryGripper,
+    WheeledRoverDrive,
 )
 from srb.interfaces.teleop import DeviceBase, Se3Gamepad
 from srb.interfaces.teleop.keyboard import KeyboardTeleopInterface
@@ -176,7 +176,7 @@ class CombinedTeleopInterface(DeviceBase):
     def _keyboard_control_scheme(
         action_cfg: ActionGroup,
     ) -> str:
-        if isinstance(action_cfg, ManipulatorTaskSpaceActionCfg):
+        if isinstance(action_cfg, SingleArmIK_BinaryGripper):
             return """
 +------------------------------------------------+
 |  Keyboard Scheme (focus the Isaac Sim window)  |
@@ -203,7 +203,7 @@ class CombinedTeleopInterface(DeviceBase):
 |       [ C ] ↺--------(±Z)--------↻ [ V ]       |
 +------------------------------------------------+
         """
-        elif isinstance(action_cfg, MultiCopterActionGroupCfg):
+        elif isinstance(action_cfg, MultiCopterBodyVelocity):
             return """
 +------------------------------------------------+
 |  Keyboard Scheme (focus the Isaac Sim window)  |
@@ -225,7 +225,7 @@ class CombinedTeleopInterface(DeviceBase):
 |       [ C ] ↺--------(±Z)--------↻ [ V ]       |
 +------------------------------------------------+
         """
-        elif isinstance(action_cfg, WheeledRoverActionGroupCfg):
+        elif isinstance(action_cfg, WheeledRoverDrive):
             return """
 +------------------------------------------------+
 |  Keyboard Scheme (focus the Isaac Sim window)  |
@@ -244,7 +244,7 @@ class CombinedTeleopInterface(DeviceBase):
 |                     [ S ] (-X)                 |
 +------------------------------------------------+
         """
-        elif isinstance(action_cfg, SpacecraftActionGroupCfg):
+        elif isinstance(action_cfg, BodyVelocity):
             return """
 +------------------------------------------------+
 |  Keyboard Scheme (focus the Isaac Sim window)  |

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence, Type
 
-from srb.core.action import MultiCopterActionGroupCfg
+from srb.core.action import MultiCopterBodyVelocity
 from srb.core.asset import Frame
 from srb.core.asset.robot.mobile.mobile_robot import MobileRobot, MobileRobotRegistry
 from srb.core.asset.robot.mobile.mobile_robot_type import MobileRobotType
@@ -18,7 +18,7 @@ class MultiCopter(
     AerialRobot, mobile_robot_metaclass=True, arbitrary_types_allowed=True
 ):
     ## Actions
-    action_cfg: MultiCopterActionGroupCfg
+    action_cfg: MultiCopterBodyVelocity
 
     ## Frames
     frame_camera_bottom: Frame

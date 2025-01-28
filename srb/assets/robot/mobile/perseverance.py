@@ -1,6 +1,6 @@
 from omni.isaac.lab.sim import UsdFileCfg
 
-from srb.core.action import WheeledRoverActionCfg, WheeledRoverActionGroupCfg
+from srb.core.action import WheeledRoverDrive, WheeledRoverDriveActionCfg
 from srb.core.actuator import ImplicitActuatorCfg
 from srb.core.asset import ArticulationCfg, Frame, Transform, WheeledRobot
 from srb.core.sim import (
@@ -10,6 +10,8 @@ from srb.core.sim import (
 )
 from srb.utils.math import quat_from_rpy
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
+
+# TODO: Fix Perseverance textures
 
 
 class Perseverance(WheeledRobot):
@@ -71,8 +73,8 @@ class Perseverance(WheeledRobot):
     )
 
     ## Actions
-    action_cfg: WheeledRoverActionGroupCfg = WheeledRoverActionGroupCfg(
-        WheeledRoverActionCfg(
+    action_cfg: WheeledRoverDrive = WheeledRoverDrive(
+        WheeledRoverDriveActionCfg(
             asset_name="robot",
             wheelbase=(2.26, 2.14764),
             wheelbase_mid=2.39164,

@@ -1,24 +1,17 @@
-from collections.abc import Sequence
-from dataclasses import MISSING
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type
 
 import torch
 
-from srb.core.action.action_group import ActionGroup
 from srb.core.manager import ActionTerm, ActionTermCfg
 from srb.utils import configclass
 
 if TYPE_CHECKING:
-    from srb._typing import AnyEnv
     from srb.core.asset import Articulation, RigidObject
 
 
-class SpacecraftAction(ActionTerm):
-    cfg: "SpacecraftActionCfg"
+class BodyVelAction(ActionTerm):
+    cfg: "BodyVelocityActionCfg"
     _asset: "Articulation | RigidObject"
-
-    def __init__(self, cfg: "SpacecraftActionCfg", env: "AnyEnv"):
-        super().__init__(cfg, env)
 
     @property
     def action_dim(self) -> int:
@@ -42,19 +35,9 @@ class SpacecraftAction(ActionTerm):
         applied_velocities = current_velocity + self.processed_actions
         self._asset.write_root_velocity_to_sim(applied_velocities)
 
-    def reset(self, env_ids: Sequence[int] | None = None) -> None:
-        pass
-
 
 @configclass
-class SpacecraftActionCfg(ActionTermCfg):
-    class_type: ActionTerm = SpacecraftAction
+class BodyVelocityActionCfg(ActionTermCfg):
+    class_type: Type = BodyVelAction
+
     scale: float = 1.0
-
-
-@configclass
-class SpacecraftActionGroupCfg(ActionGroup):
-    flight: SpacecraftActionCfg = MISSING
-
-    def map_teleop_actions(self, twist: torch.Tensor, event: bool) -> torch.Tensor:
-        return twist

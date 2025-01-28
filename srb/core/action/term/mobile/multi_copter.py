@@ -1,10 +1,8 @@
-from collections.abc import Sequence
 from dataclasses import MISSING
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Sequence, Type
 
 import torch
 
-from srb.core.action.action_group import ActionGroup
 from srb.core.manager import ActionTerm, ActionTermCfg
 from srb.utils import configclass
 from srb.utils.math import euler_xyz_from_quat, quat_from_euler_xyz
@@ -14,12 +12,15 @@ if TYPE_CHECKING:
     from srb.core.asset import Articulation
 
 
-class MultiCopterAction(ActionTerm):
-    cfg: "MultiCopterActionCfg"
+class MultiCopterBodyVelocityAction(ActionTerm):
+    cfg: "MultiCopterBodyVelocityActionCfg"
     _asset: "Articulation"
 
-    def __init__(self, cfg: "MultiCopterActionCfg", env: "AnyEnv"):
-        super().__init__(cfg, env)
+    def __init__(self, cfg: "MultiCopterBodyVelocityActionCfg", env: "AnyEnv"):
+        super().__init__(
+            cfg,
+            env,  # type: ignore
+        )
 
         self._body_index = self._asset.find_bodies(self.cfg.frame_base)[0]
         self._rotor_indices, rotor_names = self._asset.find_joints(
@@ -106,11 +107,11 @@ class MultiCopterAction(ActionTerm):
 
 
 @configclass
-class MultiCopterActionCfg(ActionTermCfg):
-    class_type: ActionTerm = MultiCopterAction
+class MultiCopterBodyVelocityActionCfg(ActionTermCfg):
+    class_type: Type = MultiCopterBodyVelocityAction  # type: ignore
 
-    frame_base: str = MISSING
-    regex_joints_rotors: str = MISSING
+    frame_base: str = MISSING  # type: ignore
+    regex_joints_rotors: str = MISSING  # type: ignore
 
     nominal_rpm: float | Dict["str", float] = 1000.0
     tilt_magnitude: float = 1.0
@@ -118,16 +119,3 @@ class MultiCopterActionCfg(ActionTermCfg):
 
     scale: float = 1.0
     noise: float = 0.0025
-
-
-@configclass
-class MultiCopterActionGroupCfg(ActionGroup):
-    flight: MultiCopterActionCfg = MISSING
-
-    def map_teleop_actions(self, twist: torch.Tensor, event: bool) -> torch.Tensor:
-        return torch.concat(
-            (
-                twist[:3],
-                twist[5].unsqueeze(0),
-            ),
-        )

@@ -1,7 +1,7 @@
 from omni.isaac.lab.sim import UsdFileCfg
 from torch import pi
 
-from srb.core.action import ManipulatorTaskSpaceActionCfg
+from srb.core.action import SingleArmIK_BinaryGripper
 from srb.core.actuator import ImplicitActuatorCfg
 from srb.core.asset import ArticulationCfg, Frame, SingleArmManipulator, Transform
 from srb.core.controller import DifferentialIKControllerCfg
@@ -57,7 +57,7 @@ class Canadarm3Large(SingleArmManipulator):
     )
 
     ## Actions
-    action_cfg: ManipulatorTaskSpaceActionCfg = ManipulatorTaskSpaceActionCfg(
+    action_cfg: SingleArmIK_BinaryGripper = SingleArmIK_BinaryGripper(
         arm=DifferentialInverseKinematicsActionCfg(
             asset_name="robot",
             joint_names=["canadarm3_large_joint_[1-7]"],

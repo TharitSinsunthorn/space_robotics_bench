@@ -195,7 +195,7 @@ def random_agent(
         while sim_app.is_running():
             actions = torch.from_numpy(env.action_space.sample()).to(device=env.device)
 
-            observation, reward, terminated, truncated, info = env.step(actions)
+            observation, reward, terminated, truncated, info = env.step(actions)  # type: ignore
 
             logging.trace(
                 f"actions: {actions}\n"
@@ -249,6 +249,8 @@ def teleop_agent(
 
     import threading
 
+    import gymnasium
+
     from srb.core.action import ActionGroup
     from srb.interfaces.teleop import CombinedTeleopInterface
 
@@ -279,7 +281,7 @@ def teleop_agent(
         node=ros_node,
         pos_sensitivity=pos_sensitivity,
         rot_sensitivity=rot_sensitivity,
-        action_cfg=env.cfg.robot.action_cfg,
+        action_cfg=env.cfg.robot.action_cfg,  # type: ignore
     )
 
     ## Set up reset callback
@@ -324,9 +326,9 @@ def teleop_agent(
 
     ## Determine how to teleoperate the agent and dispatch the appropriate implementation
     env_supports_direct_teleop = (
-        hasattr(env.cfg.robot.action_cfg.__class__, "map_teleop_actions")
-        and env.cfg.robot.action_cfg.__class__.map_teleop_actions
-        is not ActionGroup.map_teleop_actions
+        hasattr(env.cfg.robot.action_cfg.__class__, "map_commands")  # type: ignore
+        and env.cfg.robot.action_cfg.__class__.map_commands  # type: ignore
+        is not ActionGroup.map_commands
     )
 
     if env_supports_direct_teleop:
@@ -338,7 +340,10 @@ def teleop_agent(
             gui_interface=gui_interface,
             **kwargs,
         )
-    elif env.cfg.robot.action_cfg.supports_policy_teleop():
+    elif (
+        isinstance(env.observation_space, gymnasium.spaces.Dict)
+        and "command" in env.observation_space.spaces.keys()
+    ):
         if algo:
             _teleop_agent_via_policy(
                 env=env,
@@ -368,14 +373,11 @@ def _teleop_agent_direct(
 ):
     import torch
 
-    from srb.core.action import ManipulatorTaskSpaceActionCfg
+    from srb.core.asset import Manipulator
     from srb.core.manager import SceneEntityCfg
     from srb.core.mdp import body_incoming_wrench_mean
 
-    is_manip_task = isinstance(
-        env.cfg.robot.action_cfg,
-        ManipulatorTaskSpaceActionCfg,
-    )
+    is_manip_task = isinstance(env.cfg.robot, Manipulator)
 
     ## Run the environment
     with torch.inference_mode():
@@ -384,7 +386,7 @@ def _teleop_agent_direct(
             twist, event = teleop_interface.advance()
             if is_manip_task and not disable_control_scheme_inversion:
                 twist[:2] *= -1.0
-            actions = env.cfg.robot.action_cfg.map_teleop_actions(
+            actions = env.cfg.robot.action_cfg.map_commands(  # type: ignore
                 torch.from_numpy(twist).to(device=env.device, dtype=torch.float32),
                 event,
             ).repeat(env.num_envs, 1)
@@ -398,7 +400,7 @@ def _teleop_agent_direct(
                 FT_FEEDBACK_SCALE = torch.tensor([0.16, 0.16, 0.16, 0.0, 0.0, 0.0])
                 ft_feedback_asset_cfg = SceneEntityCfg(
                     "robot",
-                    body_names=env.cfg.robot.regex_links_hand,
+                    body_names=env.cfg.robot.regex_links_hand,  # type: ignore
                 )
                 ft_feedback_asset_cfg.resolve(env.scene)
                 ft_feedback = (
@@ -418,9 +420,9 @@ def _teleop_agent_direct(
             if ros2_interface:
                 ros2_interface.publish(
                     observation,  # type: ignore
-                    reward,
-                    terminated,
-                    truncated,
+                    reward,  # type: ignore
+                    terminated,  # type: ignore
+                    truncated,  # type: ignore
                     info,
                 )
                 ros2_interface.update()
@@ -451,16 +453,13 @@ def _teleop_agent_via_policy(
         WrapperObsType,
     )
 
-    from srb.core.action import ManipulatorTaskSpaceActionCfg
+    from srb.core.asset import Manipulator
 
     # Disable command randomization
     if hasattr(env.cfg.events, "command"):
         env.cfg.events.command = None  # type: ignore
 
-    is_manip_task = isinstance(
-        env.cfg.robot.action_cfg,
-        ManipulatorTaskSpaceActionCfg,
-    )
+    is_manip_task = isinstance(env.cfg.robot, Manipulator)
 
     class InjectTeleopWrapper(ObservationWrapper):
         def observation(self, observation: ObsType) -> WrapperObsType:  # type: ignore
@@ -565,14 +564,14 @@ def ros_agent(
             actions = ros2_interface.actions
 
             # Step the environment
-            observation, reward, terminated, truncated, info = env.step(actions)
+            observation, reward, terminated, truncated, info = env.step(actions)  # type: ignore
 
             # Publish to ROS 2
             ros2_interface.publish(
                 observation,  # type: ignore
-                reward,
-                terminated,
-                truncated,
+                reward,  # type: ignore
+                terminated,  # type: ignore
+                truncated,  # type: ignore
                 info,
             )
 
@@ -834,8 +833,8 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
 
     # Print table for action groups
     if RegisteredEntity.ACTION in category:
-        from srb.core import action as srb_actions
         from srb.core.action import ActionGroupRegistry
+        from srb.core.action import group as srb_action_groups
 
         table = Table(title="Action Groups of the Space Robotics Bench")
         table.add_column("#", justify="right", style="cyan", no_wrap=True)
@@ -851,7 +850,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
             )
             try:
                 action_group_relpath = action_group_path.relative_to(
-                    Path(inspect.getabsfile(srb_actions)).parent
+                    Path(inspect.getabsfile(srb_action_groups)).parent
                 )
             except ValueError:
                 action_group_relpath = path.join("EXT", action_group_path.name)

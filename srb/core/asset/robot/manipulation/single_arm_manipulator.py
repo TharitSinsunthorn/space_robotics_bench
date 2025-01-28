@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence, Type
 
-from srb.core.action import ManipulatorTaskSpaceActionCfg
+from srb.core.action import SingleArmIK_BinaryGripper
 from srb.core.asset.common import Frame
 from srb.core.asset.robot.manipulation.manipulator import (
     Manipulator,
@@ -15,7 +15,7 @@ class SingleArmManipulator(
     Manipulator, manipulator_entrypoint=ManipulatorType.SINGLE_ARM
 ):
     ## Actions
-    action_cfg: ManipulatorTaskSpaceActionCfg
+    action_cfg: SingleArmIK_BinaryGripper
 
     ## Frames
     frame_ee: Frame

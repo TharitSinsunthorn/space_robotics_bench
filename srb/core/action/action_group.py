@@ -10,11 +10,8 @@ from srb.utils.str import convert_to_snake_case
 
 @configclass
 class ActionGroup:
-    def map_teleop_actions(self, twist: torch.Tensor, event: bool) -> torch.Tensor:
+    def map_commands(self, twist: torch.Tensor, event: bool) -> torch.Tensor:
         raise NotImplementedError()
-
-    def supports_policy_teleop(self) -> bool:
-        return False
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)

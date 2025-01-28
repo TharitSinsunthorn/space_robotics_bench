@@ -1,7 +1,7 @@
 from omni.isaac.lab.sim import UsdFileCfg
 from omni.isaac.lab_assets import ANYDRIVE_3_LSTM_ACTUATOR_CFG
 
-from srb.core.action import JointPositionActionCfg, LocomotionJointSpaceActionCfg
+from srb.core.action import JointPosition, JointPositionActionCfg
 from srb.core.asset import ArticulationCfg, Frame, LeggedRobot
 from srb.core.sim import (
     ArticulationRootPropertiesCfg,
@@ -53,10 +53,8 @@ class AnymalB(LeggedRobot):
     )
 
     ## Actions
-    action_cfg: LocomotionJointSpaceActionCfg = LocomotionJointSpaceActionCfg(
-        joint_pos=JointPositionActionCfg(
-            asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True
-        )
+    action_cfg: JointPosition = JointPosition(
+        pos=JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5)
     )
 
     ## Frames
@@ -103,10 +101,8 @@ class AnymalC(LeggedRobot):
     )
 
     ## Actions
-    action_cfg: LocomotionJointSpaceActionCfg = LocomotionJointSpaceActionCfg(
-        joint_pos=JointPositionActionCfg(
-            asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True
-        )
+    action_cfg: JointPosition = JointPosition(
+        pos=JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5)
     )
 
     ## Frames
@@ -153,10 +149,8 @@ class AnymalD(LeggedRobot):
     )
 
     ## Actions
-    action_cfg: LocomotionJointSpaceActionCfg = LocomotionJointSpaceActionCfg(
-        joint_pos=JointPositionActionCfg(
-            asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True
-        )
+    action_cfg: JointPosition = JointPosition(
+        pos=JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5)
     )
 
     ## Frames
@@ -261,10 +255,8 @@ class AnymalMulti(LeggedRobot):
     )
 
     ## Actions
-    action_cfg: LocomotionJointSpaceActionCfg = LocomotionJointSpaceActionCfg(
-        joint_pos=JointPositionActionCfg(
-            asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True
-        )
+    action_cfg: JointPosition = JointPosition(
+        pos=JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5)
     )
 
     ## Frames
