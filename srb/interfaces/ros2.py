@@ -44,7 +44,7 @@ from tf2_ros import TransformBroadcaster  # noqa: E402
 if TYPE_CHECKING:
     from srb._typing import AnyEnv
 
-# TODO: Improve the ROS 2 interface to dynamically include all observations and reward components. Map each actiongroup to a specific topic type
+# TODO: Fix/improve the ROS 2 interface to dynamically include all observations and reward components. Map each actiongroup to a specific topic type
 
 
 class ROS2Interface:

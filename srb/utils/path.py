@@ -19,5 +19,5 @@ SRB_ASSETS_DIR_SRB_VEHICLE = SRB_ASSETS_DIR_SRB_MODEL.joinpath("vehicle")
 # Path to hyperparameters directory
 SRB_HYPERPARAMS_DIR = SRB_DIR.joinpath("hyperparams")
 
-# Path to scripts directory
-SRB_SCRIPTS_DIR = SRB_DIR.joinpath("scripts")
+# Path to logs
+SRB_LOGS_DIR = SRB_DIR.joinpath("logs")

@@ -5,7 +5,7 @@ def is_isaacsim_initialized() -> bool:
     return find_spec("omni.isaac.version") is not None
 
 
-def hide_ui():
+def hide_isaacsim_ui():
     import carb.settings
 
     settings = carb.settings.get_settings()

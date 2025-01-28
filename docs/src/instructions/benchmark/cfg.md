@@ -39,7 +39,7 @@ The following arguments are common across all entrypoint scripts, e.g. [`teleop.
 - `-h`, `--help`: Display the help message and exit.
 - `-t TASK`, `--task TASK`, `-e ENV`, `--env ENV`, `--demo DEMO`: Specify the name of the environment (task/demo). You can list available tasks using `list_envs.py`.
 - `--num_envs NUM_ENVS`: Number of parallel environments to simulate.
-- `--disable_ui`: Disable the majority of the Isaac Sim UI.
+- `--hide_ui`: Disable the majority of the Isaac Sim UI.
 - `--headless`: Force the display to remain off, making the simulation headless.
 - `--device DEVICE`: Set the device for simulation (e.g., `"cpu"`, `"cuda"`, or `"cuda:N"` where `N` is the device ID).
 

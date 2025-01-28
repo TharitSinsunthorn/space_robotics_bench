@@ -1,6 +1,6 @@
 policy: "MultiInputLstmPolicy"
 normalize: true
-n_timesteps: 200000000
+n_timesteps: 100000000
 batch_size: 256
 n_steps: 512
 gamma: 0.95
@@ -12,5 +12,5 @@ gae_lambda: 0.9
 max_grad_norm: 2
 vf_coef: 0.4
 
-save_freq: 10000000
+save_freq: 10000
 track: true

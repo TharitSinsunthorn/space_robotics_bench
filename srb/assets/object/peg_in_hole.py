@@ -23,7 +23,7 @@ class Peg(Object):
     )
 
 
-# TODO: Consider making it a kinematic rigid body object
+# TODO: Consider making hole a kinematic rigid body object
 class Hole(Object):
     asset_cfg: AssetBaseCfg = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/hole",

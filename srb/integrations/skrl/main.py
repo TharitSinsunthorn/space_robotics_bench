@@ -5,7 +5,8 @@ from omni.isaac.kit import SimulationApp
 from skrl.utils.runner.torch import Runner
 
 from srb.integrations.skrl.wrapper import SkrlEnvWrapper
-from srb.utils.cfg import create_logdir_path, get_last_file, get_last_run_logdir_path
+from srb.utils import logging
+from srb.utils.cfg import last_file, stamp_dir
 
 if TYPE_CHECKING:
     from srb._typing import AnyEnv, AnyEnvCfg
@@ -20,31 +21,26 @@ def run(
     env_id: str,
     env_cfg: "AnyEnvCfg",
     agent_cfg: dict,
-    model: str,
+    logdir: Path,
+    model: Path,
     continue_training: bool | None = None,
     **kwargs,
 ):
-    # Determine logdir and checkpoint path
-    match workflow:
-        case "train":
-            assert not (continue_training and model)
-            if continue_training:
-                logdir = Path(get_last_run_logdir_path(FRAMEWORK_NAME, env_id))
-                from_checkpoint = get_last_file(logdir.joinpath("checkpoints"))
-            elif model:
-                from_checkpoint = model
-                logdir = Path(from_checkpoint).parent.parent
-            else:
-                logdir = Path(create_logdir_path(FRAMEWORK_NAME, env_id))
-                from_checkpoint = ""
-        case "eval":
-            if model:
-                from_checkpoint = model
-                logdir = Path(from_checkpoint).parent.joinpath("eval")
-            else:
-                logdir = Path(get_last_run_logdir_path(FRAMEWORK_NAME, env_id))
-                from_checkpoint = get_last_file(logdir.joinpath("checkpoints"))
-                logdir = from_checkpoint.parent.joinpath("eval")
+    # Determine checkpoint path
+    if model:
+        from_checkpoint = model
+    elif workflow == "eval" or continue_training:
+        from_checkpoint = last_file(
+            logdir.joinpath("checkpoints"), modification_time=True
+        )
+    else:
+        from_checkpoint = ""
+    if from_checkpoint:
+        logging.info(f"Loading model from {from_checkpoint}")
+
+    # Special handling for eval workflow
+    if workflow == "eval":
+        logdir = stamp_dir(logdir.joinpath("eval"))
 
     # Update agent config
     agent_cfg["seed"] = env_cfg.seed

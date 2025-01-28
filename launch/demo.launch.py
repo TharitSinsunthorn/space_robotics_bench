@@ -58,7 +58,7 @@ def generate_launch_description() -> LaunchDescription:
                 task,
                 "--num_envs",
                 num_envs,
-                "--disable_ui",
+                "--hide_ui",
             ],
             output="screen",
             shell=True,

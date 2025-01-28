@@ -191,3 +191,19 @@ class Domain(str, Enum):
         temperature = self.light_color_temperature
         delta = self.light_color_temperature_variation / 2.0
         return (temperature - delta, temperature + delta)
+
+    @property
+    def contrastive_grayscale(self) -> float:
+        """
+        Grayscale value for contrastive color based on the domain.
+
+        - Asteroid | Moon: Light gray.
+        - Earth | Mars | Orbit: Dark gray.
+        """
+        match self:
+            case Domain.ASTEROID | Domain.MOON:
+                return 0.8
+            case Domain.EARTH | Domain.MARS | Domain.ORBIT:
+                return 0.1
+            case _:
+                return 0.7071

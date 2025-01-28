@@ -50,7 +50,7 @@ class ShortProfilePeg(Object):
     )
 
 
-# TODO: Consider making it a kinematic rigid body object
+# TODO: Consider making hole a kinematic rigid body object
 class ProfileHole(Object):
     asset_cfg: AssetBaseCfg = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/object",

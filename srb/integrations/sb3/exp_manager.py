@@ -1,7 +1,7 @@
 import os
 from collections import OrderedDict
 from pprint import pprint
-from typing import Any, Dict, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Tuple
 
 import yaml
 from gymnasium import spaces
@@ -17,11 +17,19 @@ from stable_baselines3.common.vec_env import (
     is_vecenv_wrapped,
 )
 
+if TYPE_CHECKING:
+    from srb._typing import AnyEnv
+
 
 class ExperimentManager(__ExperimentManager):
-    def __init__(self, *args, env, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, env: "AnyEnv", tensorboard_log: str = "", **kwargs):
+        super().__init__(*args, tensorboard_log=tensorboard_log, **kwargs)
         self._env = env
+
+        self.tensorboard_log = tensorboard_log
+        self.log_path = self.log_folder
+        self.save_path = os.path.join(self.log_folder, "ckpt")
+        self.params_path = self.log_folder
 
     def read_hyperparameters(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         hyperparams = self.custom_hyperparams
@@ -46,7 +54,7 @@ class ExperimentManager(__ExperimentManager):
     ) -> VecEnv:
         # Special case for GoalEnvs: log success rate too
         if (
-            # env.is_goal_env  # TODO: Add goal env handling
+            # env.is_goal_env  # TODO[minor]: Add goal env handling for SB3/SBX
             False and len(self.monitor_kwargs) == 0
         ):
             self.monitor_kwargs = dict(info_keywords=("is_success",))

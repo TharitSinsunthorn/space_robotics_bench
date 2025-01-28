@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from enum import Enum, auto
 from importlib.util import find_spec
@@ -57,7 +58,7 @@ def agent_main(
     video,
     video_length,
     video_interval,
-    disable_ui: bool,
+    hide_ui: bool,
     **kwargs,
 ):
     from srb.core.app import AppLauncher
@@ -75,15 +76,39 @@ def agent_main(
     from srb import tasks as _  # noqa: F401
     from srb.interfaces.teleop import EventKeyboardTeleopInterface
     from srb.utils import logging
-    from srb.utils.cfg import create_logdir_path, hydra_task_config
-    from srb.utils.isaacsim import hide_ui
-
-    if find_spec("rich"):
-        from rich import print
+    from srb.utils.cfg import hydra_task_config, last_logdir, new_logdir
+    from srb.utils.isaacsim import hide_isaacsim_ui
 
     # Post-launch configuration
-    if disable_ui:
-        hide_ui()
+    if hide_ui:
+        hide_isaacsim_ui()
+
+    # Get the log directory based on the workflow
+    workflow = kwargs.get("algo") or agent_subcommand
+    if model := kwargs.get("model"):
+        model = Path(model)
+        assert model.exists(), f"Model path does not exist: {model}"
+        logdir = model.parent
+        while not (
+            logdir.parent.name == workflow
+            and (logdir.parent.parent.name == env_id.removeprefix("srb/"))
+        ):
+            _new_parent = logdir.parent
+            if logdir == _new_parent:
+                # TODO: Maybe the dir needs to be created here before symlink
+                model_symlink_path = logdir.joinpath("model").joinpath(model.name)
+                os.symlink(model, model_symlink_path)
+                model = model_symlink_path
+                logdir = new_logdir(env_id=env_id, workflow=workflow)
+                break
+            logdir = _new_parent
+        kwargs["model"] = model
+    elif (agent_subcommand == "train" and kwargs["continue_training"]) or (
+        agent_subcommand in ("eval", "teleop") and kwargs["algo"]
+    ):
+        logdir = last_logdir(env_id=env_id, workflow=workflow)
+    else:
+        logdir = new_logdir(env_id=env_id, workflow=workflow)
 
     @hydra_task_config(
         task_name=env_id,
@@ -98,19 +123,15 @@ def agent_main(
         )
         env.reset()
 
-        # TODO: Handle logdir creation and management here instead of individual agent integrations
-
         # Add wrapper for video recording
         if video:
-            logdir = Path(create_logdir_path(agent_subcommand, env_id))
             video_kwargs = {
                 "video_folder": logdir.joinpath("videos"),
                 "step_trigger": lambda step: step % video_interval == 0,
                 "video_length": video_length,
                 "disable_logger": True,
             }
-            logging.info("Recording videos during training")
-            print(video_kwargs)
+            logging.info(f"Recording videos: {video_kwargs}")
             env = gymnasium.wrappers.RecordVideo(env, **video_kwargs)
 
         # Add keyboard callbacks
@@ -150,7 +171,7 @@ def agent_main(
                     # NOTE: Learning from demonstration does not require the environment
                     raise NotImplementedError()
 
-        agent_impl(env=env, sim_app=launcher.app, **kwargs)
+        agent_impl(env=env, sim_app=launcher.app, logdir=logdir, **kwargs)
 
         # Close the environment
         env.close()
@@ -230,9 +251,6 @@ def teleop_agent(
 
     from srb.core.action import ActionGroup
     from srb.interfaces.teleop import CombinedTeleopInterface
-
-    if find_spec("rich"):
-        from rich import print
 
     # Ensure that a feasible teleoperation device is selected
     if headless and len(teleop_device) == 1 and "keyboard" in teleop_device:
@@ -1027,7 +1045,7 @@ def parse_cli_args() -> argparse.Namespace:
 
         experience_group = _agent_parser.add_argument_group("Experience")
         experience_group.add_argument(
-            "--disable_ui",
+            "--hide_ui",
             action="store_true",
             default=False,
             help="Disable most of the Isaac Sim UI and set it to fullscreen",
@@ -1103,32 +1121,17 @@ def parse_cli_args() -> argparse.Namespace:
             help="Sequence of integrations ro enable",
         )
 
-        policy_group = _agent_parser.add_argument_group("Teleop Policy")
-        policy_group.add_argument(
-            "--algo",
-            type=str,
-            help="Name of the algorithm that should drives the policy for control from teleopration",
-            choices=[
-                "dreamer",
-                "skrl_ppo",
-                "skrl_ppo_rnn",
-                "sb3_ppo",
-                "sb3_ppo_lstm",
-                "sbx_ppo",
-            ],  # TODO: Enum
-            # required=False,
-        )
-        policy_group.add_argument(
-            "--model",
-            type=str,
-            help="Path to the model",
-        )
-
     for _agent_parser in (
         train_agent_parser,
         eval_agent_parser,
+        teleop_agent_parser,
+        collect_agent_parser,
     ):
-        algorithm_group = _agent_parser.add_argument_group("Algorithm")
+        algorithm_group = _agent_parser.add_argument_group(
+            "Algorithm"
+            if _agent_parser in (train_agent_parser, eval_agent_parser)
+            else "Teleop Policy"
+        )
         algorithm_group.add_argument(
             "--algo",
             type=str,
@@ -1141,23 +1144,29 @@ def parse_cli_args() -> argparse.Namespace:
                 "sb3_ppo_lstm",
                 "sbx_ppo",
             ],  # TODO: Enum
-            # required=True,
-            default="dreamer",
+            required=_agent_parser in (train_agent_parser, eval_agent_parser),
         )
-        algorithm_group.add_argument(
-            "--model",
-            type=str,
-            help="Path to the model",
-        )
+        if _agent_parser != train_agent_parser:
+            algorithm_group.add_argument(
+                "--model",
+                type=str,
+                help="Path to the model",
+            )
 
     train_group = train_agent_parser.add_argument_group("Train")
-    train_group.add_argument(
+    mutex_group = train_group.add_mutually_exclusive_group()
+    mutex_group.add_argument(
         "--continue_training",
         "--continue",
         "--resume",
         action="store_true",
         default=False,
-        help="Continue training the model from the checkpoint of the last run",
+        help="Continue training the model from the last checkpoint",
+    )
+    mutex_group.add_argument(
+        "--model",
+        type=str,
+        help="Continue training the model from the specified checkpoint",
     )
 
     # GUI

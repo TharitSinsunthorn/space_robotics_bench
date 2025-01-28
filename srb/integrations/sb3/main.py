@@ -1,4 +1,3 @@
-import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Sequence
 
@@ -9,12 +8,8 @@ from stable_baselines3.common.callbacks import tqdm
 
 from srb.integrations.sb3.exp_manager import ExperimentManager
 from srb.integrations.sb3.wrapper import Sb3EnvWrapper
-from srb.utils.cfg import (
-    create_logdir_path,
-    get_last_dir,
-    get_last_file,
-    get_last_run_logdir_path,
-)
+from srb.utils import logging
+from srb.utils.cfg import last_file, stamp_dir
 
 if TYPE_CHECKING:
     from srb._typing import AnyEnv, AnyEnvCfg
@@ -31,7 +26,8 @@ def run(
     env_id: str,
     env_cfg: "AnyEnvCfg",
     agent_cfg: dict,
-    model: str,
+    logdir: Path,
+    model: Path,
     continue_training: bool | None = None,
     **kwargs,
 ):
@@ -52,38 +48,29 @@ def run(
     # HER
     truncate_last_trajectory = agent_cfg.pop("truncate_last_trajectory", True)
 
-    # Determine logdir and checkpoint path
-    match workflow:
-        case "train":
-            assert not (continue_training and model)
-            if continue_training:
-                logdir = Path(get_last_run_logdir_path(FRAMEWORK_NAME, env_id))
-                from_checkpoint = get_last_file(get_last_dir(logdir.joinpath(algo)))
-            elif model:
-                from_checkpoint = model
-                logdir = Path(from_checkpoint).parent.parent.parent.parent
-            else:
-                logdir = Path(create_logdir_path(FRAMEWORK_NAME, env_id))
-                from_checkpoint = ""
-        case "eval":
-            if model:
-                from_checkpoint = model
-                logdir = Path(from_checkpoint).parent.parent.parent.joinpath("eval")
-            else:
-                logdir = Path(get_last_run_logdir_path(FRAMEWORK_NAME, env_id))
-                from_checkpoint = get_last_file(get_last_dir(logdir.joinpath(algo)))
-                logdir = from_checkpoint.parent.parent.parent.joinpath("eval")
+    # Determine checkpoint path
+    if model:
+        from_checkpoint = model
+    elif workflow == "eval" or continue_training:
+        from_checkpoint = last_file(logdir.joinpath("ckpt"), modification_time=True)
+    else:
+        from_checkpoint = ""
+    if from_checkpoint:
+        logging.info(f"Loading model from {from_checkpoint}")
+
+    # Special handling for eval workflow
+    if workflow == "eval":
+        logdir = stamp_dir(logdir.joinpath("eval"))
 
     if track:
         import wandb
 
-        run_name = f"{env_id}__{algo}__{int(time.time())}"
         _run = wandb.init(
-            name=run_name,
+            name=f"{env_id}_{algo}",
             sync_tensorboard=True,
             monitor_gym=True,
         )
-        tensorboard_log = logdir.joinpath(run_name)
+        tensorboard_log = logdir.joinpath("tensorboard")
     else:
         tensorboard_log = None
 
@@ -95,7 +82,7 @@ def run(
         algo=algo,
         env_id=env_id,
         log_folder=logdir.as_posix(),
-        tensorboard_log=tensorboard_log,
+        tensorboard_log=tensorboard_log.as_posix() if tensorboard_log else "",
         n_timesteps=0,
         eval_freq=0,
         n_eval_episodes=0,
@@ -146,7 +133,7 @@ def run(
 
             # Load the agent
             agent = ALGOS[algo].load(
-                from_checkpoint,
+                from_checkpoint.as_posix(),  # type: ignore
                 device=env.unwrapped.device,  # type: ignore
             )
 

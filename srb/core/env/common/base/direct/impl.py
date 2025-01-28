@@ -20,8 +20,11 @@ class __PostInitCaller(type):
 class DirectEnv(__DirectRLEnv, metaclass=__PostInitCaller):
     cfg: DirectEnvCfg
 
-    def __init__(self, cfg: DirectEnvCfg, render_mode: str | None = None, **kwargs):
-        super().__init__(cfg, render_mode, **kwargs)
+    def __init__(self, cfg: DirectEnvCfg, **kwargs):
+        super().__init__(cfg, **kwargs)
+
+        # Apply visuals
+        self.cfg.visuals.func(self.cfg.visuals)
 
         if self.cfg.actions:
             self.action_manager = ActionManager(self.cfg.actions, self)

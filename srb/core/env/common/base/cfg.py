@@ -1,5 +1,6 @@
 from srb.core.asset import Object, Robot, Terrain
 from srb.core.env.common.enums import AssetVariant, Domain
+from srb.core.visuals import VisualsCfg
 from srb.utils import configclass
 
 
@@ -16,3 +17,6 @@ class BaseEnvCfg:
     robot: Robot | AssetVariant | None = AssetVariant.DATASET
     obj: Object | AssetVariant | None = AssetVariant.PROCEDURAL
     terrain: Terrain | AssetVariant | None = AssetVariant.PROCEDURAL
+
+    ## Visuals
+    visuals: VisualsCfg = VisualsCfg()

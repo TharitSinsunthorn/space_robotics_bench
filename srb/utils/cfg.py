@@ -5,6 +5,7 @@ import importlib
 import inspect
 import os
 import string
+import sys
 from collections.abc import Callable
 from dataclasses import is_dataclass
 from importlib.util import find_spec
@@ -51,6 +52,7 @@ from srb.utils.dict import (
     update_class_from_dict,
     update_dict,
 )
+from srb.utils.path import SRB_LOGS_DIR
 from srb.utils.spaces import (
     replace_env_cfg_spaces_with_strings,
     replace_strings_with_env_cfg_spaces,
@@ -196,78 +198,75 @@ def parse_task_cfg(
     return cfg
 
 
-def create_logdir_path(
-    algo_name: str,
-    task_name: str,
-    prefix: str = "logs/",
-    timestamp_format="%Y%m%d-%H%M%S",
-) -> str:
-    timestamp = datetime.datetime.now().strftime(timestamp_format)
-    logdir = os.path.realpath(os.path.join(prefix, algo_name, task_name, timestamp))
-    os.makedirs(logdir, exist_ok=True)
-    return logdir
+def stamp_dir(directory: Path, timestamp_format: str = "%Y%m%d_%H%M%S") -> Path:
+    return directory.joinpath(datetime.datetime.now().strftime(timestamp_format))
 
 
-def get_last_run_logdir_path(
-    algo_name: str,
-    task_name: str,
-    prefix: str = "logs/",
-) -> str:
-    logdir_root = os.path.abspath(os.path.join(prefix, algo_name, task_name))
-    logdirs = [
-        os.path.join(logdir_root, d)
-        for d in os.listdir(logdir_root)
-        if os.path.isdir(os.path.join(logdir_root, d))
-    ]
-    logdirs.sort(key=os.path.getmtime, reverse=True)
-    if len(logdirs) == 0:
-        raise FileNotFoundError(f"No logdirs found in: {logdir_root}")
-    last_logdir = None
-    for d in logdirs:
-        if not d.endswith("eval"):
-            last_logdir = d
-            break
-    if last_logdir is None:
-        raise FileNotFoundError(f"No logdirs found in: {logdir_root}")
-    return last_logdir
-
-
-def get_last_file(
-    path: str | Path,
+def new_logdir(
+    env_id: str,
+    workflow: str,
+    root: Path = SRB_LOGS_DIR,
+    timestamp_format: str = "%Y%m%d_%H%M%S",
 ) -> Path:
-    logdirs = [
-        os.path.join(path, d)
-        for d in os.listdir(path)
-        if os.path.isfile(os.path.join(path, d))
-    ]
-    logdirs.sort(key=os.path.getmtime, reverse=True)
-    if len(logdirs) == 0:
-        raise FileNotFoundError(f"No logdirs found in: {path}")
-    last_logdir = None
-    for d in logdirs:
-        if not d.endswith("eval"):
-            last_logdir = d
-            break
-    return Path(last_logdir)
+    return stamp_dir(
+        root.joinpath(env_id.removeprefix("srb/")).joinpath(workflow),
+        timestamp_format=timestamp_format,
+    )
 
 
-def get_last_dir(
-    path: str | Path,
+def last_logdir(
+    env_id: str,
+    workflow: str,
+    root: Path = SRB_LOGS_DIR,
+    modification_time: bool = False,
 ) -> Path:
-    logdirs = [
-        os.path.join(path, d)
-        for d in os.listdir(path)
-        if os.path.isdir(os.path.join(path, d))
-    ]
-    logdirs.sort(key=os.path.getmtime, reverse=True)
-    if len(logdirs) == 0:
-        raise FileNotFoundError(f"No logdirs found in: {path}")
-    last_logdir = None
-    for d in logdirs:
-        if not d.endswith("eval"):
-            last_logdir = d
-            break
-    return Path(last_logdir)
+    logdir_parent = root.joinpath(env_id.removeprefix("srb/")).joinpath(workflow)
+    if not logdir_parent.is_dir():
+        raise ValueError(
+            f"Path {logdir_parent} is expected to be a directory with logdirs but it "
+            + ("is a file" if logdir_parent.is_file() else "does not exist")
+        )
+
+    if last_logdir := last_dir(
+        directory=logdir_parent, modification_time=modification_time
+    ):
+        logging.debug(
+            f"Selecting {last_logdir} as the last logdir"
+            + (" (based on modification time)" if modification_time else "")
+        )
+        return last_logdir
+    else:
+        raise FileNotFoundError(f"Path {logdir_parent} does not contain any logdirs")
+
+
+def last_dir(directory: Path, modification_time: bool = False) -> Path | None:
+    assert directory.is_dir()
+    if dirs := sorted(
+        filter(
+            lambda p: p.is_dir(),
+            (directory.joinpath(child) for child in os.listdir(directory)),
+        ),
+        key=os.path.getmtime if modification_time else None,
+        reverse=True,
+    ):
+        return dirs[0]
+    else:
+        return None
+
+
+def last_file(directory: Path, modification_time: bool = False) -> Path | None:
+    assert directory.is_dir()
+    if files := sorted(
+        filter(
+            lambda p: p.is_file(),
+            (directory.joinpath(child) for child in os.listdir(directory)),
+        ),
+        key=os.path.getmtime if modification_time else None,
+        reverse=True,
+    ):
+        return files[0]
+    else:
+        return None
 
 
 def register_task_to_hydra(
@@ -346,189 +345,203 @@ def hydra_task_config(
 
 
 def reconstruct_object(obj: Any, updates: Mapping[str, Any]) -> Any:
-    ## String-based updates that indirectly represent a type/instance
-    if (
-        not isinstance(obj, str)
-        and isinstance(updates, str)
-        and all(c not in string.whitespace for c in updates)
-    ):
-        if ":" in updates and not callable(obj):
-            ## Object updated via its full module path and name
-            mod_name, attr_name = updates.split(":")
-            if find_spec(mod_name) is None:
-                raise ModuleNotFoundError(f"Module '{mod_name}' not found.")
-            mod = importlib.import_module(mod_name)
-            if not hasattr(mod, attr_name):
-                raise AttributeError(
-                    f"Attribute '{attr_name}' not found in '{mod_name}'."
-                )
-            attr = getattr(mod, attr_name)
-            if isinstance(attr, (Type, Callable)):
-                return attr()
+    try:
+        ## String-based updates that indirectly represent a type/instance
+        if (
+            not isinstance(obj, str)
+            and isinstance(updates, str)
+            and all(c not in string.whitespace for c in updates)
+        ):
+            if ":" in updates and not callable(obj):
+                ## Object updated via its full module path and name
+                mod_name, attr_name = updates.split(":")
+                if find_spec(mod_name) is None:
+                    raise ModuleNotFoundError(f"Module '{mod_name}' not found.")
+                mod = importlib.import_module(mod_name)
+                if not hasattr(mod, attr_name):
+                    raise AttributeError(
+                        f"Attribute '{attr_name}' not found in '{mod_name}'."
+                    )
+                attr = getattr(mod, attr_name)
+                if isinstance(attr, (Type, Callable)):
+                    return attr()
+                else:
+                    return attr
             else:
-                return attr
-        else:
-            ## Registered class updated via its name
-            if isinstance(obj, Asset):
-                if isinstance(obj, Robot):
-                    # Manipulator
-                    if isinstance(obj, Manipulator):
-                        if manipulator_class := ManipulatorRegistry.get_by_name(
-                            updates
-                        ):
-                            return manipulator_class()  # type: ignore
-                        else:
-                            raise ValueError(
-                                f'Manipulator "{updates}" is not registered'
-                            )
+                ## Registered class updated via its name
+                if isinstance(obj, Asset):
+                    if isinstance(obj, Robot):
+                        # Manipulator
+                        if isinstance(obj, Manipulator):
+                            if manipulator_class := ManipulatorRegistry.get_by_name(
+                                updates
+                            ):
+                                return manipulator_class()  # type: ignore
+                            else:
+                                raise ValueError(
+                                    f'Manipulator "{updates}" is not registered'
+                                )
 
-                    # Mobile robot
-                    if isinstance(obj, MobileRobot):
-                        if mobile_robot_class := MobileRobotRegistry.get_by_name(
-                            updates
-                        ):
-                            return mobile_robot_class()  # type: ignore
-                        else:
-                            raise ValueError(
-                                f'Mobile robot "{updates}" is not registered'
-                            )
+                        # Mobile robot
+                        if isinstance(obj, MobileRobot):
+                            if mobile_robot_class := MobileRobotRegistry.get_by_name(
+                                updates
+                            ):
+                                return mobile_robot_class()  # type: ignore
+                            else:
+                                raise ValueError(
+                                    f'Mobile robot "{updates}" is not registered'
+                                )
 
-                    # Mobile manipulator
-                    if isinstance(obj, MobileManipulator):
-                        if (
-                            mobile_manipulator_class
-                            := MobileManipulatorRegistry.get_by_name(updates)
-                        ):
-                            return mobile_manipulator_class()  # type: ignore
-                        else:
-                            raise ValueError(
-                                f'Mobile manipulator "{updates}" is not registered'
-                            )
+                        # Mobile manipulator
+                        if isinstance(obj, MobileManipulator):
+                            if (
+                                mobile_manipulator_class
+                                := MobileManipulatorRegistry.get_by_name(updates)
+                            ):
+                                return mobile_manipulator_class()  # type: ignore
+                            else:
+                                raise ValueError(
+                                    f'Mobile manipulator "{updates}" is not registered'
+                                )
 
-                    # Other robot
-                    if robot_class := RobotRegistry.get_by_name(updates):
-                        return robot_class()  # type: ignore
+                        # Other robot
+                        if robot_class := RobotRegistry.get_by_name(updates):
+                            return robot_class()  # type: ignore
+                        else:
+                            raise ValueError(f'Robot "{updates}" is not registered')
+
+                    # Other asset
+                    if asset_class := AssetRegistry.get_by_name(updates):
+                        return asset_class()  # type: ignore
                     else:
-                        raise ValueError(f'Robot "{updates}" is not registered')
+                        raise ValueError(f'Asset "{updates}" is not registered')
 
-                # Other asset
-                if asset_class := AssetRegistry.get_by_name(updates):
-                    return asset_class()  # type: ignore
+                # Action group
+                if isinstance(obj, ActionGroup):
+                    if action_group_class := ActionGroupRegistry.get_by_name(updates):
+                        return action_group_class()
+                    else:
+                        raise ValueError(f'Action group "{updates}" is not registered')
+
+                # SimForge asset
+                if isinstance(obj, SimForgeAsset):
+                    if asset_class := SimForgeAssetRegistry.get_by_name(updates):
+                        return asset_class()
+                    else:
+                        raise ValueError(f'Asset "{updates}" is not registered')
+
+        # Pydantic
+        if isinstance(obj, BaseModel):
+            try:
+                type_hints = get_type_hints(obj.__class__)
+            except Exception:
+                type_hints = {k: type(v) for k, v in obj.__dict__.items()}
+            new_kwargs = {}
+            for field_name, field_type in type_hints.items():
+                if field_name.startswith("_"):
+                    continue
+                current_value = getattr(obj, field_name, None)
+                update_value = updates.get(field_name, None)
+                if update_value is not None:
+                    new_kwargs[field_name] = reconstruct_object(
+                        current_value, update_value
+                    )
                 else:
-                    raise ValueError(f'Asset "{updates}" is not registered')
+                    new_kwargs[field_name] = current_value
 
-            # Action group
-            if isinstance(obj, ActionGroup):
-                if action_group_class := ActionGroupRegistry.get_by_name(updates):
-                    return action_group_class()
+            return obj.__class__(**new_kwargs)
+
+        # Dataclass
+        if is_dataclass(obj):
+            try:
+                type_hints = get_type_hints(obj.__class__)  # type: ignore
+            except Exception:
+                type_hints = {k: type(v) for k, v in obj.__dict__.items()}
+            new_kwargs = {}
+            for field_name, field_type in type_hints.items():
+                if field_name.startswith("_"):
+                    continue
+                current_value = getattr(obj, field_name, None)
+                update_value = updates.get(field_name, None)
+                if update_value is not None:
+                    new_kwargs[field_name] = reconstruct_object(
+                        current_value, update_value
+                    )
                 else:
-                    raise ValueError(f'Action group "{updates}" is not registered')
+                    new_kwargs[field_name] = current_value
 
-            # SimForge asset
-            if isinstance(obj, SimForgeAsset):
-                if asset_class := SimForgeAssetRegistry.get_by_name(updates):
-                    return asset_class()
-                else:
-                    raise ValueError(f'Asset "{updates}" is not registered')
+            return obj.__class__(**new_kwargs)  # type: ignore
 
-    # Pydantic
-    if isinstance(obj, BaseModel):
-        try:
-            type_hints = get_type_hints(obj.__class__)
-        except Exception:
-            type_hints = {k: type(v) for k, v in obj.__dict__.items()}
-        new_kwargs = {}
-        for field_name, field_type in type_hints.items():
-            if field_name.startswith("_"):
-                continue
-            current_value = getattr(obj, field_name, None)
-            update_value = updates.get(field_name, None)
-            if update_value is not None:
-                new_kwargs[field_name] = reconstruct_object(current_value, update_value)
-            else:
-                new_kwargs[field_name] = current_value
+        # Enum
+        if isinstance(obj, enum.Enum):
+            if isinstance(updates, str):
+                return obj.__class__[updates.strip().upper()]
+            if isinstance(updates, Mapping) and "_name_" in updates.keys():
+                return obj.__class__[updates["_name_"]]
+            if updates is None and hasattr(obj, "NONE"):
+                # Handle enums with "NONE" value
+                return obj.__class__.NONE
 
-        return obj.__class__(**new_kwargs)
-
-    # Dataclass
-    if is_dataclass(obj):
-        try:
-            type_hints = get_type_hints(obj.__class__)  # type: ignore
-        except Exception:
-            type_hints = {k: type(v) for k, v in obj.__dict__.items()}
-        new_kwargs = {}
-        for field_name, field_type in type_hints.items():
-            if field_name.startswith("_"):
-                continue
-            current_value = getattr(obj, field_name, None)
-            update_value = updates.get(field_name, None)
-            if update_value is not None:
-                new_kwargs[field_name] = reconstruct_object(current_value, update_value)
-            else:
-                new_kwargs[field_name] = current_value
-
-        return obj.__class__(**new_kwargs)  # type: ignore
-
-    # Enum
-    if isinstance(obj, enum.Enum):
-        if isinstance(updates, str):
-            return obj.__class__[updates.strip().upper()]
-        if isinstance(updates, Mapping) and "_name_" in updates.keys():
-            return obj.__class__[updates["_name_"]]
-        if updates is None and hasattr(obj, "NONE"):
-            # Handle enums with "NONE" value
-            return obj.__class__.NONE
-
-    # Dict
-    if isinstance(obj, Dict) and isinstance(updates, Mapping):
-        obj.update(
-            {
-                key: reconstruct_object(obj.get(key, None), updates.get(key, None))
-                for key in set(obj) | set(updates)
-            }
-        )
-        return obj
-
-    # Set
-    if isinstance(obj, Set) and isinstance(updates, Iterable):
-        obj.update(updates)
-        return obj
-
-    # Mapping
-    if isinstance(obj, Mapping) and isinstance(updates, Mapping):
-        return obj.__class__(
-            (  # type: ignore
-                key,
-                reconstruct_object(obj.get(key, None), updates.get(key, None)),
+        # Dict
+        if isinstance(obj, Dict) and isinstance(updates, Mapping):
+            obj.update(
+                {
+                    key: reconstruct_object(obj.get(key, None), updates.get(key, None))
+                    for key in set(obj) | set(updates)
+                }
             )
-            for key in set(obj) | set(updates)
+            return obj
+
+        # Set
+        if isinstance(obj, Set) and isinstance(updates, Iterable):
+            obj.update(updates)
+            return obj
+
+        # Mapping
+        if isinstance(obj, Mapping) and isinstance(updates, Mapping):
+            return obj.__class__(
+                (  # type: ignore
+                    key,
+                    reconstruct_object(obj.get(key, None), updates.get(key, None)),
+                )
+                for key in set(obj) | set(updates)
+            )
+
+        # Sequence
+        if (isinstance(obj, Sequence) and not isinstance(obj, str)) and isinstance(
+            updates, Iterable
+        ):
+            result = obj.__class__(
+                reconstruct_object(o, u)  # type: ignore
+                for o, u in zip(obj, updates)
+            )
+            return result
+
+        # Callable (e.g. function)
+        if callable(obj):
+            return obj
+
+        # Other types
+        if not isinstance(
+            obj,
+            (
+                str,
+                int,
+                float,
+                bool,
+                slice,
+                type(None),
+            ),
+        ):
+            logging.warning(f"Unhandled type: {obj}\nUpdates:{updates}")
+        return updates if updates is not None else obj
+    except Exception as e:
+        overrides = ", ".join(
+            f'"{arg}"' if any(c in string.whitespace for c in arg) else arg
+            for arg in sys.argv[1:]
         )
-
-    # Sequence
-    if (isinstance(obj, Sequence) and not isinstance(obj, str)) and isinstance(
-        updates, Iterable
-    ):
-        result = obj.__class__(
-            reconstruct_object(o, u)  # type: ignore
-            for o, u in zip(obj, updates)
+        logging.critical(
+            f'Failed to apply the requested override of type "{type(updates)}" to object of type "{type(obj)}" with overrides: [{overrides}]'
         )
-        return result
-
-    # Callable (e.g. function)
-    if callable(obj):
-        return obj
-
-    # Other types
-    if not isinstance(
-        obj,
-        (
-            str,
-            int,
-            float,
-            bool,
-            slice,
-            type(None),
-        ),
-    ):
-        logging.warning(f"Unhandled type: {obj}\nUpdates:{updates}")
-    return updates if updates is not None else obj
+        raise e

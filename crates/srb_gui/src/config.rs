@@ -296,7 +296,7 @@ impl TaskConfig {
         if self.task == Task::Locomotion {
             exec = exec.args(&["agent", "rand"]);
             if !self.enable_ui {
-                exec = exec.arg("--disable_ui");
+                exec = exec.arg("--hide_ui");
             }
         } else {
             exec = exec.args(&[
@@ -316,7 +316,7 @@ impl TaskConfig {
                     // "ros2",
                 ]);
             } else {
-                exec = exec.args(&["--disable_ui", "--integration", "gui"]);
+                exec = exec.args(&["--hide_ui", "--integration", "gui"]);
             }
         }
 

@@ -3,32 +3,8 @@ from typing import Iterable, Tuple
 import carb.settings
 
 
-def simple_fog(
-    enable: bool = True,
-    color: Tuple[float, float, float] = (0.75, 0.75, 0.75),
-    intensity: float = 1.0,
-    z_up: bool = True,
-    start_height: float = 1.0,
-    height_density: float = 1.0,
-    height_falloff: float = 1.0,
-    distance_range: Tuple[float, float] = (0.0, 1024.0),
-    fog_distance_density: float = 1.0,
-):
-    settings = carb.settings.get_settings()
-    settings.set("/rtx/fog/enabled", enable)
-    settings.set("/rtx/fog/fogColor", color)
-    settings.set("/rtx/fog/fogColorIntensity", intensity)
-    settings.set("/rtx/fog/fogZup/enabled", z_up)
-    settings.set("/rtx/fog/fogStartHeight", start_height)
-    settings.set("/rtx/fog/fogHeightDensity", height_density)
-    settings.set("/rtx/fog/fogHeightFalloff", height_falloff)
-    settings.set("/rtx/fog/fogStartDist", distance_range[0])
-    settings.set("/rtx/fog/fogEndDist", distance_range[1])
-    settings.set("/rtx/fog/fogDistanceDensity", fog_distance_density)
-
-
 def auto_exposure(
-    enable: bool = True,
+    enable: bool,
     filter_type: int = 0,
     tau: float = 3.5,
     white_scale: float = 10.0,
@@ -51,7 +27,7 @@ def auto_exposure(
 
 
 def chromatic_aberration(
-    enable: bool = True,
+    enable: bool,
     strength: Tuple[float, float, float] = (-0.055, -0.075, 0.015),
     mode: Tuple[int, int, int] | int = (0, 0, 0),
     lanczos: bool = False,
@@ -74,8 +50,8 @@ def chromatic_aberration(
     settings.set("/rtx/post/chromaticAberration/enableLanczos", lanczos)
 
 
-def depth_of_field_override(
-    enable: bool = True,
+def depth_of_field(
+    enable: bool,
     subject_distance: float = 2.0,
     focal_length: float = 35.0,
     f_number: float = 5.0,
@@ -90,21 +66,32 @@ def depth_of_field_override(
     settings.set("/rtx/post/dof/anisotropy", anisotropy)
 
 
-def motion_blur(
-    enable: bool = True,
-    diameter_fraction: float = 0.02,
-    exposure_fraction: float = 1.0,
-    num_samples: int = 8,
+def fog(
+    enable: bool,
+    color: Tuple[float, float, float] = (0.75, 0.75, 0.75),
+    intensity: float = 1.0,
+    z_up: bool = True,
+    start_height: float = 1.0,
+    height_density: float = 1.0,
+    height_falloff: float = 1.0,
+    distance_range: Tuple[float, float] = (0.0, 1024.0),
+    fog_distance_density: float = 1.0,
 ):
     settings = carb.settings.get_settings()
-    settings.set("/rtx/post/motionblur/enabled", enable)
-    settings.set("/rtx/post/motionblur/maxBlurDiameterFraction", diameter_fraction)
-    settings.set("/rtx/post/motionblur/exposureFraction", exposure_fraction)
-    settings.set("/rtx/post/motionblur/numSamples", num_samples)
+    settings.set("/rtx/fog/enabled", enable)
+    settings.set("/rtx/fog/fogColor", color)
+    settings.set("/rtx/fog/fogColorIntensity", intensity)
+    settings.set("/rtx/fog/fogZup/enabled", z_up)
+    settings.set("/rtx/fog/fogStartHeight", start_height)
+    settings.set("/rtx/fog/fogHeightDensity", height_density)
+    settings.set("/rtx/fog/fogHeightFalloff", height_falloff)
+    settings.set("/rtx/fog/fogStartDist", distance_range[0])
+    settings.set("/rtx/fog/fogEndDist", distance_range[1])
+    settings.set("/rtx/fog/fogDistanceDensity", fog_distance_density)
 
 
-def lens_flare_physical(
-    enable: bool = True,
+def lens_flare(
+    enable: bool,
     scale: float = 1.0,
     cutoff_point: Tuple[float, float, float] | float = (2.0, 2.0, 2.0),
     cutoff_fuzziness: float = 0.5,
@@ -154,53 +141,30 @@ def lens_flare_physical(
     )
 
 
-def lens_flare_non_physical(
-    enable: bool = True,
-    scale: float = 1.0,
-    cutoff_point: Tuple[float, float, float] | float = (2.0, 2.0, 2.0),
-    cutoff_fuzziness: float = 0.5,
-    alpha_exposure_scale: float = 1.0,
-    energy_constraining_blend: bool = False,
-    halo_radius: Tuple[float, float, float] | float = (75.0, 75.0, 75.0),
-    halo_falloff: Tuple[float, float, float] | float = (10.0, 10.0, 10.0),
-    halo_weight: float = 0.01,
-    aniso_falloff_y: Tuple[float, float, float] | float = (10.0, 10.0, 10.0),
-    aniso_falloff_x: Tuple[float, float, float] | float = (450.0, 475.0, 500.0),
-    aniso_weight: float = 0.6,
-    isotropic_falloff: Tuple[float, float, float] | float = (50.0, 50.0, 50.0),
-    isotropic_weight: float = 0.4,
+def motion_blur(
+    enable: bool,
+    diameter_fraction: float = 0.02,
+    exposure_fraction: float = 1.0,
+    num_samples: int = 8,
 ):
-    if not isinstance(cutoff_point, Iterable):
-        cutoff_point = (cutoff_point, cutoff_point, cutoff_point)
-    if not isinstance(halo_radius, Iterable):
-        halo_radius = (halo_radius, halo_radius, halo_radius)
-    if not isinstance(halo_falloff, Iterable):
-        halo_falloff = (halo_falloff, halo_falloff, halo_falloff)
-    if not isinstance(aniso_falloff_y, Iterable):
-        aniso_falloff_y = (aniso_falloff_y, aniso_falloff_y, aniso_falloff_y)
-    if not isinstance(aniso_falloff_x, Iterable):
-        aniso_falloff_x = (aniso_falloff_x, aniso_falloff_x, aniso_falloff_x)
-    if not isinstance(isotropic_falloff, Iterable):
-        isotropic_falloff = (isotropic_falloff, isotropic_falloff, isotropic_falloff)
-
     settings = carb.settings.get_settings()
-    settings.set("/rtx/post/lensFlares/enabled", enable)
-    settings.set("/rtx/post/lensFlares/flareScale", scale)
-    settings.set("/rtx/post/lensFlares/cutoffPoint", cutoff_point)
-    settings.set("/rtx/post/lensFlares/cutoffFuzziness", cutoff_fuzziness)
-    settings.set("/rtx/post/lensFlares/alphaExposureScale", alpha_exposure_scale)
-    settings.set(
-        "/rtx/post/lensFlares/energyConstrainingBlend", energy_constraining_blend
-    )
-    settings.set("/rtx/post/lensFlares/physicalSettings", False)
-    settings.set("/rtx/post/lensFlares/haloFlareRadius", halo_radius)
-    settings.set("/rtx/post/lensFlares/haloFlareFalloff", halo_falloff)
-    settings.set("/rtx/post/lensFlares/haloFlareWeight", halo_weight)
-    settings.set("/rtx/post/lensFlares/anisoFlareFalloffY", aniso_falloff_y)
-    settings.set("/rtx/post/lensFlares/anisoFlareFalloffX", aniso_falloff_x)
-    settings.set("/rtx/post/lensFlares/anisoFlareWeight", aniso_weight)
-    settings.set("/rtx/post/lensFlares/isotropicFlareFalloff", isotropic_falloff)
-    settings.set("/rtx/post/lensFlares/isotropicFlareWeight", isotropic_weight)
+    settings.set("/rtx/post/motionblur/enabled", enable)
+    settings.set("/rtx/post/motionblur/maxBlurDiameterFraction", diameter_fraction)
+    settings.set("/rtx/post/motionblur/exposureFraction", exposure_fraction)
+    settings.set("/rtx/post/motionblur/numSamples", num_samples)
+
+
+def reshade(
+    enable: bool,
+    preset_file_path: str = "",
+    effect_search_dir_path: str = "",
+    texture_search_dir_path: str = "/root/isaac-sim/kit/reshade",
+):
+    settings = carb.settings.get_settings()
+    settings.set("/rtx/reshade/enabled", enable)
+    settings.set("/rtx/reshade/presetFilePath", preset_file_path)
+    settings.set("/rtx/reshade/effectSearchDirPath", effect_search_dir_path)
+    settings.set("/rtx/reshade/textureSearchDirPath", texture_search_dir_path)
 
 
 def tv_noise(
@@ -215,7 +179,7 @@ def tv_noise(
     enable_wave_distortion: bool = False,
     enable_vertical_lines: bool = False,
     enable_random_splotches: bool = False,
-    enable_film_grain: bool = True,
+    enable_film_grain: bool = False,
     grain_amount: float = 0.05,
     color_amount: float = 0.6,
     lum_amount: float = 1.0,
@@ -251,16 +215,3 @@ def tv_noise(
     settings.set("/rtx/post/tvNoise/colorAmount", color_amount)
     settings.set("/rtx/post/tvNoise/lumAmount", lum_amount)
     settings.set("/rtx/post/tvNoise/grainSize", grain_size)
-
-
-def reshade(
-    enable: bool = True,
-    preset_file_path: str = "",
-    effect_search_dir_path: str = "",
-    texture_search_dir_path: str = "/root/isaac-sim/kit/reshade",
-):
-    settings = carb.settings.get_settings()
-    settings.set("/rtx/reshade/enabled", enable)
-    settings.set("/rtx/reshade/presetFilePath", preset_file_path)
-    settings.set("/rtx/reshade/effectSearchDirPath", effect_search_dir_path)
-    settings.set("/rtx/reshade/textureSearchDirPath", texture_search_dir_path)
