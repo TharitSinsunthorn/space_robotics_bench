@@ -10,6 +10,8 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence, Tuple
 
+from srb.utils.path import SRB_APPS_DIR, SRB_DIR
+
 if TYPE_CHECKING:
     from omni.isaac.kit import SimulationApp
 
@@ -62,7 +64,6 @@ def agent_main(
     **kwargs,
 ):
     from srb.core.app import AppLauncher
-    from srb.utils.path import SRB_APPS_DIR
 
     # Preprocess kwargs
     kwargs["enable_cameras"] = video or env_id.endswith("_visual")
@@ -72,6 +73,9 @@ def agent_main(
 
     # Launch Isaac Sim
     launcher = AppLauncher(launcher_args=kwargs)
+
+    # Update the offline environment registry
+    OfflineEnvRegistry.update()
 
     from srb import tasks as _  # noqa: F401
     from srb.interfaces.teleop import EventKeyboardTeleopInterface
@@ -86,7 +90,7 @@ def agent_main(
     # Get the log directory based on the workflow
     workflow = kwargs.get("algo") or agent_subcommand
     if model := kwargs.get("model"):
-        model = Path(model)
+        model = Path(model).resolve()
         assert model.exists(), f"Model path does not exist: {model}"
         logdir = model.parent
         while not (
@@ -95,11 +99,11 @@ def agent_main(
         ):
             _new_parent = logdir.parent
             if logdir == _new_parent:
-                # TODO: Maybe the dir needs to be created here before symlink
-                model_symlink_path = logdir.joinpath("model").joinpath(model.name)
+                logdir = new_logdir(env_id=env_id, workflow=workflow)
+                model_symlink_path = logdir.joinpath(model.name)
+                model_symlink_path.parent.mkdir(parents=True, exist_ok=True)
                 os.symlink(model, model_symlink_path)
                 model = model_symlink_path
-                logdir = new_logdir(env_id=env_id, workflow=workflow)
                 break
             logdir = _new_parent
         kwargs["model"] = model
@@ -634,7 +638,6 @@ def launch_gui(release: bool):
     import subprocess
 
     from srb.utils import logging
-    from srb.utils.path import SRB_DIR
 
     try:
         import string
@@ -665,7 +668,6 @@ def launch_gui(release: bool):
 ### List ###
 def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
     from srb.core.app import AppLauncher
-    from srb.utils.path import SRB_APPS_DIR
 
     if not find_spec("rich"):
         raise ImportError(
@@ -676,6 +678,9 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
     launcher = AppLauncher(
         headless=True, experience=SRB_APPS_DIR.joinpath("srb.barebones.kit")
     )
+
+    # Update the offline environment registry
+    OfflineEnvRegistry.update()
 
     import importlib
     import inspect
@@ -999,6 +1004,7 @@ def parse_cli_args() -> argparse.Namespace:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
+    _env_choices = OfflineEnvRegistry.read()
     for _agent_parser in (
         zero_agent_parser,
         rand_agent_parser,
@@ -1019,7 +1025,8 @@ def parse_cli_args() -> argparse.Namespace:
             help="Name of the environment to select",
             type=str,
             action=AutoNamespaceTaskAction,
-            default="srb/sample_collection",
+            choices=_env_choices,
+            required=True,
         )
 
         video_recording_group = _agent_parser.add_argument_group("Video")
@@ -1255,6 +1262,43 @@ class AutoNamespaceTaskAction(argparse.Action):
             DEFAULT_TASK_NAMESPACE: str = "srb"
             values = f"{DEFAULT_TASK_NAMESPACE}/{values}"
         setattr(namespace, self.dest, values)
+
+
+class OfflineEnvRegistry:
+    ENV_REGISTRY_CACHE: Path = SRB_DIR.joinpath(".envs_cache")
+
+    @classmethod
+    def read(cls) -> Sequence[str] | None:
+        if not cls.ENV_REGISTRY_CACHE.exists():
+            return None
+        with cls.ENV_REGISTRY_CACHE.open("r") as f:
+            return f.read().splitlines()
+
+    @classmethod
+    def update(cls):
+        from srb import tasks as _  # noqa: F401
+        from srb.utils import logging
+        from srb.utils.registry import SRB_NAMESPACE, get_srb_tasks
+
+        registered_envs = sorted(
+            map(lambda env: env.removeprefix(f"{SRB_NAMESPACE}/"), get_srb_tasks())
+        )
+
+        if len(registered_envs) == 0:
+            logging.warning(
+                "Cannot update the cache of registered environments because no environments are registered"
+            )
+            return
+
+        if registered_envs == cls.read():
+            logging.trace("The cache of registered environments is up-to-date")
+            return
+
+        with cls.ENV_REGISTRY_CACHE.open("w") as f:
+            f.write("\n".join(registered_envs) + "\n")
+        logging.debug(
+            f"Updated the cache of registered environments to {cls.ENV_REGISTRY_CACHE}"
+        )
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ from typing import Literal, Sequence, Tuple
 
 from srb.core.sim import ShapeCfg
 from srb.core.sim.spawners.multi_shape.impl import spawn_multi_shape
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 
 @configclass

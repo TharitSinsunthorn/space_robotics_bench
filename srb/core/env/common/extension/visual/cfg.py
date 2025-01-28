@@ -3,7 +3,7 @@ from typing import Dict, Literal, Sequence, Tuple
 
 from srb.core.env import InteractiveSceneCfg
 from srb.core.sensor import CameraCfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 
 @configclass

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, List, Sequence, Tuple, Type
 import torch
 
 from srb.core.manager import ActionTerm, ActionTermCfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 if TYPE_CHECKING:
     from srb._typing import AnyEnv

@@ -3,7 +3,7 @@ from typing import Dict, Sequence, Tuple
 import torch
 
 from srb.core.env import MobileRoboticsEnv, MobileRoboticsEnvCfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 ##############
 ### Config ###

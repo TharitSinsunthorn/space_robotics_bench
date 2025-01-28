@@ -1,7 +1,7 @@
 import gymnasium
 from omni.isaac.lab.envs import DirectRLEnvCfg as __DirectRLEnvCfg
 
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 from ..cfg import BaseEnvCfg
 

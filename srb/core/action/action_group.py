@@ -4,7 +4,7 @@ from typing import ClassVar, Iterable, List, Sequence, Type
 
 import torch
 
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 from srb.utils.str import convert_to_snake_case
 
 

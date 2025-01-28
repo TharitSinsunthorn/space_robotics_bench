@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Dict, Sequence, Type
 import torch
 
 from srb.core.manager import ActionTerm, ActionTermCfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 from srb.utils.math import euler_xyz_from_quat, quat_from_euler_xyz
 
 if TYPE_CHECKING:

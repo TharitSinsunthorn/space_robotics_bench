@@ -9,7 +9,7 @@ from srb.core.asset import RigidObjectCfg
 from srb.core.env import Domain, SpacecraftEnv, SpacecraftEnvCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform_poisson_disk_3d
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 ##############
 ### Config ###

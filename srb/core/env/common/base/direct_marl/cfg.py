@@ -1,6 +1,6 @@
 from omni.isaac.lab.envs import DirectMARLEnvCfg as __DirectMARLEnvCfg
 
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 from ..cfg import BaseEnvCfg
 

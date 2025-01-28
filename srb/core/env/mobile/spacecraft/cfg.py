@@ -13,7 +13,7 @@ from srb.core.mdp import (
     reset_xform_orientation_uniform,
 )
 from srb.core.sim import PhysxCfg, RenderCfg, RigidBodyMaterialCfg, SimulationCfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 
 @configclass

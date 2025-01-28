@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Type
 import torch
 
 from srb.core.manager import ActionTerm, ActionTermCfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 if TYPE_CHECKING:
     from srb.core.asset import Articulation, RigidObject

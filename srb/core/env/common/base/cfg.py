@@ -1,7 +1,7 @@
 from srb.core.asset import Object, Robot, Terrain
 from srb.core.env.common.enums import AssetVariant, Domain
 from srb.core.visuals import VisualsCfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 
 @configclass

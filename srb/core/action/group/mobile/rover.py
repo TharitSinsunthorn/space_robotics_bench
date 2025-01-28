@@ -4,7 +4,7 @@ import torch
 
 from srb.core.action.action_group import ActionGroup
 from srb.core.action.term import WheeledRoverDriveActionCfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 
 @configclass

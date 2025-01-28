@@ -12,7 +12,7 @@ from srb.core.env import (
     ManipulationEnvCfg,
     ViewerCfg,
 )
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 ##############
 ### Config ###

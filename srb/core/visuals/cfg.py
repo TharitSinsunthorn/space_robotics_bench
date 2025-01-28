@@ -1,7 +1,7 @@
 from typing import Callable, Tuple, Union
 
 from srb.core.visuals import rtx_post
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 
 def set_visuals(cfg: "VisualsCfg"):

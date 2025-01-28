@@ -1,6 +1,6 @@
 from srb.core.env.common.extension.visual import VisualExtCfg
 from srb.core.sensor import CameraCfg, PinholeCameraCfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 from srb.utils.math import quat_from_rpy
 
 from .cfg import ManipulationEnvCfg

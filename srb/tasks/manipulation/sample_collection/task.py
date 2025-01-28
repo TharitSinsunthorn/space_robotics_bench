@@ -18,7 +18,7 @@ from srb.core.marker import VisualizationMarkers, VisualizationMarkersCfg
 from srb.core.mdp import reset_root_state_uniform
 from srb.core.sensor import ContactSensor, ContactSensorCfg
 from srb.core.sim import PreviewSurfaceCfg, SphereCfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 from srb.utils.math import (
     combine_frame_transforms,
     matrix_from_quat,

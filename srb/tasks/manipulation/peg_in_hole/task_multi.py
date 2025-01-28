@@ -8,7 +8,7 @@ from srb.core.env import ManipulationEnv
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform_poisson_disk_2d
 from srb.core.sensor import ContactSensor
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 from srb.utils.math import (
     combine_frame_transforms,
     matrix_from_quat,

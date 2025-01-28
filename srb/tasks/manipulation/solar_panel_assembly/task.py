@@ -22,7 +22,7 @@ from srb.core.mdp import (
 from srb.core.sensor import ContactSensor, ContactSensorCfg
 from srb.core.sim import PreviewSurfaceCfg
 from srb.tasks.manipulation.peg_in_hole.task import peg_and_hole_cfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 from srb.utils.math import (
     combine_frame_transforms,
     matrix_from_quat,

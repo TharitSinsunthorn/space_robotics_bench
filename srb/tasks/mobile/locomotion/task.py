@@ -4,7 +4,7 @@ import torch
 
 from srb.core.env import LocomotionEnv, LocomotionEnvCfg, LocomotionEnvEventCfg
 from srb.core.manager import EventTermCfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 from srb.utils.math import matrix_from_quat, rotmat_to_rot6d, sample_uniform
 
 if TYPE_CHECKING:

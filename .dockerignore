@@ -33,6 +33,9 @@ logs/
 outputs/
 wandb/
 
+## Cache of registered environments for CLI argcomplete
+.envs_cache
+
 ## Dump files
 **/core.*
 

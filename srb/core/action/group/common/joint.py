@@ -13,7 +13,7 @@ from srb.core.action import (
     RelativeJointPositionActionCfg,
 )
 from srb.core.action.action_group import ActionGroup
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 
 @configclass

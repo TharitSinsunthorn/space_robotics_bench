@@ -3,7 +3,7 @@ from typing import Dict
 import torch
 
 from srb.core.env import VisualExt, VisualExtCfg
-from srb.utils import configclass
+from srb.utils.cfg import configclass
 
 from .task import Task, TaskCfg
 
