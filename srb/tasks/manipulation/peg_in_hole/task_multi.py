@@ -1,10 +1,10 @@
+from dataclasses import MISSING
 from typing import Dict, List, Sequence, Tuple
 
 import torch
-from omni.isaac.core.prims.xform_prim_view import XFormPrimView
 
-from srb.core.asset import RigidObject, RigidObjectCfg
-from srb.core.env import ManipulationEnv
+from srb.core.asset import RigidObject, RigidObjectCfg, XFormPrimView
+from srb.core.env import ManipulationEnv, ManipulationEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform_poisson_disk_2d
 from srb.core.sensor import ContactSensor
@@ -23,6 +23,27 @@ from .task import TaskCfg, peg_and_hole_cfg
 ##############
 ### Config ###
 ##############
+
+
+@configclass
+class EventCfg(ManipulationEventCfg):
+    ## Object
+    randomize_object_state: EventTermCfg | None = EventTermCfg(
+        func=reset_root_state_uniform_poisson_disk_2d,
+        mode="reset",
+        params={
+            "asset_cfgs": MISSING,
+            "pose_range": {
+                "x": MISSING,
+                "y": MISSING,
+                "roll": (torch.pi / 2, torch.pi / 2),
+                "pitch": (-torch.pi, torch.pi),
+                "yaw": (-torch.pi, torch.pi),
+            },
+            "velocity_range": {},
+            "radius": 0.1,
+        },
+    )
 
 
 @configclass
@@ -63,6 +84,7 @@ class MultiTaskCfg(TaskCfg):
         ]
         self.scene.object = None
         self.scene.target = None
+        # TODO: Convert to rigid body array (here, sample collection, and debris avoidance)
         for i, cfg in enumerate(self.problem_cfg):
             setattr(
                 self.scene,
@@ -89,30 +111,16 @@ class MultiTaskCfg(TaskCfg):
         ]
 
         ## Events
-        self.events.reset_rand_object_state = EventTermCfg(
-            func=reset_root_state_uniform_poisson_disk_2d,
-            mode="reset",
-            params={
-                "asset_cfgs": [
-                    SceneEntityCfg(f"object{i}")
-                    for i in range(self.num_problems_per_env)
-                ],
-                "pose_range": {
-                    "x": (
-                        -0.5 * (num_rows - 0.5) * self.problem_spacing,
-                        0.5 * (num_rows - 0.5) * self.problem_spacing,
-                    ),
-                    "y": (
-                        -0.5 * (num_cols - 0.5) * self.problem_spacing,
-                        0.5 * (num_cols - 0.5) * self.problem_spacing,
-                    ),
-                    "roll": (torch.pi / 2, torch.pi / 2),
-                    "pitch": (-torch.pi, torch.pi),
-                    "yaw": (-torch.pi, torch.pi),
-                },
-                "velocity_range": {},
-                "radius": 0.1,
-            },
+        self.events.randomize_object_state.params["asset_cfgs"] = [  # type: ignore
+            SceneEntityCfg(f"object{i}") for i in range(self.num_problems_per_env)
+        ]
+        self.events.randomize_object_state.params["pose_range"]["x"] = (  # type: ignore
+            -0.5 * (num_rows - 0.5) * self.problem_spacing,
+            0.5 * (num_rows - 0.5) * self.problem_spacing,
+        )
+        self.events.randomize_object_state.params["pose_range"]["y"] = (  # type: ignore
+            -0.5 * (num_cols - 0.5) * self.problem_spacing,
+            0.5 * (num_cols - 0.5) * self.problem_spacing,
         )
 
 

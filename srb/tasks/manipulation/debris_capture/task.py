@@ -1,17 +1,15 @@
-import sys
 from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
 
 import torch
-from pydantic import BaseModel
 from simforge import TexResConfig
 
 from srb import assets
-from srb.core.asset import RigidObject, RigidObjectCfg
+from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg, Terrain
 from srb.core.env import (
     Domain,
     ManipulationEnv,
     ManipulationEnvCfg,
-    ManipulationEnvEventCfg,
+    ManipulationEventCfg,
 )
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform
@@ -33,16 +31,42 @@ if TYPE_CHECKING:
 ##############
 
 
-class DebrisCfg(BaseModel, arbitrary_types_allowed=True):
-    ## Model
-    asset_cfg: RigidObjectCfg
-
-    ## Randomization
-    state_randomizer: EventTermCfg
+@configclass
+class EventCfg(ManipulationEventCfg):
+    ## Object
+    randomize_object_state: EventTermCfg | None = EventTermCfg(
+        func=reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("object"),
+            "pose_range": {
+                "x": (-0.25, 0.25),
+                "y": (-0.25, 0.25),
+                "z": (-0.25, 0.25),
+                "roll": (-torch.pi, torch.pi),
+                "pitch": (-torch.pi, torch.pi),
+                "yaw": (-torch.pi, torch.pi),
+            },
+            "velocity_range": {
+                "x": (-0.2 - 0.05, -0.2 + 0.05),
+                "y": (-0.05, 0.05),
+                "z": (-0.05, 0.05),
+                "roll": (-torch.pi, torch.pi),
+                "pitch": (-torch.pi, torch.pi),
+                "yaw": (-torch.pi, torch.pi),
+            },
+        },
+    )
 
 
 @configclass
 class TaskCfg(ManipulationEnvCfg):
+    ## Scenario
+    domain: Domain = Domain.ORBIT
+
+    ## Assets
+    terrain: Terrain | AssetVariant | None = None
+
     ## Environment
     episode_length_s: float = 10.0
 
@@ -50,27 +74,9 @@ class TaskCfg(ManipulationEnvCfg):
     is_finite_horizon: bool = True
 
     ## Events
-    @configclass
-    class EventCfg(ManipulationEnvEventCfg):
-        ## Object
-        reset_rand_object_state: EventTermCfg | None = None
-
-    events = EventCfg()
+    events: EventCfg = EventCfg()
 
     def __post_init__(self):
-        if self.domain is not Domain.ORBIT:
-            print(
-                f"[WARN] Environment requires ORBIT scenario ({self.domain} ignored)",
-                file=sys.stderr,
-            )
-            self.domain = Domain.ORBIT
-        if self.terrain is not None:
-            print(
-                f"[WARN] Environment requires NONE terrain ({self.terrain} ignored)",
-                file=sys.stderr,
-            )
-            self.terrain = None
-
         super().__post_init__()
 
         ## Simulation
@@ -95,9 +101,6 @@ class TaskCfg(ManipulationEnvCfg):
             filter_prim_paths_expr=[self.scene.object.prim_path],
         )
 
-        ## Events
-        self.events.reset_rand_object_state = self.object.state_randomizer
-
     ########################
     ### Helper Functions ###
     ########################
@@ -110,11 +113,10 @@ class TaskCfg(ManipulationEnvCfg):
         num_assets: int,
         init_state: RigidObjectCfg.InitialStateCfg,
         prim_path: str = "{ENV_REGEX_NS}/sample",
-        asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
         scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
         texture_resolution: TexResConfig | None = None,
         **kwargs,
-    ) -> DebrisCfg:
+    ) -> RigidObjectCfg:
         debris_cfg = assets.rigid_object_from_cfg(
             cfg,
             seed=seed,
@@ -126,32 +128,7 @@ class TaskCfg(ManipulationEnvCfg):
         debris_cfg.init_state = init_state
         debris_cfg.spawn.replace(**kwargs)
 
-        return DebrisCfg(
-            asset_cfg=debris_cfg,
-            state_randomizer=EventTermCfg(
-                func=reset_root_state_uniform,
-                mode="reset",
-                params={
-                    "asset_cfg": asset_cfg,
-                    "pose_range": {
-                        "x": (-0.25, 0.25),
-                        "y": (-0.25, 0.25),
-                        "z": (-0.25, 0.25),
-                        "roll": (-torch.pi, torch.pi),
-                        "pitch": (-torch.pi, torch.pi),
-                        "yaw": (-torch.pi, torch.pi),
-                    },
-                    "velocity_range": {
-                        "x": (-0.2 - 0.05, -0.2 + 0.05),
-                        "y": (-0.05, 0.05),
-                        "z": (-0.05, 0.05),
-                        "roll": (-torch.pi, torch.pi),
-                        "pitch": (-torch.pi, torch.pi),
-                        "yaw": (-torch.pi, torch.pi),
-                    },
-                },
-            ),
-        )
+        return debris_cfg
 
 
 ############

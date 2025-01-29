@@ -1,9 +1,10 @@
+from dataclasses import MISSING
 from typing import Dict, List, Sequence, Tuple
 
 import torch
 
-from srb.core.asset import RigidObject, RigidObjectCfg
-from srb.core.env import AssetVariant, ManipulationEnv
+from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg
+from srb.core.env import ManipulationEnv, ManipulationEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers
 from srb.core.mdp import reset_root_state_uniform_poisson_disk_2d
@@ -22,6 +23,21 @@ from .task import TaskCfg, sample_cfg
 ##############
 ### Config ###
 ##############
+
+
+@configclass
+class EventCfg(ManipulationEventCfg):
+    ## Object
+    randomize_object_state: EventTermCfg | None = EventTermCfg(
+        func=reset_root_state_uniform_poisson_disk_2d,
+        mode="reset",
+        params={
+            "asset_cfgs": MISSING,
+            "pose_range": MISSING,
+            "velocity_range": MISSING,
+            "radius": MISSING,
+        },
+    )
 
 
 @configclass
@@ -62,20 +78,17 @@ class MultiTaskCfg(TaskCfg):
         ]
 
         ## Events
-        self.events.reset_rand_object_state = EventTermCfg(
-            func=reset_root_state_uniform_poisson_disk_2d,
-            mode="reset",
-            params={
-                "asset_cfgs": [
-                    SceneEntityCfg(f"object{i}")
-                    for i in range(self.num_problems_per_env)
-                ],
-                "pose_range": self.object[0].state_randomizer.params["pose_range"],
-                "velocity_range": self.object[0].state_randomizer.params[
-                    "velocity_range"
-                ],
-                "radius": (0.225 if self.object == AssetVariant.DATASET else 0.06),
-            },
+        self.events.randomize_object_state.params["asset_cfgs"] = [  # type: ignore
+            SceneEntityCfg(f"object{i}") for i in range(self.num_problems_per_env)
+        ]
+        self.events.randomize_object_state.params["pose_range"] = (  # type: ignore
+            self.object[0].state_randomizer.params["pose_range"]
+        )
+        self.events.randomize_object_state.params["velocity_range"] = (  # type: ignore
+            self.object[0].state_randomizer.params["velocity_range"]
+        )
+        self.events.randomize_object_state.params["radius"] = (  # type: ignore
+            0.225 if self.object == AssetVariant.DATASET else 0.06
         )
 
 

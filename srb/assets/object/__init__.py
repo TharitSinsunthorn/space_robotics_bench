@@ -2,8 +2,8 @@ from typing import TYPE_CHECKING, Tuple
 
 from simforge import TexResConfig
 
-from srb.core.asset import RigidObjectCfg
-from srb.core.env import AssetVariant, Domain
+from srb.core.asset import AssetVariant, RigidObjectCfg
+from srb.core.env import Domain
 
 from .asteroid import Asteroid  # noqa: F401
 from .cubesat_debris import CubesatDebris  # noqa: F401

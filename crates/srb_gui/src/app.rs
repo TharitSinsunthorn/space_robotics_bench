@@ -1527,17 +1527,17 @@ impl App {
     }
 
     fn get_isaacsim_python_exe() -> String {
-        if let Ok(python_exe) = std::env::var("ISAAC_SIM_EXE") {
-            trace!("ISAAC_SIM_EXE: {}", python_exe);
+        if let Ok(python_exe) = std::env::var("ISAAC_SIM_PYTHON") {
+            trace!("ISAAC_SIM_PYTHON: {}", python_exe);
             python_exe.trim().to_owned()
         } else {
             let home_dir = home::home_dir().unwrap_or("/root".into());
             let isaac_sim_python_sh = home_dir.join("isaac-sim/python.sh");
             if std::path::Path::new(&isaac_sim_python_sh).exists() {
-                trace!("ISAAC_SIM_EXE: {}", isaac_sim_python_sh.display());
+                trace!("ISAAC_SIM_PYTHON: {}", isaac_sim_python_sh.display());
                 isaac_sim_python_sh.display().to_string()
             } else {
-                trace!("ISAAC_SIM_EXE: which python3");
+                trace!("ISAAC_SIM_PYTHON: which python3");
                 subprocess::Exec::cmd("which")
                     .arg("python3")
                     .stdout(subprocess::Redirection::Pipe)

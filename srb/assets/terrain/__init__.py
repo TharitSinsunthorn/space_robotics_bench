@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, Tuple
 
 from simforge import TexResConfig
 
-from srb.core.asset import AssetBaseCfg
-from srb.core.env import AssetVariant, Domain
+from srb.core.asset import AssetBaseCfg, AssetVariant
+from srb.core.env import Domain
 
 from .ground_plane import GroundPlane
 from .planetary_surface import MarsSurface, MoonSurface

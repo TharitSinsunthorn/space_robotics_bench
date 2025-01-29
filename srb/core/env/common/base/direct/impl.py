@@ -28,7 +28,6 @@ class DirectEnv(__DirectRLEnv, metaclass=__PostInitCaller):
 
         if self.cfg.actions:
             self.action_manager = ActionManager(self.cfg.actions, self)
-            self.cfg.num_actions = self.action_manager.total_action_dim
             print("[INFO] Action Manager: ", self.action_manager)
 
     def __post_init__(self):
@@ -65,7 +64,9 @@ class DirectEnv(__DirectRLEnv, metaclass=__PostInitCaller):
     def _update_gym_env_spaces(self):
         # Action space
         self.single_action_space = gymnasium.spaces.Box(
-            low=-numpy.inf, high=numpy.inf, shape=(self.cfg.num_actions,)
+            low=-numpy.inf,
+            high=numpy.inf,
+            shape=(self.action_manager.total_action_dim,),
         )
         self.action_space = gymnasium.vector.utils.batch_space(
             self.single_action_space, self.num_envs

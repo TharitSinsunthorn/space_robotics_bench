@@ -1,3 +1,4 @@
+from dataclasses import MISSING
 from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
 
 import torch
@@ -5,13 +6,12 @@ from pydantic import BaseModel
 from simforge import TexResConfig
 
 from srb import assets
-from srb.core.asset import RigidObject, RigidObjectCfg
+from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg
 from srb.core.env import (
-    AssetVariant,
     Domain,
     ManipulationEnv,
     ManipulationEnvCfg,
-    ManipulationEnvEventCfg,
+    ManipulationEventCfg,
 )
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers, VisualizationMarkersCfg
@@ -33,6 +33,20 @@ if TYPE_CHECKING:
 ##############
 ### Config ###
 ##############
+
+
+@configclass
+class EventCfg(ManipulationEventCfg):
+    ## Object
+    randomize_object_state: EventTermCfg | None = EventTermCfg(
+        func=reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("object"),
+            "pose_range": MISSING,
+            "velocity_range": {},
+        },
+    )
 
 
 class SampleCfg(BaseModel, arbitrary_types_allowed=True):
@@ -133,12 +147,7 @@ class TaskCfg(ManipulationEnvCfg):
     )
 
     ## Events
-    @configclass
-    class EventCfg(ManipulationEnvEventCfg):
-        ## Object
-        reset_rand_object_state: EventTermCfg | None = None
-
-    events = EventCfg()
+    events: EventCfg = EventCfg()
 
     def __post_init__(self):
         super().__post_init__()
@@ -165,7 +174,9 @@ class TaskCfg(ManipulationEnvCfg):
         )
 
         ## Events
-        self.events.reset_rand_object_state = self.object.state_randomizer
+        self.events.randomize_object_state.params["pose_range"] = (  # type: ignore
+            self.object.state_randomizer.params["pose_range"]
+        )
 
 
 ############

@@ -1,27 +1,30 @@
-from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 import torch
 
-from srb.core.env import LocomotionEnv, LocomotionEnvCfg, LocomotionEnvEventCfg
+from srb.core.env import LocomotionEnv, LocomotionEnvCfg, LocomotionEventCfg
 from srb.core.manager import EventTermCfg
+from srb.core.mdp import randomize_command
 from srb.utils.cfg import configclass
-from srb.utils.math import matrix_from_quat, rotmat_to_rot6d, sample_uniform
-
-if TYPE_CHECKING:
-    from srb._typing import AnyEnv
+from srb.utils.math import matrix_from_quat, rotmat_to_rot6d
 
 ##############
 ### Config ###
 ##############
 
 
-def change_locomotion_command(
-    env: "AnyEnv", env_ids: torch.Tensor | None, magnitude: float = 1.0
-):
-    if env_ids is None:
-        env_ids = torch.arange(env.cfg.scene.num_envs, device=env.device)
-    env._command[env_ids] = sample_uniform(  # type: ignore
-        -magnitude, magnitude, (len(env_ids), 3), device=env.device
+@configclass
+class EventCfg(LocomotionEventCfg):
+    command = EventTermCfg(
+        func=randomize_command,
+        mode="interval",
+        is_global_time=True,
+        interval_range_s=(0.5, 5.0),
+        params={
+            "env_attr_name": "_command",
+            "length": 3,
+            # "magnitude": 1.0,
+        },
     )
 
 
@@ -34,16 +37,7 @@ class TaskCfg(LocomotionEnvCfg):
     is_finite_horizon: bool = False
 
     ## Events
-    @configclass
-    class EventCfg(LocomotionEnvEventCfg):
-        command = EventTermCfg(
-            func=change_locomotion_command,
-            mode="interval",
-            is_global_time=True,
-            interval_range_s=(0.5, 5.0),  # time_s = num_steps * (decimation * dt)
-        )
-
-    events = EventCfg()
+    events: EventCfg = EventCfg()
 
     def __post_init__(self):
         super().__post_init__()

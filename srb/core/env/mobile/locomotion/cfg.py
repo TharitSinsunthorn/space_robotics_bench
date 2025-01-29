@@ -1,19 +1,15 @@
 import math
 
-import torch
 from simforge import BakeType
 
 from srb import assets
-from srb.core.asset import LeggedRobot
-from srb.core.env import DirectEnvCfg, InteractiveSceneCfg, ViewerCfg
-from srb.core.env.common.enums import AssetVariant
+from srb.core.asset import AssetVariant, LeggedRobot
+from srb.core.env import BaseEventCfg, DirectEnvCfg, InteractiveSceneCfg, ViewerCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import (
     push_by_setting_velocity,
     reset_joints_by_scale,
     reset_root_state_uniform,
-    reset_scene_to_default,
-    reset_xform_orientation_uniform,
 )
 from srb.core.sensor import ContactSensorCfg
 from srb.core.sim import PhysxCfg, RenderCfg, RigidBodyMaterialCfg, SimulationCfg
@@ -21,31 +17,9 @@ from srb.utils.cfg import configclass
 
 
 @configclass
-class LocomotionEnvEventCfg:
-    ## Default scene reset
-    reset_all = EventTermCfg(func=reset_scene_to_default, mode="reset")
-
-    ## Light
-    reset_rand_light_rot = EventTermCfg(
-        func=reset_xform_orientation_uniform,
-        mode="reset",
-        params={
-            "asset_cfg": SceneEntityCfg("light"),
-            "orientation_distribution_params": {
-                "roll": (
-                    -75.0 * torch.pi / 180.0,
-                    75.0 * torch.pi / 180.0,
-                ),
-                "pitch": (
-                    0.0,
-                    75.0 * torch.pi / 180.0,
-                ),
-            },
-        },
-    )
-
+class LocomotionEventCfg(BaseEventCfg):
     ## Robot
-    reset_base = EventTermCfg(
+    randomize_robot_state: EventTermCfg | None = EventTermCfg(
         func=reset_root_state_uniform,
         mode="reset",
         params={
@@ -61,7 +35,7 @@ class LocomotionEnvEventCfg:
             },
         },
     )
-    reset_robot_joints = EventTermCfg(
+    randomize_robot_joints: EventTermCfg | None = EventTermCfg(
         func=reset_joints_by_scale,
         mode="reset",
         params={
@@ -70,7 +44,7 @@ class LocomotionEnvEventCfg:
             "velocity_range": (0.0, 0.0),
         },
     )
-    push_robot = EventTermCfg(
+    push_robot: EventTermCfg | None = EventTermCfg(
         func=push_by_setting_velocity,
         mode="interval",
         interval_range_s=(10.0, 15.0),
@@ -136,20 +110,24 @@ class LocomotionEnvCfg(DirectEnvCfg):
     )
 
     ## Scene
-    scene = InteractiveSceneCfg(num_envs=1, env_spacing=0.0, replicate_physics=False)
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(
+        num_envs=1, env_spacing=0.0, replicate_physics=False
+    )
 
     ## Events
-    events = LocomotionEnvEventCfg()
+    events: LocomotionEventCfg = LocomotionEventCfg()
 
     def __post_init__(self):
         super().__post_init__()
 
         ## Simulation
+        # TODO: Move these into the base class
         self.decimation = int(self.agent_rate / self.env_rate)
         self.sim.dt = self.env_rate
         self.sim.render_interval = self.decimation
         self.sim.gravity = (0.0, 0.0, -self.domain.gravity_magnitude)
         # TODO: Fix scaling with self.scene.num_envs everywhere (this should be supported now with the reconstructed hydra config)
+        # TODO: Maybe move this to one of the superclasses
         # Increase GPU settings based on the number of environments
         gpu_capacity_factor = math.pow(self.scene.num_envs, 0.5)
         self.sim.physx.gpu_heap_capacity *= gpu_capacity_factor

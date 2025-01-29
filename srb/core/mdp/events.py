@@ -1,18 +1,37 @@
-from typing import TYPE_CHECKING, Dict, List, Tuple
+from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
 
 import torch
-from omni.isaac.core.prims.xform_prim_view import XFormPrimView
+from pxr import Gf
 
-from srb.core.asset import Articulation, RigidObject
+from srb.core.asset import Articulation, RigidObject, XFormPrimView
 from srb.core.manager import SceneEntityCfg
-from srb.utils.math import quat_from_euler_xyz, quat_mul, sample_uniform
+from srb.utils.math import quat_from_euler_xyz, quat_mul
 from srb.utils.sampling import (
     sample_poisson_disk_2d_looped,
     sample_poisson_disk_3d_looped,
+    sample_uniform,
 )
+from srb.utils.usd import safe_set_attribute_on_usd_prim
 
 if TYPE_CHECKING:
     from srb._typing import AnyEnv
+
+
+def randomize_command(
+    env: "AnyEnv",
+    env_ids: torch.Tensor | None,
+    env_attr_name: str,
+    length: int,
+    magnitude: float = 1.0,
+):
+    if env_ids is None:
+        env_ids = torch.arange(
+            env.unwrapped.cfg.scene.num_envs, device=env.unwrapped.device
+        )
+    cmd_attr = getattr(env, env_attr_name)
+    cmd_attr[env_ids] = sample_uniform(
+        -magnitude, magnitude, (len(env_ids), length), device=env.unwrapped.device
+    )
 
 
 def reset_xform_orientation_uniform(
@@ -35,27 +54,6 @@ def reset_xform_orientation_uniform(
     orientations = quat_from_euler_xyz(
         rand_samples[:, 0], rand_samples[:, 1], rand_samples[:, 2]
     )
-
-    asset.set_world_poses(orientations=orientations)
-
-
-def follow_xform_orientation_linear_trajectory(
-    env: "AnyEnv",
-    env_ids: torch.Tensor,
-    orientation_step_params: Dict[str, float],
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
-):
-    asset: XFormPrimView = env.scene[asset_cfg.name]
-
-    _, current_quat = asset.get_world_poses()
-
-    steps = torch.tensor(
-        [orientation_step_params.get(key, 0.0) for key in ["roll", "pitch", "yaw"]],
-        device=asset._device,
-    )
-    step_quat = quat_from_euler_xyz(steps[0], steps[1], steps[2]).unsqueeze(0)
-
-    orientations = quat_mul(current_quat, step_quat)
 
     asset.set_world_poses(orientations=orientations)
 
@@ -98,6 +96,80 @@ def reset_joints_by_offset(
         joint_ids=joint_indices,
         env_ids=env_ids,
     )
+
+
+def randomize_usd_prim_attribute_uniform(
+    env: "AnyEnv",
+    env_ids: torch.Tensor | None,
+    attr_name: str,
+    distribution_params: Tuple[float | Sequence[float], float | Sequence[float]],
+    asset_cfg: SceneEntityCfg,
+):
+    asset: XFormPrimView = env.scene[asset_cfg.name]
+    if isinstance(distribution_params[0], Sequence):
+        dist_len = len(distribution_params[0])
+        distribution_params = (  # type: ignore
+            torch.tensor(distribution_params[0]),
+            torch.tensor(distribution_params[1]),
+        )
+    else:
+        dist_len = 1
+    for i, prim in enumerate(asset.prims):
+        if env_ids and i not in env_ids:
+            continue
+        value = sample_uniform(
+            distribution_params[0],  # type: ignore
+            distribution_params[1],  # type: ignore
+            (dist_len,),
+            device="cpu",
+        )
+        value = value.item() if dist_len == 1 else value.tolist()
+        safe_set_attribute_on_usd_prim(
+            prim, f"inputs:{attr_name}", value, camel_case=True
+        )
+
+
+def randomize_gravity_uniform(
+    env: "AnyEnv",
+    env_ids: torch.Tensor | None,
+    distribution_params: Tuple[Tuple[float, float, float], Tuple[float, float, float]],
+):
+    physics_scene = env.sim._physics_context._physics_scene  # type: ignore
+    gravity = sample_uniform(
+        torch.tensor(distribution_params[0]),
+        torch.tensor(distribution_params[1]),
+        (3,),
+        device="cpu",
+    )
+    gravity_magnitude = torch.norm(gravity)
+    if gravity_magnitude == 0.0:
+        gravity_direction = gravity
+    else:
+        gravity_direction = gravity / gravity_magnitude
+
+    physics_scene.CreateGravityDirectionAttr(Gf.Vec3f(*gravity_direction.tolist()))
+    physics_scene.CreateGravityMagnitudeAttr(gravity_magnitude.item())
+
+
+def follow_xform_orientation_linear_trajectory(
+    env: "AnyEnv",
+    env_ids: torch.Tensor,
+    orientation_step_params: Dict[str, float],
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
+):
+    asset: XFormPrimView = env.scene[asset_cfg.name]
+
+    _, current_quat = asset.get_world_poses()
+
+    steps = torch.tensor(
+        [orientation_step_params.get(key, 0.0) for key in ["roll", "pitch", "yaw"]],
+        device=asset._device,
+    )
+    step_quat = quat_from_euler_xyz(steps[0], steps[1], steps[2]).unsqueeze(0)
+
+    orientations = quat_mul(current_quat, step_quat)  # type: ignore
+
+    asset.set_world_poses(orientations=orientations)
 
 
 def reset_root_state_uniform_poisson_disk_2d(

@@ -1,12 +1,11 @@
-import sys
+from dataclasses import MISSING
 from typing import Dict, Sequence, Tuple
 
 import torch
-from pydantic import BaseModel
 
 from srb import assets
 from srb.core.asset import RigidObjectCfg
-from srb.core.env import Domain, SpacecraftEnv, SpacecraftEnvCfg
+from srb.core.env import SpacecraftEnv, SpacecraftEnvCfg, SpacecraftEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform_poisson_disk_3d
 from srb.utils.cfg import configclass
@@ -16,9 +15,33 @@ from srb.utils.cfg import configclass
 ##############
 
 
-class ExtDebrisCfg(BaseModel):
-    ## Model
-    asset_cfg: RigidObjectCfg
+@configclass
+class EventCfg(SpacecraftEventCfg):
+    ## Object
+    randomize_object_state: EventTermCfg | None = EventTermCfg(
+        func=reset_root_state_uniform_poisson_disk_3d,
+        mode="reset",
+        params={
+            "asset_cfgs": MISSING,
+            "pose_range": {
+                "x": (-5.0, 5.0),
+                "y": (-5.0, 5.0),
+                "z": (-5.0, 5.0),
+                "roll": (-torch.pi, torch.pi),
+                "pitch": (-torch.pi, torch.pi),
+                "yaw": (-torch.pi, torch.pi),
+            },
+            "velocity_range": {
+                "x": (-0.1, 0.1),
+                "y": (-0.1, 0.1),
+                "z": (-0.1, 0.1),
+                "roll": (-0.1 * torch.pi, 0.1 * torch.pi),
+                "pitch": (-0.1 * torch.pi, 0.1 * torch.pi),
+                "yaw": (-0.1 * torch.pi, 0.1 * torch.pi),
+            },
+            "radius": (2.0),
+        },
+    )
 
 
 def asteroid_cfg(
@@ -28,16 +51,16 @@ def asteroid_cfg(
     prim_path: str = "{ENV_REGEX_NS}/sample",
     scale: Tuple[float, float, float] = (10.0, 10.0, 10.0),
     **kwargs,
-) -> ExtDebrisCfg:
-    cfg = assets.Asteroid(scale=scale).asset_cfg
+) -> RigidObjectCfg:
+    asset_cfg = assets.Asteroid(scale=scale).asset_cfg
 
-    cfg.spawn.num_assets = num_assets  # type: ignore
-    cfg.spawn.seed = seed  # type: ignore
-    cfg.init_state = init_state
-    cfg.prim_path = prim_path
-    cfg.spawn.replace(**kwargs)
+    asset_cfg.spawn.num_assets = num_assets  # type: ignore
+    asset_cfg.spawn.seed = seed  # type: ignore
+    asset_cfg.init_state = init_state
+    asset_cfg.prim_path = prim_path
+    asset_cfg.spawn.replace(**kwargs)
 
-    return ExtDebrisCfg(asset_cfg=cfg)
+    return asset_cfg
 
 
 @configclass
@@ -47,20 +70,10 @@ class TaskCfg(SpacecraftEnvCfg):
     ## Task
     is_finite_horizon: bool = False
 
-    def __post_init__(self):
-        if self.domain != Domain.ORBIT:
-            print(
-                f"[WARN] Environment requires ORBIT scenario ({self.domain} ignored)",
-                file=sys.stderr,
-            )
-            self.domain = Domain.ORBIT
-        if self.terrain is not None:
-            print(
-                f"[WARN] Environment requires NONE terrain ({self.terrain} ignored)",
-                file=sys.stderr,
-            )
-            self.terrain = None
+    ## Events
+    events: EventCfg = EventCfg()
 
+    def __post_init__(self):
         super().__post_init__()
 
         ## Scene
@@ -74,37 +87,13 @@ class TaskCfg(SpacecraftEnvCfg):
             )
             for i in range(self.num_problems_per_env)
         ]
-        for i, object in enumerate(self.objects):
-            setattr(self.scene, f"object{i}", object.asset_cfg)
+        for i, obj_cfg in enumerate(self.objects):
+            setattr(self.scene, f"object{i}", obj_cfg)
 
         ## Events
-        self.events.reset_rand_object_state_multi = EventTermCfg(
-            func=reset_root_state_uniform_poisson_disk_3d,
-            mode="reset",
-            params={
-                "asset_cfgs": [
-                    SceneEntityCfg(f"object{i}")
-                    for i in range(self.num_problems_per_env)
-                ],
-                "pose_range": {
-                    "x": (-5.0, 5.0),
-                    "y": (-5.0, 5.0),
-                    "z": (-5.0, 5.0),
-                    "roll": (-torch.pi, torch.pi),
-                    "pitch": (-torch.pi, torch.pi),
-                    "yaw": (-torch.pi, torch.pi),
-                },
-                "velocity_range": {
-                    # "x": (-50.0, 50.0),
-                    # "y": (-50.0, 50.0),
-                    # "z": (-50.0, 50.0),
-                    # "roll": (-torch.pi, torch.pi),
-                    # "pitch": (-torch.pi, torch.pi),
-                    # "yaw": (-torch.pi, torch.pi),
-                },
-                "radius": (2.0),
-            },
-        )
+        self.events.randomize_object_state.params["asset_cfgs"] = [  # type: ignore
+            SceneEntityCfg(f"object{i}") for i in range(self.num_problems_per_env)
+        ]
 
 
 ############

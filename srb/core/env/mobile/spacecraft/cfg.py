@@ -3,39 +3,24 @@ import math
 import torch
 
 from srb import assets
-from srb.core.asset import Spacecraft
-from srb.core.env import DirectEnvCfg, InteractiveSceneCfg, ViewerCfg
-from srb.core.env.common.enums import AssetVariant
-from srb.core.manager import EventTermCfg, SceneEntityCfg
-from srb.core.mdp import (
-    reset_root_state_uniform,
-    reset_scene_to_default,
-    reset_xform_orientation_uniform,
+from srb.core.asset import AssetVariant, Spacecraft, Terrain
+from srb.core.env import (
+    BaseEventCfg,
+    DirectEnvCfg,
+    Domain,
+    InteractiveSceneCfg,
+    ViewerCfg,
 )
+from srb.core.manager import EventTermCfg, SceneEntityCfg
+from srb.core.mdp import reset_root_state_uniform
 from srb.core.sim import PhysxCfg, RenderCfg, RigidBodyMaterialCfg, SimulationCfg
 from srb.utils.cfg import configclass
 
 
 @configclass
-class SpacecraftEnvEventCfg:
-    ## Default scene reset
-    reset_all = EventTermCfg(func=reset_scene_to_default, mode="reset")
-
-    ## Light
-    reset_rand_light_rot = EventTermCfg(
-        func=reset_xform_orientation_uniform,
-        mode="reset",
-        params={
-            "asset_cfg": SceneEntityCfg("light"),
-            "orientation_distribution_params": {
-                "roll": (-20.0 * torch.pi / 180.0,) * 2,
-                "pitch": (50.0 * torch.pi / 180.0,) * 2,
-            },
-        },
-    )
-
+class SpacecraftEventCfg(BaseEventCfg):
     ## Robot
-    reset_rand_robot_state = EventTermCfg(
+    randomize_robot_state: EventTermCfg | None = EventTermCfg(
         func=reset_root_state_uniform,
         mode="reset",
         params={
@@ -71,6 +56,12 @@ class SpacecraftEnvEventCfg:
 
 @configclass
 class SpacecraftEnvCfg(DirectEnvCfg):
+    ## Scenario
+    domain: Domain = Domain.ORBIT
+
+    ## Assets
+    terrain: Terrain | AssetVariant | None = None
+
     ## Environment
     episode_length_s: float = 50.0
     env_rate: float = 1.0 / 50.0
@@ -124,10 +115,12 @@ class SpacecraftEnvCfg(DirectEnvCfg):
     )
 
     ## Scene
-    scene = InteractiveSceneCfg(num_envs=1, env_spacing=1.5, replicate_physics=False)
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(
+        num_envs=1, env_spacing=1.5, replicate_physics=False
+    )
 
     ## Events
-    events = SpacecraftEnvEventCfg()
+    events: SpacecraftEventCfg = SpacecraftEventCfg()
 
     def __post_init__(self):
         super().__post_init__()

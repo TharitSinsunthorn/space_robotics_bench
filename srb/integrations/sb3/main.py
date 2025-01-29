@@ -138,7 +138,7 @@ def run(
             )
 
             # Initialize the runner
-            episode_start = numpy.ones((env.num_envs,), dtype=bool)
+            episode_start = numpy.ones((env.unwrapped.num_envs,), dtype=bool)
             lstm_states = None
 
             obs = env.reset()

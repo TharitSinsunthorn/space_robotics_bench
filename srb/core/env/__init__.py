@@ -2,8 +2,8 @@ from omni.isaac.lab.envs import ViewerCfg  # noqa: F401
 from omni.isaac.lab.scene import InteractiveScene, InteractiveSceneCfg  # noqa: F401
 
 from .common import (  # noqa: F401
-    AssetVariant,
     BaseEnvCfg,
+    BaseEventCfg,
     DirectEnv,
     DirectEnvCfg,
     DirectMarlEnv,
@@ -20,23 +20,23 @@ from .common import (  # noqa: F401
 from .manipulation import (  # noqa: F401
     ManipulationEnv,
     ManipulationEnvCfg,
-    ManipulationEnvEventCfg,
     ManipulationEnvVisualExtCfg,
+    ManipulationEventCfg,
 )
 from .mobile import (  # noqa: F401
     AerialEnv,
     AerialEnvCfg,
-    AerialEnvEventCfg,
     AerialEnvVisualExtCfg,
+    AerialEventCfg,
     LocomotionEnv,
     LocomotionEnvCfg,
-    LocomotionEnvEventCfg,
+    LocomotionEventCfg,
     MobileRoboticsEnv,
     MobileRoboticsEnvCfg,
-    MobileRoboticsEnvEventCfg,
     MobileRoboticsEnvVisualExtCfg,
+    MobileRoboticsEventCfg,
     SpacecraftEnv,
     SpacecraftEnvCfg,
-    SpacecraftEnvEventCfg,
+    SpacecraftEventCfg,
 )
 from .mobile_manipulation import *  # noqa: F403

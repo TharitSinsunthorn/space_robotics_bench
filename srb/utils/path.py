@@ -21,3 +21,6 @@ SRB_HYPERPARAMS_DIR = SRB_DIR.joinpath("hyperparams")
 
 # Path to logs
 SRB_LOGS_DIR = SRB_DIR.joinpath("logs")
+
+# Path to a cached list of registered environments
+SRB_ENV_CACHE_PATH: Path = SRB_DIR.joinpath(".envs_cache")

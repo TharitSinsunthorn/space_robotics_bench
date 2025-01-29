@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal, Mapping, Sequence, Tuple
 
 from srb.interfaces.interface_type import InterfaceType
 from srb.interfaces.teleop_device import TeleopDevice
-from srb.utils.path import SRB_APPS_DIR, SRB_DIR
+from srb.utils.path import SRB_APPS_DIR, SRB_DIR, SRB_ENV_CACHE_PATH
 
 if TYPE_CHECKING:
     from omni.isaac.kit import SimulationApp
@@ -190,7 +190,9 @@ def random_agent(env: "AnyEnv", sim_app: "SimulationApp", **kwargs):
 
     with torch.inference_mode():
         while sim_app.is_running():
-            actions = torch.from_numpy(env.action_space.sample()).to(device=env.device)
+            actions = torch.from_numpy(env.action_space.sample()).to(
+                device=env.unwrapped.device
+            )
 
             observation, reward, terminated, truncated, info = env.step(actions)  # type: ignore
 
@@ -209,7 +211,7 @@ def zero_agent(env: "AnyEnv", sim_app: "SimulationApp", **kwargs):
 
     from srb.utils import logging
 
-    actions = torch.zeros(env.action_space.shape, device=env.device)  # type: ignore
+    actions = torch.zeros(env.action_space.shape, device=env.unwrapped.device)  # type: ignore
 
     with torch.inference_mode():
         while sim_app.is_running():
@@ -257,8 +259,8 @@ def teleop_agent(
         )
 
     # Disable truncation
-    if hasattr(env.cfg, "enable_truncation"):
-        env.cfg.enable_truncation = False
+    if hasattr(env.unwrapped.cfg, "enable_truncation"):
+        env.unwrapped.cfg.enable_truncation = False
 
     # Create ROS 2 node
     if InterfaceType.GUI in interface or InterfaceType.ROS2 in interface:
@@ -277,7 +279,7 @@ def teleop_agent(
         node=ros_node,
         pos_sensitivity=pos_sensitivity,
         rot_sensitivity=rot_sensitivity,
-        action_cfg=env.cfg.robot.action_cfg,  # type: ignore
+        action_cfg=env.unwrapped.cfg.robot.action_cfg,  # type: ignore
     )
 
     ## Set up reset callback
@@ -322,8 +324,8 @@ def teleop_agent(
 
     ## Determine how to teleoperate the agent and dispatch the appropriate implementation
     env_supports_direct_teleop = (
-        hasattr(env.cfg.robot.action_cfg.__class__, "map_commands")  # type: ignore
-        and env.cfg.robot.action_cfg.__class__.map_commands  # type: ignore
+        hasattr(env.unwrapped.cfg.robot.action_cfg.__class__, "map_commands")  # type: ignore
+        and env.unwrapped.cfg.robot.action_cfg.__class__.map_commands  # type: ignore
         is not ActionGroup.map_commands
     )
 
@@ -373,7 +375,7 @@ def _teleop_agent_direct(
     from srb.core.manager import SceneEntityCfg
     from srb.core.mdp import body_incoming_wrench_mean
 
-    is_manip_task = isinstance(env.cfg.robot, Manipulator)
+    is_manip_task = isinstance(env.unwrapped.cfg.robot, Manipulator)
 
     ## Run the environment
     with torch.inference_mode():
@@ -382,10 +384,12 @@ def _teleop_agent_direct(
             twist, event = teleop_interface.advance()
             if is_manip_task and not disable_control_scheme_inversion:
                 twist[:2] *= -1.0
-            actions = env.cfg.robot.action_cfg.map_commands(  # type: ignore
-                torch.from_numpy(twist).to(device=env.device, dtype=torch.float32),
+            actions = env.unwrapped.cfg.robot.action_cfg.map_commands(  # type: ignore
+                torch.from_numpy(twist).to(
+                    device=env.unwrapped.device, dtype=torch.float32
+                ),
                 event,
-            ).repeat(env.num_envs, 1)
+            ).repeat(env.unwrapped.num_envs, 1)
 
             ## Step the environment
             observation, reward, terminated, truncated, info = env.step(actions)
@@ -396,7 +400,7 @@ def _teleop_agent_direct(
                 FT_FEEDBACK_SCALE = torch.tensor([0.16, 0.16, 0.16, 0.0, 0.0, 0.0])
                 ft_feedback_asset_cfg = SceneEntityCfg(
                     "robot",
-                    body_names=env.cfg.robot.regex_links_hand,  # type: ignore
+                    body_names=env.unwrapped.cfg.robot.regex_links_hand,  # type: ignore
                 )
                 ft_feedback_asset_cfg.resolve(env.scene)
                 ft_feedback = (
@@ -452,10 +456,10 @@ def _teleop_agent_via_policy(
     from srb.core.asset import Manipulator
 
     # Disable command randomization
-    if hasattr(env.cfg.events, "command"):
-        env.cfg.events.command = None  # type: ignore
+    if hasattr(env.unwrapped.cfg.events, "command"):
+        env.unwrapped.cfg.events.command = None  # type: ignore
 
-    is_manip_task = isinstance(env.cfg.robot, Manipulator)
+    is_manip_task = isinstance(env.unwrapped.cfg.robot, Manipulator)
 
     class InjectTeleopWrapper(ObservationWrapper):
         def observation(self, observation: ObsType) -> WrapperObsType:  # type: ignore
@@ -470,13 +474,13 @@ def _teleop_agent_via_policy(
             match cmd_len:
                 case _ if cmd_len < 7:
                     observation["command"][:] = torch.from_numpy(twist[:cmd_len]).to(  # type: ignore
-                        device=env.device, dtype=torch.float32
+                        device=env.unwrapped.device, dtype=torch.float32
                     )
                 case 7:
                     observation["command"][:] = torch.concat(  # type: ignore
                         (
                             torch.from_numpy(twist).to(
-                                device=env.device, dtype=torch.float32
+                                device=env.unwrapped.device, dtype=torch.float32
                             ),
                             torch.Tensor((-1.0 if event else 1.0,)).to(
                                 device=twist.device  # type: ignore
@@ -543,8 +547,8 @@ def ros_agent(env: "AnyEnv", sim_app: "SimulationApp", **kwargs):
     from srb.interfaces.ros2 import ROS2Interface
 
     # Disable truncation
-    if hasattr(env.cfg, "enable_truncation"):
-        env.cfg.enable_truncation = False
+    if hasattr(env.unwrapped.cfg, "enable_truncation"):
+        env.unwrapped.cfg.enable_truncation = False
 
     ## Create ROS 2 interface
     ros2_interface = ROS2Interface(env)
@@ -1223,13 +1227,11 @@ class AutoNamespaceTaskAction(argparse.Action):
 
 
 class OfflineEnvRegistry:
-    ENV_REGISTRY_CACHE: Path = SRB_DIR.joinpath(".envs_cache")
-
-    @classmethod
-    def read(cls) -> Sequence[str] | None:
-        if not cls.ENV_REGISTRY_CACHE.exists():
+    @staticmethod
+    def read() -> Sequence[str] | None:
+        if not SRB_ENV_CACHE_PATH.exists():
             return None
-        with cls.ENV_REGISTRY_CACHE.open("r") as f:
+        with SRB_ENV_CACHE_PATH.open("r") as f:
             return f.read().splitlines()
 
     @classmethod
@@ -1252,10 +1254,10 @@ class OfflineEnvRegistry:
             logging.trace("The cache of registered environments is up-to-date")
             return
 
-        with cls.ENV_REGISTRY_CACHE.open("w") as f:
+        with SRB_ENV_CACHE_PATH.open("w") as f:
             f.write("\n".join(registered_envs) + "\n")
         logging.debug(
-            f"Updated the cache of registered environments to {cls.ENV_REGISTRY_CACHE}"
+            f"Updated the cache of registered environments to {SRB_ENV_CACHE_PATH}"
         )
 
 

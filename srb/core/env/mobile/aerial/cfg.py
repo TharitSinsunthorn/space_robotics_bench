@@ -4,58 +4,18 @@ import torch
 from simforge import BakeType
 
 from srb import assets
-from srb.core.asset import AerialRobot
-from srb.core.env import DirectEnvCfg, InteractiveSceneCfg, ViewerCfg
-from srb.core.env.common.enums import AssetVariant
+from srb.core.asset import AerialRobot, AssetVariant
+from srb.core.env import BaseEventCfg, DirectEnvCfg, InteractiveSceneCfg, ViewerCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
-from srb.core.mdp import (
-    reset_root_state_uniform,
-    reset_scene_to_default,
-    reset_xform_orientation_uniform,
-)
+from srb.core.mdp import reset_root_state_uniform
 from srb.core.sim import PhysxCfg, RenderCfg, RigidBodyMaterialCfg, SimulationCfg
 from srb.utils.cfg import configclass
 
 
 @configclass
-class AerialEnvEventCfg:
-    ## Default scene reset
-    reset_all = EventTermCfg(func=reset_scene_to_default, mode="reset")
-
-    ## Light
-    reset_rand_light_rot = EventTermCfg(
-        func=reset_xform_orientation_uniform,
-        mode="reset",
-        params={
-            "asset_cfg": SceneEntityCfg("light"),
-            "orientation_distribution_params": {
-                "roll": (
-                    -75.0 * torch.pi / 180.0,
-                    75.0 * torch.pi / 180.0,
-                ),
-                "pitch": (
-                    -75.0 * torch.pi / 180.0,
-                    75.0 * torch.pi / 180.0,
-                ),
-            },
-        },
-    )
-    # reset_rand_light_rot = EventTermCfg(
-    #     func=follow_xform_orientation_linear_trajectory,
-    #     mode="interval",
-    #     interval_range_s=(0.1, 0.1),
-    #     is_global_time=True,
-    #     params={
-    #         "asset_cfg": SceneEntityCfg("light"),
-    #         "orientation_step_params": {
-    #             "roll": 0.25 * torch.pi / 180.0,
-    #             "pitch": 0.5 * torch.pi / 180.0,
-    #         },
-    #     },
-    # )
-
+class AerialEventCfg(BaseEventCfg):
     ## Robot
-    reset_rand_robot_state = EventTermCfg(
+    randomize_robot_state: EventTermCfg | None = EventTermCfg(
         func=reset_root_state_uniform,
         mode="reset",
         params={
@@ -129,10 +89,12 @@ class AerialEnvCfg(DirectEnvCfg):
     )
 
     ## Scene
-    scene = InteractiveSceneCfg(num_envs=1, env_spacing=64.0, replicate_physics=False)
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(
+        num_envs=1, env_spacing=64.0, replicate_physics=False
+    )
 
     ## Events
-    events = AerialEnvEventCfg()
+    events: AerialEventCfg = AerialEventCfg()
 
     def __post_init__(self):
         super().__post_init__()

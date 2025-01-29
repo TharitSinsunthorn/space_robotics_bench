@@ -4,9 +4,9 @@ import torch
 from simforge import BakeType
 
 from srb import assets
-from srb.core.asset import Manipulator, StaticVehicle
+from srb.core.asset import AssetVariant, Manipulator, StaticVehicle
 from srb.core.env import (
-    AssetVariant,
+    BaseEventCfg,
     DirectEnvCfg,
     Domain,
     InteractiveSceneCfg,
@@ -14,42 +14,16 @@ from srb.core.env import (
 )
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import FRAME_MARKER_SMALL_CFG
-from srb.core.mdp import (
-    reset_joints_by_offset,
-    reset_scene_to_default,
-    reset_xform_orientation_uniform,
-)
+from srb.core.mdp import reset_joints_by_offset
 from srb.core.sensor import ContactSensorCfg, FrameTransformerCfg, OffsetCfg
 from srb.core.sim import PhysxCfg, RenderCfg, RigidBodyMaterialCfg, SimulationCfg
 from srb.utils.cfg import configclass
 
 
 @configclass
-class ManipulationEnvEventCfg:
-    ## Default scene reset
-    reset_all = EventTermCfg(func=reset_scene_to_default, mode="reset")
-
-    ## Light
-    reset_rand_light_rot = EventTermCfg(
-        func=reset_xform_orientation_uniform,
-        mode="reset",
-        params={
-            "asset_cfg": SceneEntityCfg("light"),
-            "orientation_distribution_params": {
-                "roll": (
-                    -75.0 * torch.pi / 180.0,
-                    75.0 * torch.pi / 180.0,
-                ),
-                "pitch": (
-                    0.0,
-                    75.0 * torch.pi / 180.0,
-                ),
-            },
-        },
-    )
-
+class ManipulationEventCfg(BaseEventCfg):
     ## Robot
-    reset_rand_robot_state = EventTermCfg(
+    randomize_robot_joints: EventTermCfg | None = EventTermCfg(
         func=reset_joints_by_offset,
         mode="reset",
         params={
@@ -116,10 +90,12 @@ class ManipulationEnvCfg(DirectEnvCfg):
     )
 
     ## Scene
-    scene = InteractiveSceneCfg(num_envs=1, env_spacing=8.0, replicate_physics=False)
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(
+        num_envs=1, env_spacing=8.0, replicate_physics=False
+    )
 
     ## Events
-    events = ManipulationEnvEventCfg()
+    events: ManipulationEventCfg = ManipulationEventCfg()
 
     def __post_init__(self):
         super().__post_init__()
@@ -147,7 +123,7 @@ class ManipulationEnvCfg(DirectEnvCfg):
 
         ## Scene
         if self.domain == Domain.ORBIT:
-            self.scene.env_spacing = 42.0
+            self.scene.env_spacing = 32.0
         self.scene.light = assets.sunlight_from_cfg(self)
         self.scene.sky = assets.sky_from_cfg(self)
         # self.robot = assets.manipulator_from_env_cfg(self)
@@ -211,14 +187,6 @@ class ManipulationEnvCfg(DirectEnvCfg):
         )
 
         ## Events
-        self.events.reset_rand_robot_state.params[
+        self.events.randomize_robot_joints.params[  # type: ignore
             "asset_cfg"
         ].joint_names = self.robot.regex_joints_arm
-        if self.domain == Domain.ORBIT:
-            # Fix the orientation of the light such that it fits with the orbital HDR
-            self.events.reset_rand_light_rot.params[
-                "orientation_distribution_params"
-            ] = {
-                "roll": (-20.0 * torch.pi / 180.0,) * 2,
-                "pitch": (50.0 * torch.pi / 180.0,) * 2,
-            }

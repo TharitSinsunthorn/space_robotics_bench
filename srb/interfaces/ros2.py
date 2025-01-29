@@ -163,7 +163,7 @@ class ROS2Interface:
     def reset(self):
         self._env.reset()
         self._actions = numpy.zeros(
-            (self._env.unwrapped.num_envs, self._env.unwrapped.cfg.num_actions)
+            (self._env.unwrapped.num_envs, *self._env.unwrapped.action_space.shape)
         )
 
     def update(self):
@@ -178,7 +178,7 @@ class ROS2Interface:
 
     def _setup_actions(self):
         self._actions = numpy.zeros(
-            (self._env.unwrapped.num_envs, self._env.unwrapped.cfg.num_actions)
+            (self._env.unwrapped.num_envs, *self._env.unwrapped.action_space.shape)
         )
 
         robot_name = self._env.unwrapped.cfg.robot.asset_cfg.prim_path.split("/")[-1]

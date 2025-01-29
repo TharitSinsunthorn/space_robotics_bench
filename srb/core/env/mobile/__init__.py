@@ -1,8 +1,8 @@
 from .base import (  # noqa: F401
     MobileRoboticsEnv,
     MobileRoboticsEnvCfg,
-    MobileRoboticsEnvEventCfg,
     MobileRoboticsEnvVisualExtCfg,
+    MobileRoboticsEventCfg,
 )
 
 # isort: split
@@ -10,16 +10,16 @@ from .base import (  # noqa: F401
 from .aerial import (  # noqa: F401
     AerialEnv,
     AerialEnvCfg,
-    AerialEnvEventCfg,
     AerialEnvVisualExtCfg,
+    AerialEventCfg,
 )
 from .locomotion import (  # noqa: F401
     LocomotionEnv,
     LocomotionEnvCfg,
-    LocomotionEnvEventCfg,
+    LocomotionEventCfg,
 )
 from .spacecraft import (  # noqa: F401
     SpacecraftEnv,
     SpacecraftEnvCfg,
-    SpacecraftEnvEventCfg,
+    SpacecraftEventCfg,
 )

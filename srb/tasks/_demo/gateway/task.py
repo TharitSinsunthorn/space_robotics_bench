@@ -1,4 +1,3 @@
-import sys
 from typing import Dict, Sequence, Tuple
 
 import torch
@@ -21,6 +20,9 @@ from srb.utils.cfg import configclass
 
 @configclass
 class TaskCfg(ManipulationEnvCfg):
+    ## Scenario
+    domain: Domain = Domain.ORBIT
+
     viewer = ViewerCfg(
         lookat=(0.0, 0.0, 2.5),
         eye=(15.0, 0.0, 12.5),
@@ -29,19 +31,6 @@ class TaskCfg(ManipulationEnvCfg):
     )
 
     def __post_init__(self):
-        if self.domain != Domain.ORBIT:
-            print(
-                f"[WARN] Environment requires ORBIT scenario ({self.domain} ignored)",
-                file=sys.stderr,
-            )
-            self.domain = Domain.ORBIT
-        if self.terrain is not None:
-            print(
-                f"[WARN] Environment requires NONE terrain ({self.terrain} ignored)",
-                file=sys.stderr,
-            )
-            self.terrain = None
-
         super().__post_init__()
 
         ## Scene
@@ -55,11 +44,6 @@ class TaskCfg(ManipulationEnvCfg):
         ## Sensors
         self.scene.tf_robot_ee = None
         self.scene.contacts_robot = None
-
-        ## Events
-        self.events.reset_rand_robot_state.params[
-            "asset_cfg"
-        ].joint_names = self.robot.regex_joints_arm
 
 
 ############

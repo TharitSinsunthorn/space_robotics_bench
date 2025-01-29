@@ -2,17 +2,11 @@ import sys
 from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
 
 import torch
-from omni.isaac.core.prims.xform_prim_view import XFormPrimView
 from pydantic import BaseModel
 
 from srb import assets
-from srb.core.asset import RigidObject, RigidObjectCfg
-from srb.core.env import (
-    AssetVariant,
-    ManipulationEnv,
-    ManipulationEnvCfg,
-    ManipulationEnvEventCfg,
-)
+from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg, XFormPrimView
+from srb.core.env import ManipulationEnv, ManipulationEnvCfg, ManipulationEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers, VisualizationMarkersCfg
 from srb.core.mdp import (
@@ -39,14 +33,60 @@ if TYPE_CHECKING:
 ##############
 
 
+@configclass
+class EventCfg(ManipulationEventCfg):
+    randomize_object_state = EventTermCfg(
+        func=reset_root_state_uniform_poisson_disk_2d,
+        mode="reset",
+        params={
+            "asset_cfgs": [SceneEntityCfg(f"object{i}") for i in range(4)],
+            "pose_range": {
+                "x": (
+                    -0.2,
+                    0.05,
+                ),
+                "y": (
+                    -0.05,
+                    0.05,
+                ),
+                "z": (
+                    0.025,
+                    0.025,
+                ),
+                "roll": (torch.pi / 2, torch.pi / 2),
+                "pitch": (-torch.pi, torch.pi),
+                "yaw": (-torch.pi, torch.pi),
+            },
+            "velocity_range": {},
+            "radius": 0.2,
+        },
+    )
+    randomize_panel_state: EventTermCfg | None = EventTermCfg(
+        func=reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("panel"),
+            "pose_range": {
+                "x": (-0.1 - 0.025, -0.1 + 0.025),
+                "y": (-0.45 - 0.025, -0.45 + 0.025),
+                "z": (-0.14, -0.14),
+                "roll": (torch.pi, torch.pi),
+                "pitch": (-torch.pi + torch.pi / 7, -torch.pi + torch.pi / 7),
+                "yaw": (
+                    torch.pi / 2 - torch.pi / 32,
+                    torch.pi / 2 + torch.pi / 32,
+                ),
+            },
+            "velocity_range": {},
+        },
+    )
+
+
 class PanelCfg(BaseModel, arbitrary_types_allowed=True):
     asset_cfg: RigidObjectCfg
 
     ## Geometry
     offset_pos: Tuple[float, float, float] = (0.0, 0.0, 0.15)
-
-    ## Randomization
-    state_randomizer: EventTermCfg | None = None
 
 
 @configclass
@@ -77,11 +117,7 @@ class TaskCfg(ManipulationEnvCfg):
     )
 
     ## Events
-    @configclass
-    class EventCfg(ManipulationEnvEventCfg):
-        pass
-
-    events = EventCfg()
+    events: EventCfg = EventCfg()
 
     def __post_init__(self):
         if self.obj != AssetVariant.DATASET:
@@ -155,58 +191,15 @@ class TaskCfg(ManipulationEnvCfg):
             ],
         )
 
-        ## Events
-        self.events.reset_rand_panel_state = self.panel_cfg.state_randomizer
-        self.events.reset_rand_object_state_multi = EventTermCfg(
-            func=reset_root_state_uniform_poisson_disk_2d,
-            mode="reset",
-            params={
-                "asset_cfgs": [SceneEntityCfg(f"object{i}") for i in range(4)],
-                "pose_range": {
-                    "x": (
-                        -0.2,
-                        0.05,
-                    ),
-                    "y": (
-                        -0.05,
-                        0.05,
-                    ),
-                    "z": (
-                        0.025,
-                        0.025,
-                    ),
-                    "roll": (torch.pi / 2, torch.pi / 2),
-                    "pitch": (-torch.pi, torch.pi),
-                    "yaw": (-torch.pi, torch.pi),
-                },
-                "velocity_range": {},
-                "radius": 0.2,
-            },
-        )
-
     ########################
     ### Helper Functions ###
     ########################
 
     @staticmethod
     def _panel_cfg(
-        env_cfg: "AnyEnvCfg",
-        *,
-        init_state: RigidObjectCfg.InitialStateCfg,
-        asset_cfg: SceneEntityCfg = SceneEntityCfg("panel"),
+        env_cfg: "AnyEnvCfg", *, init_state: RigidObjectCfg.InitialStateCfg
     ) -> PanelCfg:
         offset_pos = (0.0, 0.0, 0.15)
-        pose_range = {
-            "x": (-0.1 - 0.025, -0.1 + 0.025),
-            "y": (-0.45 - 0.025, -0.45 + 0.025),
-            "z": (-0.14, -0.14),
-            "roll": (torch.pi, torch.pi),
-            "pitch": (-torch.pi + torch.pi / 7, -torch.pi + torch.pi / 7),
-            "yaw": (
-                torch.pi / 2 - torch.pi / 32,
-                torch.pi / 2 + torch.pi / 32,
-            ),
-        }
         init_state.pos = (
             init_state.pos[0] + offset_pos[0],
             init_state.pos[1] + offset_pos[1],
@@ -219,15 +212,6 @@ class TaskCfg(ManipulationEnvCfg):
         return PanelCfg(
             asset_cfg=cfg,
             offset_pos=offset_pos,
-            state_randomizer=EventTermCfg(
-                func=reset_root_state_uniform,
-                mode="reset",
-                params={
-                    "asset_cfg": asset_cfg,
-                    "pose_range": pose_range,
-                    "velocity_range": {},
-                },
-            ),
         )
 
 

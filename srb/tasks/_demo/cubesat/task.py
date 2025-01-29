@@ -1,9 +1,8 @@
-import sys
 from typing import Dict, Sequence, Tuple
 
 import torch
 
-from srb.core.env import Domain, SpacecraftEnv, SpacecraftEnvCfg
+from srb.core.env import SpacecraftEnv, SpacecraftEnvCfg
 from srb.utils.cfg import configclass
 
 ##############
@@ -13,21 +12,7 @@ from srb.utils.cfg import configclass
 
 @configclass
 class TaskCfg(SpacecraftEnvCfg):
-    def __post_init__(self):
-        if self.domain != Domain.ORBIT:
-            print(
-                f"[WARN] Environment requires ORBIT scenario ({self.domain} ignored)",
-                file=sys.stderr,
-            )
-            self.domain = Domain.ORBIT
-        if self.terrain is not None:
-            print(
-                f"[WARN] Environment requires NONE terrain ({self.terrain} ignored)",
-                file=sys.stderr,
-            )
-            self.terrain = None
-
-        super().__post_init__()
+    pass
 
 
 ############
@@ -43,6 +28,8 @@ class Task(SpacecraftEnv):
 
         ## Pre-compute metrics used in hot loops
         self._max_episode_length = self.max_episode_length
+
+        raise NotImplementedError()
 
         ## Initialize the intermediate state
         self._update_intermediate_state()

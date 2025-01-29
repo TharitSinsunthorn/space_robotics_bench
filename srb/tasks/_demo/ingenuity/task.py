@@ -2,7 +2,7 @@ from typing import Dict, Sequence, Tuple
 
 import torch
 
-from srb.core.env import AerialEnv, AerialEnvCfg
+from srb.core.env import AerialEnv, AerialEnvCfg, Domain
 from srb.utils.cfg import configclass
 
 ##############
@@ -12,8 +12,8 @@ from srb.utils.cfg import configclass
 
 @configclass
 class TaskCfg(AerialEnvCfg):
-    def __post_init__(self):
-        super().__post_init__()
+    ## Scenario
+    domain: Domain = Domain.MARS
 
 
 ############

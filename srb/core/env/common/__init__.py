@@ -1,5 +1,6 @@
 from .base import (  # noqa: F401
     BaseEnvCfg,
+    BaseEventCfg,
     DirectEnv,
     DirectEnvCfg,
     DirectMarlEnv,
@@ -7,5 +8,5 @@ from .base import (  # noqa: F401
     ManagedEnv,
     ManagedEnvCfg,
 )
-from .enums import AssetVariant, Domain  # noqa: F401
+from .domain import Domain  # noqa: F401
 from .extension import VisualExt, VisualExtCfg  # noqa: F401

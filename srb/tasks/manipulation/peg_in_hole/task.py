@@ -1,18 +1,18 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
 
 import torch
-from omni.isaac.core.prims.xform_prim_view import XFormPrimView
 from pydantic import BaseModel, NonNegativeInt
 from simforge import TexResConfig
 
 from srb import assets
-from srb.core.asset import AssetBaseCfg, RigidObject, RigidObjectCfg
-from srb.core.env import (
+from srb.core.asset import (
+    AssetBaseCfg,
     AssetVariant,
-    ManipulationEnv,
-    ManipulationEnvCfg,
-    ManipulationEnvEventCfg,
+    RigidObject,
+    RigidObjectCfg,
+    XFormPrimView,
 )
+from srb.core.env import ManipulationEnv, ManipulationEnvCfg, ManipulationEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform
 from srb.core.sensor import ContactSensor, ContactSensorCfg
@@ -33,6 +33,29 @@ if TYPE_CHECKING:
 ##############
 
 
+## Events
+@configclass
+class EventCfg(ManipulationEventCfg):
+    ## Object
+    randomize_object_state: EventTermCfg | None = EventTermCfg(
+        func=reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("object"),
+            "pose_range": {
+                "x": (-0.25 - 0.025, -0.25 + 0.0125),
+                "y": (-0.05, 0.05),
+                "roll": (torch.pi / 2, torch.pi / 2),
+                "yaw": (
+                    torch.pi / 2 - torch.pi / 16,
+                    torch.pi / 2 + torch.pi / 16,
+                ),
+            },
+            "velocity_range": {},
+        },
+    )
+
+
 class PegCfg(BaseModel, arbitrary_types_allowed=True):
     ## Model
     asset_cfg: RigidObjectCfg
@@ -48,9 +71,6 @@ class PegCfg(BaseModel, arbitrary_types_allowed=True):
     #  1: No symmetry (exactly one fit)
     #  n: n-fold symmetry (360/n deg between each symmetry)
     rot_symmetry_n: NonNegativeInt = 1
-
-    ## Randomization
-    state_randomizer: EventTermCfg | None = None
 
 
 class HoleCfg(BaseModel):
@@ -126,15 +146,6 @@ def peg_and_hole_cfg(
     hole_kwargs: Dict[str, Any] = {},
     **kwargs,
 ) -> PegInHoleCfg:
-    pose_range_peg = {
-        "x": (-0.25 - 0.025, -0.25 + 0.0125),
-        "y": (-0.05, 0.05),
-        "roll": (torch.pi / 2, torch.pi / 2),
-        "yaw": (
-            torch.pi / 2 - torch.pi / 16,
-            torch.pi / 2 + torch.pi / 16,
-        ),
-    }
     rot_symmetry_n = 4
     offset_pos_ends = ((0.0, 0.0, 0.0), (0.0, 0.0, 0.2))
     offset_pos_entrance = (0.0, 0.0, 0.02)
@@ -159,15 +170,6 @@ def peg_and_hole_cfg(
             asset_cfg=peg_cfg,
             offset_pos_ends=offset_pos_ends,
             rot_symmetry_n=rot_symmetry_n,
-            state_randomizer=EventTermCfg(
-                func=reset_root_state_uniform,
-                mode="reset",
-                params={
-                    "asset_cfg": asset_cfg_peg,
-                    "pose_range": pose_range_peg,
-                    "velocity_range": {},
-                },
-            ),
         ),
         hole=HoleCfg(
             asset_cfg=hole_cfg,
@@ -185,12 +187,7 @@ class TaskCfg(ManipulationEnvCfg):
     is_finite_horizon: bool = True
 
     ## Events
-    @configclass
-    class EventCfg(ManipulationEnvEventCfg):
-        ## Object
-        reset_rand_object_state: EventTermCfg | None = None
-
-    events = EventCfg()
+    events: EventCfg = EventCfg()
 
     def __post_init__(self):
         super().__post_init__()
@@ -216,9 +213,6 @@ class TaskCfg(ManipulationEnvCfg):
             #       However, it seems to function properly anyway...
             filter_prim_paths_expr=[self.scene.object.prim_path],
         )
-
-        ## Events
-        self.events.reset_rand_object_state = self.problem_cfg.peg.state_randomizer
 
 
 ############
