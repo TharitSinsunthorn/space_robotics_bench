@@ -1582,6 +1582,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-order"
+version = "1.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1d/66/02ae17461b14a52ce5a29ae2900156b9110d1de34721ccc16ccd79419876/pytest_order-1.3.0.tar.gz", hash = "sha256:51608fec3d3ee9c0adaea94daa124a5c4c1d2bb99b00269f098f414307f23dde", size = 47544 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1b/73/59b038d1aafca89f8e9936eaa8ffa6bb6138d00459d13a32ce070be4f280/pytest_order-1.3.0-py3-none-any.whl", hash = "sha256:2cd562a21380345dd8d5774aa5fd38b7849b6ee7397ca5f6999bbe6e89f07f6e", size = 14609 },
+]
+
+[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 source = { registry = "https://pypi.org/simple" }
@@ -1878,6 +1890,7 @@ all = [
     { name = "omegaconf" },
     { name = "pyspacemouse" },
     { name = "pytest" },
+    { name = "pytest-order" },
     { name = "rich" },
     { name = "rl-zoo3" },
     { name = "sb3-contrib" },
@@ -1900,6 +1913,7 @@ dev = [
     { name = "lark" },
     { name = "logfire" },
     { name = "pytest" },
+    { name = "pytest-order" },
     { name = "rich" },
 ]
 hw = [
@@ -1935,6 +1949,7 @@ tensorboard = [
 test = [
     { name = "lark" },
     { name = "pytest" },
+    { name = "pytest-order" },
 ]
 tracing = [
     { name = "logfire" },
@@ -1957,6 +1972,7 @@ requires-dist = [
     { name = "pydantic", specifier = "~=2.0" },
     { name = "pyspacemouse", marker = "extra == 'spacemouse'", specifier = "~=1.0" },
     { name = "pytest", marker = "extra == 'test'", specifier = "~=8.0" },
+    { name = "pytest-order", marker = "extra == 'test'", specifier = "~=1.3" },
     { name = "rich", marker = "extra == 'rich'", specifier = "~=13.0" },
     { name = "rl-zoo3", marker = "extra == 'sb3'", git = "https://github.com/AndrejOrsula/rl-baselines3-zoo.git?rev=e04921b4ccbadbc9f6bcc46cc1787ffc1d2c8963#e04921b4ccbadbc9f6bcc46cc1787ffc1d2c8963" },
     { name = "sb3-contrib", marker = "extra == 'sb3'", specifier = "~=2.4" },
