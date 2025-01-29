@@ -311,12 +311,12 @@ impl TaskConfig {
             // Arguments
             if self.enable_ui {
                 exec = exec.args(&[
-                    "--integration",
+                    "--interface",
                     "gui",
                     // "ros2",
                 ]);
             } else {
-                exec = exec.args(&["--hide_ui", "--integration", "gui"]);
+                exec = exec.args(&["--hide_ui", "--interface", "gui"]);
             }
         }
 

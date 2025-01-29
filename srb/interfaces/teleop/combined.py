@@ -14,6 +14,7 @@ from srb.core.action import (
 from srb.interfaces.teleop import DeviceBase, Se3Gamepad
 from srb.interfaces.teleop.keyboard import KeyboardTeleopInterface
 from srb.interfaces.teleop.spacemouse import SpacemouseTeleopInterface
+from srb.interfaces.teleop_device import TeleopDevice
 
 if TYPE_CHECKING:
     from rclpy.node import Node
@@ -22,13 +23,15 @@ if TYPE_CHECKING:
 class CombinedTeleopInterface(DeviceBase):
     def __init__(
         self,
-        devices: Sequence[str],  # TODO: Enum
+        devices: Sequence[TeleopDevice],
         node: "Node | None" = None,
         pos_sensitivity: float = 1.0,
         rot_sensitivity: float = 1.0,
         action_cfg: ActionGroup | None = None,
     ):
-        if not node and ("ros2" in devices or "haptic" in devices):
+        if not node and (
+            TeleopDevice.ROS2 in devices or TeleopDevice.HAPTIC in devices
+        ):
             from srb.utils.ros2 import enable_ros2_bridge
 
             enable_ros2_bridge()
@@ -45,28 +48,28 @@ class CombinedTeleopInterface(DeviceBase):
         self.ft_feedback_interfaces = []
         for device in devices:
             match device.lower():
-                case "keyboard":
+                case TeleopDevice.KEYBOARD:
                     self.interfaces.append(
                         KeyboardTeleopInterface(
                             pos_sensitivity=0.05 * pos_sensitivity,
                             rot_sensitivity=10.0 * rot_sensitivity,
                         )
                     )
-                case "spacemouse":
+                case TeleopDevice.SPACEMOUSE:
                     self.interfaces.append(
                         SpacemouseTeleopInterface(
                             pos_sensitivity=0.1 * pos_sensitivity,
                             rot_sensitivity=0.05 * rot_sensitivity,
                         )
                     )
-                case "gamepad":
+                case TeleopDevice.GAMEPAD:
                     self.interfaces.append(
                         Se3Gamepad(
                             pos_sensitivity=0.1 * pos_sensitivity,
                             rot_sensitivity=0.1 * rot_sensitivity,
                         )
                     )
-                case "ros2":
+                case TeleopDevice.ROS2:
                     from srb.interfaces.teleop.ros2 import ROS2TeleopInterface
 
                     self.interfaces.append(
@@ -76,7 +79,7 @@ class CombinedTeleopInterface(DeviceBase):
                             rot_sensitivity=1.0 * rot_sensitivity,
                         )
                     )
-                case "haptic":
+                case TeleopDevice.HAPTIC:
                     from srb.interfaces.teleop.haptic import HapticROS2TeleopInterface
 
                     interface = HapticROS2TeleopInterface(

@@ -1799,7 +1799,7 @@ wheels = [
 [[package]]
 name = "simforge-foundry"
 version = "0.1.0"
-source = { git = "https://github.com/AndrejOrsula/simforge_foundry.git?rev=240d992efb628dbb34124fda5edcc187781814f2#240d992efb628dbb34124fda5edcc187781814f2" }
+source = { git = "https://github.com/AndrejOrsula/simforge_foundry.git?rev=main#50a1c74e0d46c2f92b5dc594a29f4879ac945ff9" }
 dependencies = [
     { name = "simforge" },
 ]
@@ -1968,7 +1968,7 @@ requires-dist = [
     { name = "sb3-contrib", marker = "extra == 'sb3'", specifier = "~=2.4" },
     { name = "sbx-rl", marker = "extra == 'sbx'", specifier = "~=0.19" },
     { name = "simforge", specifier = "~=0.1" },
-    { name = "simforge-foundry", git = "https://github.com/AndrejOrsula/simforge_foundry.git?rev=240d992efb628dbb34124fda5edcc187781814f2#240d992efb628dbb34124fda5edcc187781814f2" },
+    { name = "simforge-foundry", git = "https://github.com/AndrejOrsula/simforge_foundry.git?rev=main" },
     { name = "skrl", marker = "extra == 'skrl'", specifier = "~=1.0" },
     { name = "srb", extras = ["algo"], marker = "extra == 'all'" },
     { name = "srb", extras = ["cli"], marker = "extra == 'all'" },

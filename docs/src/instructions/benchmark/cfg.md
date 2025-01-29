@@ -45,7 +45,7 @@ The following arguments are common across all entrypoint scripts, e.g. [`teleop.
 
 ## Additional Environment Variables
 
-- `SRB_SKIP_REGISTRATION` (default: `false`): When set to `"true"`|`1`, automatic registering of environments with the Gymnasium registry is disabled. This can be useful in specific deployment or testing scenarios.
-- `SRB_UPDATE_EXTENSION_MODULE` (default: `false`): When set to `"true"`|`1`, the Rust extension module will be automatically recompiled on startup of Python entrypoint scripts. By default, this ensures that the extension module is always up-to-date with the source code. Skipping this step can be useful when the extension module never changes to reduce startup time slightly.
+<!-- TODO: Update to new environ names -->
+
 - `SRB_WITH_TRACEBACK` (default: `false`): When set to `"true"`|`1`, rich traceback information is displayed for exceptions. This can be useful for debugging.
   - `SRB_WITH_TRACEBACK_LOCALS` (default: `false`): When set to `"true"`|`1` and `SRB_WITH_TRACEBACK` is enabled, local variables are included in the traceback information. This can be useful for debugging, but it can also be overwhelming in some cases.

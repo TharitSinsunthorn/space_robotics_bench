@@ -8,8 +8,10 @@ import sys
 from enum import Enum, auto
 from importlib.util import find_spec
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Literal, Mapping, Sequence, Tuple
 
+from srb.interfaces.interface_type import InterfaceType
+from srb.interfaces.teleop_device import TeleopDevice
 from srb.utils.path import SRB_APPS_DIR, SRB_DIR
 
 if TYPE_CHECKING:
@@ -20,14 +22,9 @@ if TYPE_CHECKING:
     from srb.interfaces.ros2 import ROS2Interface
     from srb.interfaces.teleop import CombinedTeleopInterface
 
-# TODO: Clean-up args (argparse and functions) with enums, add choices, ...
-
 
 def main():
-    def impl(
-        subcommand: Literal["agent", "gui", "ls"],
-        **kwargs,
-    ):
+    def impl(subcommand: Literal["agent", "gui", "ls"], **kwargs):
         if not find_spec("omni"):
             raise ImportError(
                 "The Space Robotics Bench requires an environment with NVIDIA Omniverse and Isaac Sim installed."
@@ -57,18 +54,18 @@ def agent_main(
         "learn",
     ],
     env_id: str,
-    video,
-    video_length,
-    video_interval,
+    video_enable: bool,
+    video_length: int,
+    video_interval: int,
     hide_ui: bool,
     **kwargs,
 ):
     from srb.core.app import AppLauncher
 
     # Preprocess kwargs
-    kwargs["enable_cameras"] = video or env_id.endswith("_visual")
+    kwargs["enable_cameras"] = video_enable or env_id.endswith("_visual")
     kwargs["experience"] = SRB_APPS_DIR.joinpath(
-        f'srb.{"headless." if kwargs["headless"] else ""}{"rendering." if video or kwargs["enable_cameras"] else ""}kit'
+        f'srb.{"headless." if kwargs["headless"] else ""}{"rendering." if video_enable or kwargs["enable_cameras"] else ""}kit'
     )
 
     # Launch Isaac Sim
@@ -123,12 +120,12 @@ def agent_main(
 
         # Create the environment and initialize it
         env = gymnasium.make(
-            id=env_id, cfg=env_cfg, render_mode="rgb_array" if video else None
+            id=env_id, cfg=env_cfg, render_mode="rgb_array" if video_enable else None
         )
         env.reset()
 
         # Add wrapper for video recording
-        if video:
+        if video_enable:
             video_kwargs = {
                 "video_folder": logdir.joinpath("videos"),
                 "step_trigger": lambda step: step % video_interval == 0,
@@ -186,11 +183,7 @@ def agent_main(
     launcher.app.close()
 
 
-def random_agent(
-    env: "AnyEnv",
-    sim_app: "SimulationApp",
-    **kwargs,
-):
+def random_agent(env: "AnyEnv", sim_app: "SimulationApp", **kwargs):
     import torch
 
     from srb.utils import logging
@@ -211,11 +204,7 @@ def random_agent(
             )
 
 
-def zero_agent(
-    env: "AnyEnv",
-    sim_app: "SimulationApp",
-    **kwargs,
-):
+def zero_agent(env: "AnyEnv", sim_app: "SimulationApp", **kwargs):
     import torch
 
     from srb.utils import logging
@@ -243,7 +232,7 @@ def teleop_agent(
     teleop_device: Sequence[str],
     pos_sensitivity: float,
     rot_sensitivity: float,
-    integration: Sequence[str],
+    interface: Sequence[str],
     algo: str,
     **kwargs,
 ):
@@ -258,8 +247,11 @@ def teleop_agent(
     from srb.core.action import ActionGroup
     from srb.interfaces.teleop import CombinedTeleopInterface
 
+    teleop_device = list(set(map(TeleopDevice.from_str, teleop_device)))
+    interface = list(set(map(InterfaceType.from_str, interface)))
+
     # Ensure that a feasible teleoperation device is selected
-    if headless and len(teleop_device) == 1 and "keyboard" in teleop_device:
+    if headless and len(teleop_device) == 1 and TeleopDevice.KEYBOARD in teleop_device:
         raise ValueError(
             'Teleoperation with the keyboard is only supported in GUI mode. Consider disabling the "--headless" mode or using a different "--teleop_device".'
         )
@@ -269,7 +261,7 @@ def teleop_agent(
         env.cfg.enable_truncation = False
 
     # Create ROS 2 node
-    if "gui" in integration or "ros2" in integration:
+    if InterfaceType.GUI in interface or InterfaceType.ROS2 in interface:
         import rclpy
         from rclpy.executors import MultiThreadedExecutor
         from rclpy.node import Node
@@ -281,7 +273,7 @@ def teleop_agent(
 
     ## Create teleop interface
     teleop_interface = CombinedTeleopInterface(
-        devices=teleop_device,
+        devices=teleop_device,  # type: ignore
         node=ros_node,
         pos_sensitivity=pos_sensitivity,
         rot_sensitivity=rot_sensitivity,
@@ -302,7 +294,7 @@ def teleop_agent(
     print(teleop_interface)
 
     ## Create GUI interface
-    if "gui" in integration:
+    if InterfaceType.GUI in interface:
         from srb.interfaces.gui import GuiInterface
 
         gui_interface = GuiInterface(env, node=ros_node)
@@ -310,7 +302,7 @@ def teleop_agent(
         gui_interface = None
 
     ## Create ROS 2 interface
-    if "ros2" in integration:
+    if InterfaceType.ROS2 in interface:
         from srb.interfaces.ros2 import ROS2Interface
 
         ros2_interface = ROS2Interface(env, node=ros_node)
@@ -545,11 +537,7 @@ def _teleop_agent_via_policy(
     eval_agent(env=env, sim_app=sim_app, **kwargs)
 
 
-def ros_agent(
-    env: "AnyEnv",
-    sim_app: "SimulationApp",
-    **kwargs,
-):
+def ros_agent(env: "AnyEnv", sim_app: "SimulationApp", **kwargs):
     import torch
 
     from srb.interfaces.ros2 import ROS2Interface
@@ -583,10 +571,7 @@ def ros_agent(
             ros2_interface.update()
 
 
-def train_agent(
-    algo: str,
-    **kwargs,
-):
+def train_agent(algo: str, **kwargs):
     WORKFLOW: str = "train"
 
     match algo:
@@ -608,10 +593,7 @@ def train_agent(
             sbx.run(workflow=WORKFLOW, algo=algo.strip("sbx_"), **kwargs)
 
 
-def eval_agent(
-    algo: str,
-    **kwargs,
-):
+def eval_agent(algo: str, **kwargs):
     WORKFLOW: str = "eval"
 
     match algo:
@@ -666,7 +648,7 @@ def launch_gui(release: bool):
 
 
 ### List ###
-def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
+def list_registered(category: str | Sequence[str], show_all: bool, **kwargs):
     from srb.core.app import AppLauncher
 
     if not find_spec("rich"):
@@ -692,31 +674,31 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
     from srb.utils.str import convert_to_snake_case
 
     # Standardize category
-    category = (
-        {RegisteredEntity.from_str(category)}
+    category = (  # type: ignore
+        {EntityToList.from_str(category)}
         if isinstance(category, str)
-        else set(map(RegisteredEntity.from_str, category))
+        else set(map(EntityToList.from_str, category))
     )
-    if RegisteredEntity.ALL in category:
-        category = {
-            RegisteredEntity.ACTION,
-            RegisteredEntity.ASSET,
-            RegisteredEntity.ENV,
+    if EntityToList.ALL in category:
+        category = {  # type: ignore
+            EntityToList.ACTION,
+            EntityToList.ASSET,
+            EntityToList.ENV,
         }
-    if RegisteredEntity.ASSET in category:
-        category.remove(RegisteredEntity.ASSET)
-        category.add(RegisteredEntity.OBJECT)
-        category.add(RegisteredEntity.TERRAIN)
-        category.add(RegisteredEntity.ROBOT)
+    if EntityToList.ASSET in category:
+        category.remove(EntityToList.ASSET)  # type: ignore
+        category.add(EntityToList.OBJECT)  # type: ignore
+        category.add(EntityToList.TERRAIN)  # type: ignore
+        category.add(EntityToList.ROBOT)  # type: ignore
 
-    if RegisteredEntity.ENV in category:
+    if EntityToList.ENV in category:
         from srb import tasks as srb_tasks
 
     # Print table for assets
     if (
-        RegisteredEntity.OBJECT in category
-        or RegisteredEntity.TERRAIN in category
-        or RegisteredEntity.ROBOT in category
+        EntityToList.OBJECT in category
+        or EntityToList.TERRAIN in category
+        or EntityToList.ROBOT in category
     ):
         from srb.core.asset import AssetRegistry, AssetType
 
@@ -729,7 +711,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
         table.add_column("Name", justify="left", style="blue", no_wrap=True)
         table.add_column("Path", justify="left", style="white")
         i = 0
-        if RegisteredEntity.OBJECT in category:
+        if EntityToList.OBJECT in category:
             from srb.assets import object as srb_objects
 
             asset_type = AssetType.OBJECT
@@ -763,7 +745,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                     f"[link=vscode://file/{asset_module_path}]{asset_module_relpath}[/link]",
                     end_section=(j + 1) == len(asset_classes),
                 )
-        if RegisteredEntity.TERRAIN in category:
+        if EntityToList.TERRAIN in category:
             from srb.assets import terrain as srb_terrains
 
             asset_type = AssetType.TERRAIN
@@ -797,7 +779,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
                     f"[link=vscode://file/{asset_module_path}]{asset_module_relpath}[/link]",
                     end_section=(j + 1) == len(asset_classes),
                 )
-        if RegisteredEntity.ROBOT in category:
+        if EntityToList.ROBOT in category:
             from srb.assets import robot as srb_robots
             from srb.core.asset import RobotRegistry
 
@@ -837,7 +819,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
         print(table)
 
     # Print table for action groups
-    if RegisteredEntity.ACTION in category:
+    if EntityToList.ACTION in category:
         from srb.core.action import ActionGroupRegistry
         from srb.core.action import group as srb_action_groups
 
@@ -867,7 +849,7 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
         print(table)
 
     # Print table for environments
-    if RegisteredEntity.ENV in category:
+    if EntityToList.ENV in category:
         import gymnasium
 
         from srb.utils.registry import get_srb_tasks
@@ -914,26 +896,6 @@ def list_registered(category: str | Iterable[str], show_all: bool, **kwargs):
 
     # Shutdown Isaac Sim
     launcher.app.close()
-
-
-class RegisteredEntity(str, Enum):
-    ALL = auto()
-    ACTION = auto()
-    ASSET = auto()
-    ENV = auto()
-    OBJECT = auto()
-    ROBOT = auto()
-    TERRAIN = auto()
-
-    def __str__(self) -> str:
-        return self.name.lower()
-
-    @classmethod
-    def from_str(cls, string: str) -> RegisteredEntity:
-        try:
-            return next(format for format in cls if string.upper() == format.name)
-        except StopIteration:
-            raise ValueError(f'String "{string}" is not a valid "{cls.__name__}"')
 
 
 ### CLI ###
@@ -1032,59 +994,61 @@ def parse_cli_args() -> argparse.Namespace:
         video_recording_group = _agent_parser.add_argument_group("Video")
         video_recording_group.add_argument(
             "--video",
+            dest="video_enable",
+            help="Record videos",
             action="store_true",
             default=False,
-            help="Record videos",
         )
         video_recording_group.add_argument(
             "--video_length",
+            help="Length of the recorded video (in steps)",
             type=int,
             default=1000,
-            help="Length of the recorded video (in steps)",
         )
         video_recording_group.add_argument(
             "--video_interval",
+            help="Interval between video recordings (in steps)",
             type=int,
             default=10000,
-            help="Interval between video recordings (in steps)",
         )
 
         experience_group = _agent_parser.add_argument_group("Experience")
         experience_group.add_argument(
             "--hide_ui",
+            help="Disable most of the Isaac Sim UI and set it to fullscreen",
             action="store_true",
             default=False,
-            help="Disable most of the Isaac Sim UI and set it to fullscreen",
         )
 
         launcher_group = _agent_parser.add_argument_group("Launcher")
         launcher_group.add_argument(
             "--headless",
+            help="Run the simulation without display output",
             action="store_true",
             default=False,
-            help="Run the simulation without display output",
         )
         launcher_group.add_argument(
             "--livestream",
-            type=int,
-            default=-1,
-            choices={0, 1, 2},
             help="Force enable livestreaming. Mapping corresponds to that for the `LIVESTREAM` environment variable (0: Disabled, 1: Native, 2: WebRTC)",
+            type=int,
+            choices={0, 1, 2},
+            default=-1,
         )
         launcher_group.add_argument(
             "--device",
-            type=str,
-            default="cuda:0",
-            choices=["cpu", "cuda", "cuda:0", "cuda:1", "cuda:2", "cuda:3"],
             help="Compute device to use for simulation",
+            type=str,
+            choices=["cpu", "cuda", "cuda:0", "cuda:1", "cuda:2", "cuda:3"],
+            default="cuda:0",
         )
         launcher_group.add_argument(
             "--kit_args",
+            help="CLI args for the Omniverse Kit as a string separated by a space delimiter (e.g., '--ext-folder=/path/to/ext1 --ext-folder=/path/to/ext2')",
             type=str,
             default="",
-            help="CLI args for the Omniverse Kit as a string separated by a space delimiter (e.g., '--ext-folder=/path/to/ext1 --ext-folder=/path/to/ext2')",
         )
 
+    _interface_choices = sorted(map(str, InterfaceType))
     for _agent_parser in (
         teleop_agent_parser,
         collect_agent_parser,
@@ -1092,41 +1056,42 @@ def parse_cli_args() -> argparse.Namespace:
         teleop_group = _agent_parser.add_argument_group("Teleop")
         teleop_group.add_argument(
             "--teleop_device",
+            help="Device for interacting with environment",
             type=str,
             nargs="+",
-            choices=["keyboard", "gamepad", "joystick", "mouse", "ros2"],
-            default=["keyboard"],  # TODO: Enum
-            help="Device for interacting with environment",
+            choices=sorted(map(str, TeleopDevice)),
+            default=[str(TeleopDevice.KEYBOARD)],
         )
         teleop_group.add_argument(
             "--pos_sensitivity",
+            help="Sensitivity factor for translation",
             type=float,
             default=10.0,
-            help="Sensitivity factor for translation",
         )
         teleop_group.add_argument(
             "--rot_sensitivity",
+            help="Sensitivity factor for rotation",
             type=float,
             default=40.0,
-            help="Sensitivity factor for rotation",
         )
         teleop_group.add_argument(
             "--disable_control_scheme_inversion",
+            help="Flag to disable inverting the control scheme due to view for manipulation-based tasks",
             action="store_true",
             default=False,
-            help="Flag to disable inverting the control scheme due to view for manipulation-based tasks",
         )
 
-        integrations_group = _agent_parser.add_argument_group("Integrations")
-        integrations_group.add_argument(
-            "--integration",
+        interfaces_group = _agent_parser.add_argument_group("Interfaces")
+        interfaces_group.add_argument(
+            "--interface",
+            help="Sequence of interfaces to enable",
             type=str,
             nargs="*",
-            choices=["gui", "ros2"],
-            default=[],  # TODO: Enum
-            help="Sequence of integrations ro enable",
+            choices=_interface_choices,
+            default=[],
         )
 
+    _algo_choices = sorted(map(str, SupportedAlgo))
     for _agent_parser in (
         train_agent_parser,
         eval_agent_parser,
@@ -1140,23 +1105,16 @@ def parse_cli_args() -> argparse.Namespace:
         )
         algorithm_group.add_argument(
             "--algo",
-            type=str,
             help="Name of the algorithm",
-            choices=[
-                "dreamer",
-                "skrl_ppo",
-                "skrl_ppo_rnn",
-                "sb3_ppo",
-                "sb3_ppo_lstm",
-                "sbx_ppo",
-            ],  # TODO: Enum
+            type=str,
+            choices=_algo_choices,
             required=_agent_parser in (train_agent_parser, eval_agent_parser),
         )
         if _agent_parser != train_agent_parser:
             algorithm_group.add_argument(
                 "--model",
                 type=str,
-                help="Path to the model",
+                help="Path to the model checkpoint",
             )
 
     train_group = train_agent_parser.add_argument_group("Train")
@@ -1165,14 +1123,14 @@ def parse_cli_args() -> argparse.Namespace:
         "--continue_training",
         "--continue",
         "--resume",
+        help="Continue training the model from the last checkpoint",
         action="store_true",
         default=False,
-        help="Continue training the model from the last checkpoint",
     )
     mutex_group.add_argument(
         "--model",
-        type=str,
         help="Continue training the model from the specified checkpoint",
+        type=str,
     )
 
     # GUI
@@ -1184,9 +1142,9 @@ def parse_cli_args() -> argparse.Namespace:
     gui_parser.add_argument(
         "-r",
         "--release",
+        help="Run GUI in release mode",
         action="store_true",
         default=False,
-        help="Run GUI in release mode",
     )
 
     # List
@@ -1201,15 +1159,15 @@ def parse_cli_args() -> argparse.Namespace:
         help="Filter of categories to list",
         nargs="*",
         type=str,
-        choices=sorted(map(str, RegisteredEntity)),
-        default=str(RegisteredEntity.ALL),
+        choices=sorted(map(str, EntityToList)),
+        default=str(EntityToList.ALL),
     )
     list_parser.add_argument(
         "-a",
         "--show_all",
+        help='Show all registered entities ("*_visual" environments are hidden by default)',
         action="store_true",
         default=False,
-        help='Show all registered entities ("*_visual" environments are hidden by default)',
     )
 
     if find_spec("argcomplete"):
@@ -1299,6 +1257,78 @@ class OfflineEnvRegistry:
         logging.debug(
             f"Updated the cache of registered environments to {cls.ENV_REGISTRY_CACHE}"
         )
+
+
+class EntityToList(str, Enum):
+    ALL = auto()
+    ACTION = auto()
+    ASSET = auto()
+    ENV = auto()
+    OBJECT = auto()
+    ROBOT = auto()
+    TERRAIN = auto()
+
+    def __str__(self) -> str:
+        return self.name.lower()
+
+    @classmethod
+    def from_str(cls, string: str) -> EntityToList:
+        try:
+            return next(variant for variant in cls if string.upper() == variant.name)
+        except StopIteration:
+            raise ValueError(f'String "{string}" is not a valid "{cls.__name__}"')
+
+
+class SupportedAlgo(str, Enum):
+    # Dreamer
+    DREAMER = auto()
+    # SB3
+    SB3_A2C = auto()
+    SB3_DDPG = auto()
+    SB3_DQN = auto()
+    SB3_PPO = auto()
+    SB3_SAC = auto()
+    SB3_TD3 = auto()
+    # SB3 Contrib
+    SB3_ARS = auto()
+    SB3_CROSSQ = auto()
+    SB3_QRDQN = auto()
+    SB3_TQC = auto()
+    SB3_TRPO = auto()
+    SB3_PPO_LSTM = auto()
+    # SBX
+    SBX_DDPG = auto()
+    SBX_DQN = auto()
+    SBX_PPO = auto()
+    SBX_SAC = auto()
+    SBX_TD3 = auto()
+    SBX_TQC = auto()
+    SBX_CrossQ = auto()
+    # SKRL
+    SKRL_A2C = auto()
+    SKRL_AMP = auto()
+    SKRL_CEM = auto()
+    SKRL_DDPG = auto()
+    SKRL_DDQN = auto()
+    SKRL_DQN = auto()
+    SKRL_PPO = auto()
+    SKRL_PPO_RNN = auto()
+    SKRL_RPO = auto()
+    SKRL_SAC = auto()
+    SKRL_TD3 = auto()
+    SKRL_TRPO = auto()
+    SKRL_IPPO = auto()
+    SKRL_MAPPO = auto()
+
+    def __str__(self) -> str:
+        return self.name.lower()
+
+    @classmethod
+    def from_str(cls, string: str) -> SupportedAlgo:
+        try:
+            return next(variant for variant in cls if string.upper() == variant.name)
+        except StopIteration:
+            raise ValueError(f'String "{string}" is not a valid "{cls.__name__}"')
 
 
 if __name__ == "__main__":

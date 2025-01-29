@@ -6,5 +6,3 @@ from .keyboard import (  # noqa: F401
     KeyboardTeleopInterface,
 )
 from .spacemouse import SpacemouseTeleopInterface  # noqa: F401
-
-# TODO: Enum - teleop devices
