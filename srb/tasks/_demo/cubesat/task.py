@@ -29,8 +29,6 @@ class Task(SpacecraftEnv):
         ## Pre-compute metrics used in hot loops
         self._max_episode_length = self.max_episode_length
 
-        raise NotImplementedError()
-
         ## Initialize the intermediate state
         self._update_intermediate_state()
 
