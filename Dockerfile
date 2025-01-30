@@ -5,6 +5,7 @@ ARG BASE_IMAGE_TAG="jammy"
 ## Isaac Sim <https://catalog.ngc.nvidia.com/orgs/nvidia/containers/isaac-sim>
 ## Label as isaac-sim for copying into the final image
 ARG ISAAC_SIM_IMAGE_NAME="nvcr.io/nvidia/isaac-sim"
+# TODO: Update to 4.5.0
 ARG ISAAC_SIM_IMAGE_TAG="4.2.0"
 FROM ${ISAAC_SIM_IMAGE_NAME}:${ISAAC_SIM_IMAGE_TAG} AS isaac-sim
 

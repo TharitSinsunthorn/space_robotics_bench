@@ -31,7 +31,7 @@ fi
 # Create a job file directory if it does not exist
 if [ ! -d "${JOBS_DIR}" ]; then
     mkdir -p "${JOBS_DIR}"
-    echo -e "\033[1;90m[INFO] Created directory ${JOBS_DIR}\033[0m"
+    echo -e "[INFO] Created directory ${JOBS_DIR}"
 fi
 
 # Create a job file

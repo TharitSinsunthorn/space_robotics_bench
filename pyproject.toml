@@ -29,9 +29,9 @@ license = { text = "MIT OR Apache-2.0" }
 requires-python = "==3.10.*"
 dependencies = [
   ## Core
+  # TODO: Add Isaac Sim/Lab to dependencies (wait until the support is adequate)
   "gymnasium~=0.29",
   "oxidasim~=0.1",
-  # TODO: Add Isaac Sim/Lab to dependencies (wait until the support is adequate)
   ## Assets
   "simforge~=0.1",
   ## Typing
@@ -51,36 +51,98 @@ all = [
   "srb[dev]",
 ]
 ## Algorithms
-algo = ["srb[dreamer]", "srb[sb3]", "srb[sbx]", "srb[skrl]", "srb[robomimic]"]
+algo = [
+  #
+  "srb[dreamer]",
+  "srb[sb3]",
+  "srb[sbx]",
+  "srb[skrl]",
+  "srb[robomimic]",
+]
 dreamer = [
+  #
   # Note: Only editable install of dreamer works for now (circular import of  partially initialized module included with sys.path)
   # TODO: Fix Dreamer install (fork and fix recursive import)
   # "dreamer@git+https://github.com/danijar/dreamerv3.git@55c8c67c956fbdace4bf8b594ea12e934a3ae4ba",
 ]
 sb3 = [
+  #
   "stable-baselines3~=2.4",
   "sb3-contrib~=2.4",
   # Note: The fork relaxes the dependency for gymnasium (shimmy requires gymnasium>=1.0)
   "rl_zoo3@git+https://github.com/AndrejOrsula/rl-baselines3-zoo.git@e04921b4ccbadbc9f6bcc46cc1787ffc1d2c8963",
 ]
-sbx = ["sbx-rl~=0.19", "tf_keras~=2.0"]
-skrl = ["skrl~=1.0"]
+sbx = [
+  #
+  "sbx-rl~=0.19",
+  "tf_keras~=2.0",
+]
+skrl = [
+  #
+  "skrl~=1.0",
+]
 robomimic = [
+  #
   # "robomimic@git+https://github.com/ARISE-Initiative/robomimic.git@TODO",
 ]
 ## Hardware
-hw = ["srb[spacemouse]"]
-spacemouse = ["pyspacemouse~=1.0"]
+hw = [
+  #
+  "srb[spacemouse]",
+]
+spacemouse = [
+  #
+  "pyspacemouse~=1.0",
+]
 ## Logging
-logging = ["srb[wandb]", "srb[tensorboard]"]
-wandb = ["wandb~=0.19"]
-tensorboard = ["tensorboard~=2.0", "tensorflow~=2.0"]
+logging = [
+  #
+  "srb[wandb]",
+  "srb[tensorboard]",
+]
+wandb = [
+  #
+  "wandb~=0.19",
+]
+tensorboard = [
+  #
+  "tensorboard~=2.0",
+  "tensorflow~=2.0",
+]
 ## Utils
-cli = ["srb[rich]", "argcomplete~=1.0", "hydra-core~=1.0", "omegaconf~=2.0"]
-dev = ["srb[test]", "srb[tracing]", "devtools~=0.12"]
-rich = ["rich~=13.0"]
-test = ["pytest~=8.0", "pytest-order~=1.3", "lark~=1.0"]
-tracing = ["srb[rich]", "logfire~=2.0"]
+cli = [
+  #
+  "srb[rich]",
+  "srb[repl]",
+  "argcomplete~=3.0",
+  "hydra-core~=1.0",
+  "omegaconf~=2.0",
+]
+dev = [
+  #
+  "srb[test]",
+  "srb[tracing]",
+  "devtools~=0.12",
+]
+rich = [
+  #
+  "rich~=13.0",
+]
+test = [
+  #
+  "pytest~=8.0",
+  "pytest-order~=1.3",
+  "lark~=1.0",
+]
+tracing = [
+  #
+  "srb[rich]",
+  "logfire~=3.0",
+]
+repl = [
+  #
+  "ptpython~=3.0",
+]
 
 [project.scripts]
 space_robotics_bench = "srb.__main__:main"

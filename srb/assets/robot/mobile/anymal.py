@@ -11,6 +11,7 @@ from srb.core.sim import (
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
 # TODO: Fix the RNN error with contiguous memory
+# TODO: Move RNN weights to assets to avoid loading from nucleus
 
 
 class AnymalB(LeggedRobot):

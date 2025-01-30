@@ -62,7 +62,7 @@ for volume in "${SINGULARITY_VOLUMES[@]}"; do
         host_dir="${BASH_REMATCH[1]}"
         if [ ! -d "${host_dir}" ]; then
             mkdir -p "${host_dir}"
-            echo -e "\033[1;90m[INFO] Created directory ${host_dir}\033[0m"
+            echo -e "[INFO] Created directory ${host_dir}"
         fi
     fi
 done

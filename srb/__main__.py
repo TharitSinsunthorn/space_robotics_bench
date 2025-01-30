@@ -25,7 +25,9 @@ if TYPE_CHECKING:
 
 
 def main():
-    def impl(subcommand: Literal["agent", "gui", "ls"], **kwargs):
+    def impl(
+        subcommand: Literal["agent", "ls", "repl", "gui", "docs", "test"], **kwargs
+    ):
         if not find_spec("omni"):
             raise ImportError(
                 "The Space Robotics Bench requires an environment with NVIDIA Omniverse and Isaac Sim installed."
@@ -33,17 +35,26 @@ def main():
 
         match subcommand:
             case "agent":
-                agent_main(**kwargs)
-            case "gui":
-                launch_gui(**kwargs)
+                if kwargs["agent_subcommand"] == "learn":
+                    raise NotImplementedError()
+                else:
+                    run_agent_with_env(**kwargs)
             case "ls":
                 list_registered(**kwargs)
+            case "repl":
+                enter_repl(**kwargs)
+            case "gui":
+                launch_gui(**kwargs)
+            case "docs":
+                serve_docs(**kwargs)
+            case "test":
+                run_tests(**kwargs)
 
     impl(**vars(parse_cli_args()))
 
 
 ### Agent ###
-def agent_main(
+def run_agent_with_env(
     agent_subcommand: Literal[
         "zero",
         "rand",
@@ -52,7 +63,6 @@ def agent_main(
         "train",
         "eval",
         "collect",
-        "learn",
     ],
     env_id: str,
     video_enable: bool,
@@ -75,7 +85,6 @@ def agent_main(
     # Update the offline environment registry
     update_env_list_cache()
 
-    from srb import tasks as _  # noqa: F401
     from srb.interfaces.teleop import EventKeyboardTeleopInterface
     from srb.utils import logging
     from srb.utils.cfg import hydra_task_config, last_logdir, new_logdir
@@ -168,9 +177,6 @@ def agent_main(
                 case "eval":
                     eval_agent(**kwargs)
                 case "collect":
-                    raise NotImplementedError()
-                case "learn":
-                    # NOTE: Learning from demonstration does not require the environment
                     raise NotImplementedError()
 
         agent_impl(env=env, sim_app=launcher.app, logdir=logdir, **kwargs)
@@ -632,38 +638,6 @@ def eval_agent(algo: str, **kwargs):
             sbx.run(workflow=WORKFLOW, algo=algo.strip("sbx_"), **kwargs)
 
 
-### GUI ###
-def launch_gui(release: bool):
-    import subprocess
-
-    from srb.utils import logging
-
-    try:
-        import string
-
-        args = [
-            "cargo",
-            "run",
-            "--manifest-path",
-            SRB_DIR.joinpath("Cargo.toml").as_posix(),
-            "--package",
-            "srb_gui",
-            "--bin",
-            "gui",
-        ] + (["--release"] if release else [])
-        logging.info(
-            "Launching GUI of the Space Robotics Bench with the following command: "
-            + " ".join(
-                (f'"{arg}"' if any(c in string.whitespace for c in arg) else arg)
-                for arg in args
-            )
-        )
-        subprocess.run(args, check=True)
-    except subprocess.CalledProcessError as e:
-        logging.critical("Launching GUI failed due to the exception above")
-        exit(e.returncode)
-
-
 ### List ###
 def list_registered(category: str | Sequence[str], show_all: bool, **kwargs):
     from srb.core.app import AppLauncher
@@ -915,6 +889,156 @@ def list_registered(category: str | Sequence[str], show_all: bool, **kwargs):
     launcher.app.close()
 
 
+### REPL ###
+def enter_repl(hide_ui: bool, **kwargs):
+    from srb.core.app import AppLauncher
+
+    if not find_spec("ptpython"):
+        raise ImportError(
+            'The "ptpython" package is required to enter REPL of the Space Robotics Bench'
+        )
+
+    # Preprocess kwargs
+    kwargs["enable_cameras"] = True
+    kwargs["experience"] = SRB_APPS_DIR.joinpath(
+        f'srb.{"headless." if kwargs["headless"] else ""}rendering.kit'
+    )
+
+    # Launch Isaac Sim
+    launcher = AppLauncher(launcher_args=kwargs)
+
+    import ptpython
+
+    import srb  # noqa: F401
+    from srb.utils import logging  # noqa: F401
+    from srb.utils.isaacsim import hide_isaacsim_ui
+
+    # Update the offline environment registry
+    update_env_list_cache()
+
+    # Post-launch configuration
+    if hide_ui:
+        hide_isaacsim_ui()
+
+    # Enter REPL
+    ptpython.repl.embed(globals(), locals(), title="Space Robotics Bench")
+
+    # Shutdown Isaac Sim
+    launcher.app.close()
+
+
+### GUI ###
+def launch_gui(forwarded_args: Sequence[str]):
+    import string
+    import subprocess
+
+    from srb.utils import logging
+
+    cmd = (
+        "cargo",
+        "run",
+        "--manifest-path",
+        SRB_DIR.joinpath("Cargo.toml").as_posix(),
+        "--package",
+        "srb_gui",
+        "--bin",
+        "gui",
+        *forwarded_args,
+    )
+    logging.info(
+        "Launching GUI of the Space Robotics Bench with the following command: "
+        + " ".join(
+            (f'"{arg}"' if any(c in string.whitespace for c in arg) else arg)
+            for arg in cmd
+        )
+    )
+
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        logging.critical("Launching GUI failed due to the exception above")
+        exit(e.returncode)
+
+
+### Docs ###
+def serve_docs(forwarded_args: Sequence[str]):
+    import string
+    import subprocess
+
+    from srb.utils import logging
+
+    cmd = (
+        "mdbook",
+        "serve",
+        SRB_DIR.joinpath("docs").as_posix(),
+        "--open",
+        *forwarded_args,
+    )
+    logging.info(
+        "Serving the docs of the Space Robotics Bench with the following command: "
+        + " ".join(
+            (f'"{arg}"' if any(c in string.whitespace for c in arg) else arg)
+            for arg in cmd
+        )
+    )
+
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        logging.critical("Serving the docs failed due to the exception above")
+        exit(e.returncode)
+
+
+### Test ###
+def run_tests(language: Sequence[str], forwarded_args: Sequence[str]):
+    import string
+    import subprocess
+
+    from srb.utils import logging
+    from srb.utils.isaacsim import get_isaacsim_python
+
+    # Standardize category
+    language = (  # type: ignore
+        {Lang.from_str(language)}
+        if isinstance(language, str)
+        else set(map(Lang.from_str, language))
+    )
+
+    for lang in language:
+        match lang:
+            case Lang.PYTHON:
+                cmd = (
+                    get_isaacsim_python(),
+                    "-m",
+                    "pytest",
+                    SRB_DIR.as_posix(),
+                    *forwarded_args,
+                )
+            case Lang.RUST:
+                cmd = (
+                    "cargo",
+                    "test",
+                    "--manifest-path",
+                    SRB_DIR.joinpath("Cargo.toml").as_posix(),
+                    *forwarded_args,
+                )
+        logging.info(
+            f"Running {str(lang)} tests of the Space Robotics Bench with the following command: "
+            + " ".join(
+                (f'"{arg}"' if any(c in string.whitespace for c in arg) else arg)
+                for arg in cmd
+            )
+        )
+
+        try:
+            subprocess.run(cmd, check=True)
+        except subprocess.CalledProcessError as e:
+            logging.critical(
+                f"Running {str(lang)} tests failed due to the exception above"
+            )
+            exit(e.returncode)
+
+
 ### CLI ###
 def parse_cli_args() -> argparse.Namespace:
     """
@@ -931,7 +1055,7 @@ def parse_cli_args() -> argparse.Namespace:
         required=True,
     )
 
-    # Agent
+    ## Agent subcommand
     agent_parser = subparsers.add_parser(
         "agent",
         help="Agent subcommands",
@@ -983,7 +1107,69 @@ def parse_cli_args() -> argparse.Namespace:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    _env_choices = read_env_list_cache()
+    ## List subcommand
+    list_parser = subparsers.add_parser(
+        "ls",
+        help="List registered assets and environments"
+        + (' (MISSING: "rich" Python package)' if find_spec("rich") else ""),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    list_parser.add_argument(
+        "category",
+        help="Filter of categories to list",
+        nargs="*",
+        type=str,
+        choices=sorted(map(str, EntityToList)),
+        default=str(EntityToList.ALL),
+    )
+    list_parser.add_argument(
+        "-a",
+        "--show_all",
+        help='Show all registered entities ("*_visual" environments are hidden by default)',
+        action="store_true",
+        default=False,
+    )
+
+    ## REPL subcommand
+    repl_parser = subparsers.add_parser(
+        "repl",
+        help="Enter REPL"
+        + (' (MISSING: "ptpython" Python package)' if find_spec("ptpython") else ""),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    ## GUI subcommand
+    _gui_parser = subparsers.add_parser(
+        "gui",
+        help="Launch GUI",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    ## Docs subcommand
+    _docs_parser = subparsers.add_parser(
+        "docs",
+        help="Serve documentation",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    ## Test subcommand
+    test_parser = subparsers.add_parser(
+        "test",
+        help="Run tests",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    test_parser.add_argument(
+        "-l",
+        "--language",
+        "--lang",
+        help="Languages to test",
+        nargs="+",
+        type=str,
+        choices=set(map(str, Lang)),
+        default=[str(Lang.PYTHON)],
+    )
+
+    ## Launcher args
     for _agent_parser in (
         zero_agent_parser,
         rand_agent_parser,
@@ -993,54 +1179,18 @@ def parse_cli_args() -> argparse.Namespace:
         eval_agent_parser,
         collect_agent_parser,
         learn_agent_parser,
+        repl_parser,
     ):
-        environment_group = _agent_parser.add_argument_group("Environment")
-        environment_group.add_argument(
-            "-e",
-            "--env",
-            "--task",
-            "--demo",
-            dest="env_id",
-            help="Name of the environment to select",
-            type=str,
-            action=AutoNamespaceTaskAction,
-            choices=_env_choices,
-            required=True,
-        )
-
-        video_recording_group = _agent_parser.add_argument_group("Video")
-        video_recording_group.add_argument(
-            "--video",
-            dest="video_enable",
-            help="Record videos",
-            action="store_true",
-            default=False,
-        )
-        video_recording_group.add_argument(
-            "--video_length",
-            help="Length of the recorded video (in steps)",
-            type=int,
-            default=1000,
-        )
-        video_recording_group.add_argument(
-            "--video_interval",
-            help="Interval between video recordings (in steps)",
-            type=int,
-            default=10000,
-        )
-
-        experience_group = _agent_parser.add_argument_group("Experience")
-        experience_group.add_argument(
-            "--hide_ui",
-            help="Disable most of the Isaac Sim UI and set it to fullscreen",
-            action="store_true",
-            default=False,
-        )
-
         launcher_group = _agent_parser.add_argument_group("Launcher")
         launcher_group.add_argument(
             "--headless",
             help="Run the simulation without display output",
+            action="store_true",
+            default=False,
+        )
+        launcher_group.add_argument(
+            "--hide_ui",
+            help="Disable most of the Isaac Sim UI and set it to fullscreen",
             action="store_true",
             default=False,
         )
@@ -1065,18 +1215,63 @@ def parse_cli_args() -> argparse.Namespace:
             default="",
         )
 
-    _interface_choices = sorted(map(str, InterfaceType))
+    ## Environment args
+    _env_choices = read_env_list_cache()
     for _agent_parser in (
+        zero_agent_parser,
+        rand_agent_parser,
         teleop_agent_parser,
+        ros_agent_parser,
+        train_agent_parser,
+        eval_agent_parser,
         collect_agent_parser,
     ):
+        environment_group = _agent_parser.add_argument_group("Environment")
+        environment_group.add_argument(
+            "-e",
+            "--env",
+            "--task",
+            "--demo",
+            dest="env_id",
+            help="Name of the environment to select",
+            type=str,
+            action=AutoNamespaceTaskAction,
+            choices=_env_choices,
+            required=True,
+        )
+
+        video_recording_group = _agent_parser.add_argument_group("Video Recording")
+        video_recording_group.add_argument(
+            "--video",
+            dest="video_enable",
+            help="Record videos",
+            action="store_true",
+            default=False,
+        )
+        video_recording_group.add_argument(
+            "--video_length",
+            help="Length of the recorded video (in steps)",
+            type=int,
+            default=1000,
+        )
+        video_recording_group.add_argument(
+            "--video_interval",
+            help="Interval between video recordings (in steps)",
+            type=int,
+            default=10000,
+        )
+
+    ## Teleop args
+    _teleop_device_choices = sorted(map(str, TeleopDevice))
+    _interface_choices = sorted(map(str, InterfaceType))
+    for _agent_parser in (teleop_agent_parser, collect_agent_parser):
         teleop_group = _agent_parser.add_argument_group("Teleop")
         teleop_group.add_argument(
             "--teleop_device",
             help="Device for interacting with environment",
             type=str,
             nargs="+",
-            choices=sorted(map(str, TeleopDevice)),
+            choices=_teleop_device_choices,
             default=[str(TeleopDevice.KEYBOARD)],
         )
         teleop_group.add_argument(
@@ -1098,7 +1293,7 @@ def parse_cli_args() -> argparse.Namespace:
             default=False,
         )
 
-        interfaces_group = _agent_parser.add_argument_group("Interfaces")
+        interfaces_group = _agent_parser.add_argument_group("Interface")
         interfaces_group.add_argument(
             "--interface",
             help="Sequence of interfaces to enable",
@@ -1108,24 +1303,26 @@ def parse_cli_args() -> argparse.Namespace:
             default=[],
         )
 
+    ## Algorithm args
     _algo_choices = sorted(map(str, SupportedAlgo))
     for _agent_parser in (
         train_agent_parser,
         eval_agent_parser,
         teleop_agent_parser,
         collect_agent_parser,
+        learn_agent_parser,
     ):
         algorithm_group = _agent_parser.add_argument_group(
-            "Algorithm"
-            if _agent_parser in (train_agent_parser, eval_agent_parser)
-            else "Teleop Policy"
+            "Teleop Policy"
+            if _agent_parser in (teleop_agent_parser, collect_agent_parser)
+            else "Algorithm"
         )
         algorithm_group.add_argument(
             "--algo",
             help="Name of the algorithm",
             type=str,
             choices=_algo_choices,
-            required=_agent_parser in (train_agent_parser, eval_agent_parser),
+            required=_agent_parser not in (teleop_agent_parser, collect_agent_parser),
         )
         if _agent_parser != train_agent_parser:
             algorithm_group.add_argument(
@@ -1134,6 +1331,7 @@ def parse_cli_args() -> argparse.Namespace:
                 help="Path to the model checkpoint",
             )
 
+    ## Train args
     train_group = train_agent_parser.add_argument_group("Train")
     mutex_group = train_group.add_mutually_exclusive_group()
     mutex_group.add_argument(
@@ -1150,43 +1348,7 @@ def parse_cli_args() -> argparse.Namespace:
         type=str,
     )
 
-    # GUI
-    gui_parser = subparsers.add_parser(
-        "gui",
-        help="Launch GUI",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    gui_parser.add_argument(
-        "-r",
-        "--release",
-        help="Run GUI in release mode",
-        action="store_true",
-        default=False,
-    )
-
-    # List
-    list_parser = subparsers.add_parser(
-        "ls",
-        help="List registered assets and environments"
-        + (' (MISSING: "rich" Python package)' if find_spec("rich") else ""),
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    list_parser.add_argument(
-        "category",
-        help="Filter of categories to list",
-        nargs="*",
-        type=str,
-        choices=sorted(map(str, EntityToList)),
-        default=str(EntityToList.ALL),
-    )
-    list_parser.add_argument(
-        "-a",
-        "--show_all",
-        help='Show all registered entities ("*_visual" environments are hidden by default)',
-        action="store_true",
-        default=False,
-    )
-
+    # Trigger argcomplete
     if find_spec("argcomplete"):
         import argcomplete
 
@@ -1199,10 +1361,16 @@ def parse_cli_args() -> argparse.Namespace:
 
     # Allow separation of arguments meant for other purposes
     if "--" in sys.argv:
-        sys.argv = [sys.argv[0], *sys.argv[(sys.argv.index("--") + 1) :]]
+        forwarded_args = sys.argv[(sys.argv.index("--") + 1) :]
+        sys.argv = sys.argv[: sys.argv.index("--")]
+    else:
+        forwarded_args = []
 
     # Parse arguments
     args, other_args = parser.parse_known_args()
+
+    # Add forwarded arguments
+    args.forwarded_args = forwarded_args
 
     # Detect any unsupported arguments
     unsupported_args = [
@@ -1216,6 +1384,23 @@ def parse_cli_args() -> argparse.Namespace:
             + ", ".join(
                 f'"{arg}"' if any(c in string.whitespace for c in arg) else arg
                 for arg in unsupported_args
+            )
+            + (
+                (
+                    '\nUse "--" to separate arguments meant for spawned processes: '
+                    + " ".join(
+                        f'"{arg}"' if any(c in string.whitespace for c in arg) else arg
+                        for arg in sys.argv
+                        if arg not in unsupported_args and arg != "--"
+                    )
+                    + " -- "
+                    + " ".join(
+                        f'"{arg}"' if any(c in string.whitespace for c in arg) else arg
+                        for arg in unsupported_args
+                    )
+                )
+                if args.subcommand in ("gui", "test")
+                else ""
             )
         )
 
@@ -1305,6 +1490,21 @@ class SupportedAlgo(str, Enum):
 
     @classmethod
     def from_str(cls, string: str) -> SupportedAlgo:
+        try:
+            return next(variant for variant in cls if string.upper() == variant.name)
+        except StopIteration:
+            raise ValueError(f'String "{string}" is not a valid "{cls.__name__}"')
+
+
+class Lang(str, Enum):
+    PYTHON = auto()
+    RUST = auto()
+
+    def __str__(self) -> str:
+        return self.name.lower()
+
+    @classmethod
+    def from_str(cls, string: str) -> Lang:
         try:
             return next(variant for variant in cls if string.upper() == variant.name)
         except StopIteration:

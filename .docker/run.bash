@@ -154,10 +154,10 @@ if [[ "${WITH_GPU,,}" = true ]]; then
         elif ! lshw -C display 2>/dev/null | grep -qi "vendor.*nvidia"; then
             return 1 # NVIDIA GPU is not present
         elif ! command -v nvidia-smi >/dev/null 2>&1; then
-            echo >&2 -e "\e[33m[WARNING] NVIDIA GPU is detected, but its functionality cannot be verified. This container will not be able to use the GPU. Please install nvidia-utils on the host system or force-enable NVIDIA GPU via 'WITH_GPU_FORCE_NVIDIA=true'.\e[0m"
+            echo >&2 -e "\033[1;33m[WARNING] NVIDIA GPU is detected, but its functionality cannot be verified. This container will not be able to use the GPU. Please install nvidia-utils on the host system or force-enable NVIDIA GPU via 'WITH_GPU_FORCE_NVIDIA=true'.\033[0m"
             return 1 # NVIDIA GPU is present but nvidia-utils not installed
         elif ! nvidia-smi -L &>/dev/null; then
-            echo >&2 -e "\e[33m[WARNING] NVIDIA GPU is detected, but it does not seem to be working properly. This container will not be able to use the GPU. Please ensure the NVIDIA drivers are properly installed on the host system.\e[0m"
+            echo >&2 -e "\033[1;33m[WARNING] NVIDIA GPU is detected, but it does not seem to be working properly. This container will not be able to use the GPU. Please ensure the NVIDIA drivers are properly installed on the host system.\033[0m"
             return 1 # NVIDIA GPU is present but is not working properly
         else
             return 0 # NVIDIA GPU is present and appears to be working
