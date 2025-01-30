@@ -38,7 +38,7 @@ def reset_xform_orientation_uniform(
     env: "AnyEnv",
     env_ids: torch.Tensor,
     orientation_distribution_params: Dict[str, Tuple[float, float]],
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
+    asset_cfg: SceneEntityCfg,
 ):
     asset: XFormPrimView = env.scene[asset_cfg.name]
 
@@ -63,7 +63,7 @@ def reset_joints_by_offset(
     env_ids: torch.Tensor,
     position_range: tuple[float, float],
     velocity_range: tuple[float, float],
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    asset_cfg: SceneEntityCfg,
 ):
     """Reset the robot joints with offsets around the default position and velocity by the given ranges.
 
@@ -155,7 +155,7 @@ def follow_xform_orientation_linear_trajectory(
     env: "AnyEnv",
     env_ids: torch.Tensor,
     orientation_step_params: Dict[str, float],
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
+    asset_cfg: SceneEntityCfg,
 ):
     asset: XFormPrimView = env.scene[asset_cfg.name]
 
@@ -178,13 +178,11 @@ def reset_root_state_uniform_poisson_disk_2d(
     pose_range: dict[str, tuple[float, float]],
     velocity_range: dict[str, tuple[float, float]],
     radius: float,
-    asset_cfgs: List[SceneEntityCfg] = [
-        SceneEntityCfg("robot"),
-    ],
+    asset_cfg: List[SceneEntityCfg],
 ):
     # Extract the used quantities (to enable type-hinting)
     assets: List[RigidObject | Articulation] = [
-        env.scene[asset_cfg.name] for asset_cfg in asset_cfgs
+        env.scene[cfg.name] for cfg in asset_cfg
     ]
     # Get default root state
     root_states = torch.stack(
@@ -199,7 +197,7 @@ def reset_root_state_uniform_poisson_disk_2d(
     ranges = torch.tensor(range_list, dtype=torch.float32, device=assets[0].device)
     samples_pos_xy = torch.tensor(
         sample_poisson_disk_2d_looped(
-            (len(env_ids), len(asset_cfgs)),
+            (len(env_ids), len(asset_cfg)),
             (
                 (range_list[0][0], range_list[1][0]),
                 (range_list[0][1], range_list[1][1]),
@@ -211,14 +209,14 @@ def reset_root_state_uniform_poisson_disk_2d(
     rand_samples = sample_uniform(
         ranges[2:, 0],
         ranges[2:, 1],
-        (len(env_ids), len(asset_cfgs), 4),
+        (len(env_ids), len(asset_cfg), 4),
         device=assets[0].device,
     )
     rand_samples = torch.cat([samples_pos_xy, rand_samples], dim=-1)
 
     positions = (
         root_states[:, :, 0:3]
-        + env.scene.env_origins[env_ids].repeat(len(asset_cfgs), 1, 1).swapaxes(0, 1)
+        + env.scene.env_origins[env_ids].repeat(len(asset_cfg), 1, 1).swapaxes(0, 1)
         + rand_samples[:, :, 0:3]
     )
     orientations_delta = quat_from_euler_xyz(
@@ -235,7 +233,7 @@ def reset_root_state_uniform_poisson_disk_2d(
     rand_samples = sample_uniform(
         ranges[:, 0],
         ranges[:, 1],
-        (len(env_ids), len(asset_cfgs), 6),
+        (len(env_ids), len(asset_cfg), 6),
         device=assets[0].device,
     )
     velocities = root_states[:, :, 7:13] + rand_samples
@@ -259,13 +257,11 @@ def reset_root_state_uniform_poisson_disk_3d(
     pose_range: dict[str, tuple[float, float, float]],
     velocity_range: dict[str, tuple[float, float, float]],
     radius: float,
-    asset_cfgs: List[SceneEntityCfg] = [
-        SceneEntityCfg("robot"),
-    ],
+    asset_cfg: List[SceneEntityCfg],
 ):
     # Extract the used quantities (to enable type-hinting)
     assets: List[RigidObject | Articulation] = [
-        env.scene[asset_cfg.name] for asset_cfg in asset_cfgs
+        env.scene[cfg.name] for cfg in asset_cfg
     ]
     # Get default root state
     root_states = torch.stack(
@@ -280,7 +276,7 @@ def reset_root_state_uniform_poisson_disk_3d(
     ranges = torch.tensor(range_list, dtype=torch.float32, device=assets[0].device)
     samples_pos = torch.tensor(
         sample_poisson_disk_3d_looped(
-            (len(env_ids), len(asset_cfgs)),
+            (len(env_ids), len(asset_cfg)),
             (
                 (range_list[0][0], range_list[1][0], range_list[2][0]),
                 (range_list[0][1], range_list[1][1], range_list[2][1]),
@@ -292,14 +288,14 @@ def reset_root_state_uniform_poisson_disk_3d(
     rand_samples = sample_uniform(
         ranges[3:, 0],
         ranges[3:, 1],
-        (len(env_ids), len(asset_cfgs), 3),
+        (len(env_ids), len(asset_cfg), 3),
         device=assets[0].device,
     )
     rand_samples = torch.cat([samples_pos, rand_samples], dim=-1)
 
     positions = (
         root_states[:, :, 0:3]
-        + env.scene.env_origins[env_ids].repeat(len(asset_cfgs), 1, 1).swapaxes(0, 1)
+        + env.scene.env_origins[env_ids].repeat(len(asset_cfg), 1, 1).swapaxes(0, 1)
         + rand_samples[:, :, 0:3]
     )
     orientations_delta = quat_from_euler_xyz(
@@ -316,7 +312,7 @@ def reset_root_state_uniform_poisson_disk_3d(
     rand_samples = sample_uniform(
         ranges[:, 0],
         ranges[:, 1],
-        (len(env_ids), len(asset_cfgs), 6),
+        (len(env_ids), len(asset_cfg), 6),
         device=assets[0].device,
     )
     velocities = root_states[:, :, 7:13] + rand_samples

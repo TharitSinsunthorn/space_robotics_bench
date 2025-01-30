@@ -533,9 +533,12 @@ def reconstruct_object(obj: Any, updates: Mapping[str, Any]) -> Any:
                 bool,
                 slice,
                 type(None),
+                Path,
             ),
         ):
-            logging.warning(f"Unhandled type: {obj}\nUpdates:{updates}")
+            logging.warning(
+                f"Type '{type(obj)}' is not explicitly handled in the object reconstruction process"
+            )
         return updates if updates is not None else obj
     except Exception as e:
         overrides = ", ".join(

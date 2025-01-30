@@ -59,7 +59,7 @@ class Ingenuity(MultiCopter):
     ## Frames
     frame_base: Frame = Frame(prim_relpath="body")
     frame_camera_bottom: Frame = Frame(
-        prim_relpath=f"{frame_base}/camera_bottom",
+        prim_relpath="body/camera_bottom",
         offset=Transform(
             translation=(0.045, 0.0, 0.1275),
             rotation=quat_from_rpy(0.0, 90.0, 0.0),

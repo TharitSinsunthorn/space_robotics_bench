@@ -32,7 +32,7 @@ class EventCfg(ManipulationEventCfg):
         func=reset_root_state_uniform_poisson_disk_2d,
         mode="reset",
         params={
-            "asset_cfgs": MISSING,
+            "asset_cfg": MISSING,
             "pose_range": {
                 "x": MISSING,
                 "y": MISSING,
@@ -51,6 +51,9 @@ class MultiTaskCfg(TaskCfg):
     ## Environment
     num_problems_per_env: int = 6
     problem_spacing: float = 0.15
+
+    ## Events
+    events: EventCfg = EventCfg()
 
     def __post_init__(self):
         super().__post_init__()
@@ -84,7 +87,7 @@ class MultiTaskCfg(TaskCfg):
         ]
         self.scene.object = None
         self.scene.target = None
-        # TODO: Convert to rigid body array (here, sample collection, and debris avoidance)
+        # TODO: Convert to rigid body collection (here, sample collection, and debris avoidance)
         for i, cfg in enumerate(self.problem_cfg):
             setattr(
                 self.scene,
@@ -111,7 +114,7 @@ class MultiTaskCfg(TaskCfg):
         ]
 
         ## Events
-        self.events.randomize_object_state.params["asset_cfgs"] = [  # type: ignore
+        self.events.randomize_object_state.params["asset_cfg"] = [  # type: ignore
             SceneEntityCfg(f"object{i}") for i in range(self.num_problems_per_env)
         ]
         self.events.randomize_object_state.params["pose_range"]["x"] = (  # type: ignore

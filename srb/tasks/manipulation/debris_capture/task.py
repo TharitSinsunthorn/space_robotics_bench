@@ -1,7 +1,6 @@
-from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 import torch
-from simforge import TexResConfig
 
 from srb import assets
 from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg, Terrain
@@ -22,9 +21,6 @@ from srb.utils.math import (
     scale_transform,
     subtract_frame_transforms,
 )
-
-if TYPE_CHECKING:
-    from srb._typing import AnyEnvCfg
 
 ##############
 ### Config ###
@@ -83,14 +79,14 @@ class TaskCfg(ManipulationEnvCfg):
         self.sim.gravity = (0.0, 0.0, 0.0)
 
         ## Scene
-        self.object = self._object(
+        self.object = assets.rigid_object_from_cfg(
             self,
             seed=self.seed,
             num_assets=self.scene.num_envs,
             init_state=RigidObjectCfg.InitialStateCfg(pos=(1.0, 0.0, 0.5)),
             activate_contact_sensors=True,
         )
-        self.scene.object = self.object.asset_cfg
+        self.scene.object = self.object
 
         ## Sensors
         self.scene.contacts_robot_hand_obj = ContactSensorCfg(
@@ -100,35 +96,6 @@ class TaskCfg(ManipulationEnvCfg):
             #       However, it seems to function properly anyway...
             filter_prim_paths_expr=[self.scene.object.prim_path],
         )
-
-    ########################
-    ### Helper Functions ###
-    ########################
-
-    @staticmethod
-    def _object(
-        cfg: "AnyEnvCfg",
-        *,
-        seed: int,
-        num_assets: int,
-        init_state: RigidObjectCfg.InitialStateCfg,
-        prim_path: str = "{ENV_REGEX_NS}/sample",
-        scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
-        texture_resolution: TexResConfig | None = None,
-        **kwargs,
-    ) -> RigidObjectCfg:
-        debris_cfg = assets.rigid_object_from_cfg(
-            cfg,
-            seed=seed,
-            num_assets=num_assets,
-            prim_path=prim_path,
-            scale=scale,
-            texture_resolution=texture_resolution,
-        )
-        debris_cfg.init_state = init_state
-        debris_cfg.spawn.replace(**kwargs)
-
-        return debris_cfg
 
 
 ############

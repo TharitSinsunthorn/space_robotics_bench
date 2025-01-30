@@ -2,6 +2,7 @@ import os
 import subprocess
 import time
 from pathlib import Path
+from typing import Iterable
 
 import pytest
 
@@ -13,19 +14,28 @@ from srb.utils.subprocess import terminate_process
 DURATION: float = 30.0
 HEADLESS: bool = True
 NUM_ENVS: int = 2
+TEST_VISUAL_ENVS: bool = True
 
 
-envs = read_env_list_cache()
-if not envs:
-    test_filepath = Path(__file__)
-    logging.warning(
-        f"Skipping {test_filepath.parent.name}/{test_filepath.name} because no environments were found in the cache (repeat the test)"
-    )
+def list_envs() -> Iterable[str] | None:
+    envs = read_env_list_cache()
+
+    if not envs:
+        test_filepath = Path(__file__)
+        logging.warning(
+            f"Skipping {test_filepath.parent.name}/{test_filepath.name} because no environments were found in the cache (repeat the test)"
+        )
+    else:
+        if not TEST_VISUAL_ENVS:
+            envs = filter(lambda env: not env.endswith("_visual"), envs)
+        envs = sorted(envs)
+
+    return envs
 
 
 @pytest.mark.order(after="cli_ls_test.py::test_cli_ls")
-@pytest.mark.parametrize("env", envs or [])
-def test_cli_agent_rand(env):
+@pytest.mark.parametrize("env", list_envs() or [])
+def test_cli_agent_rand(env: str):
     cmd = (
         get_isaacsim_python(),
         "-m",
@@ -33,9 +43,9 @@ def test_cli_agent_rand(env):
         "agent",
         "rand",
         "--headless" if HEADLESS else "--hide_ui",
+        f"env.scene.num_envs={NUM_ENVS}",
         "--env",
         env,
-        f"env.scene.num_envs={NUM_ENVS}",
     )
 
     environ = os.environ.copy()
@@ -45,22 +55,24 @@ def test_cli_agent_rand(env):
     try:
         process = subprocess.Popen(
             cmd,
+            env=environ,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            preexec_fn=os.setsid,
             text=True,
-            env=environ,
+            preexec_fn=os.setsid,
         )
 
         start = time.time()
         while time.time() - start < DURATION:
             if process.poll() is not None:
+                logging.critical(f'[{env}] Failed command: {" ".join(cmd)}')
                 stdout, stderr = process.communicate()
                 pytest.fail(
                     f'Process failed for env "{env}"\n[env={env}] STDOUT:\n{stdout}\n[env={env}] STDERR:\n{stderr}'
                 )
             time.sleep(0.1)
     except Exception as e:
+        logging.critical(f'[{env}] Failed command: {" ".join(cmd)}')
         pytest.fail(
             f'Failed to start process for env "{env}"\n[env={env}] Exception: {e}'
         )

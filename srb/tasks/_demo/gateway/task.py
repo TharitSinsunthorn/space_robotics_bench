@@ -3,7 +3,7 @@ from typing import Dict, Sequence, Tuple
 import torch
 
 from srb import assets
-from srb.core.asset import Articulation
+from srb.core.asset import Articulation, AssetVariant, Manipulator
 from srb.core.env import (
     DirectEnv,
     Domain,
@@ -22,6 +22,7 @@ from srb.utils.cfg import configclass
 class TaskCfg(ManipulationEnvCfg):
     ## Scenario
     domain: Domain = Domain.ORBIT
+    robot: Manipulator | AssetVariant | None = assets.Canadarm3Large()
 
     viewer = ViewerCfg(
         lookat=(0.0, 0.0, 2.5),
@@ -32,14 +33,6 @@ class TaskCfg(ManipulationEnvCfg):
 
     def __post_init__(self):
         super().__post_init__()
-
-        ## Scene
-        self.scene.env_spacing = 42.0
-        self.robot = assets.Canadarm3Large()
-        self.scene.robot = self.robot.asset_cfg
-
-        ## Actions
-        self.actions = self.robot.action_cfg
 
         ## Sensors
         self.scene.tf_robot_ee = None

@@ -2,6 +2,7 @@ import subprocess
 
 import pytest
 
+from srb.utils import logging
 from srb.utils.isaacsim import get_isaacsim_python
 from srb.utils.subprocess import terminate_process
 
@@ -20,7 +21,8 @@ def test_cli_ls():
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
 
-        if process.wait():
+        if process.wait(timeout=600.0) != 0:
+            logging.critical(f'Failed command: {" ".join(cmd)}')
             stdout, stderr = process.communicate()
             pytest.fail(f"Process failed\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}")
     except Exception as e:

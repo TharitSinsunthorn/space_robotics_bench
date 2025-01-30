@@ -2,6 +2,7 @@ from dataclasses import MISSING
 from typing import Dict, Sequence, Tuple
 
 import torch
+from simforge import TexResConfig
 
 from srb import assets
 from srb.core.asset import RigidObjectCfg
@@ -22,7 +23,7 @@ class EventCfg(SpacecraftEventCfg):
         func=reset_root_state_uniform_poisson_disk_3d,
         mode="reset",
         params={
-            "asset_cfgs": MISSING,
+            "asset_cfg": MISSING,
             "pose_range": {
                 "x": (-5.0, 5.0),
                 "y": (-5.0, 5.0),
@@ -44,19 +45,21 @@ class EventCfg(SpacecraftEventCfg):
     )
 
 
-def asteroid_cfg(
-    num_assets: int,
+def debris_cfg(
+    *,
     seed: int,
-    init_state: RigidObjectCfg.InitialStateCfg,
-    prim_path: str = "{ENV_REGEX_NS}/sample",
-    scale: Tuple[float, float, float] = (10.0, 10.0, 10.0),
+    num_assets: int,
+    prim_path: str = "{ENV_REGEX_NS}/object",
+    scale: Tuple[float, float, float] = (1.0, 1.0, 1.0),
+    texture_resolution: TexResConfig | None = None,
     **kwargs,
 ) -> RigidObjectCfg:
-    asset_cfg = assets.Asteroid(scale=scale).asset_cfg
+    asset_cfg = assets.Asteroid(
+        scale=scale, texture_resolution=texture_resolution
+    ).asset_cfg
 
-    asset_cfg.spawn.num_assets = num_assets  # type: ignore
     asset_cfg.spawn.seed = seed  # type: ignore
-    asset_cfg.init_state = init_state
+    asset_cfg.spawn.num_assets = num_assets  # type: ignore
     asset_cfg.prim_path = prim_path
     asset_cfg.spawn.replace(**kwargs)
 
@@ -78,11 +81,10 @@ class TaskCfg(SpacecraftEnvCfg):
 
         ## Scene
         self.objects = [
-            asteroid_cfg(
-                prim_path=f"{{ENV_REGEX_NS}}/asteroid{i}",
+            debris_cfg(
+                prim_path=f"{{ENV_REGEX_NS}}/debris{i}",
                 seed=self.seed + (i * self.scene.num_envs),
                 num_assets=self.scene.num_envs,
-                init_state=RigidObjectCfg.InitialStateCfg(pos=(0.55, 0.0, 0.0)),
                 activate_contact_sensors=True,
             )
             for i in range(self.num_problems_per_env)
@@ -91,7 +93,7 @@ class TaskCfg(SpacecraftEnvCfg):
             setattr(self.scene, f"object{i}", obj_cfg)
 
         ## Events
-        self.events.randomize_object_state.params["asset_cfgs"] = [  # type: ignore
+        self.events.randomize_object_state.params["asset_cfg"] = [  # type: ignore
             SceneEntityCfg(f"object{i}") for i in range(self.num_problems_per_env)
         ]
 

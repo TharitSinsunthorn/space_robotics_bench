@@ -39,7 +39,7 @@ class EventCfg(ManipulationEventCfg):
         func=reset_root_state_uniform_poisson_disk_2d,
         mode="reset",
         params={
-            "asset_cfgs": [SceneEntityCfg(f"object{i}") for i in range(4)],
+            "asset_cfg": [SceneEntityCfg(f"object{i}") for i in range(4)],
             "pose_range": {
                 "x": (
                     -0.2,

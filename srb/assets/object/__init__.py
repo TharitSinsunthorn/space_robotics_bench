@@ -6,7 +6,7 @@ from srb.core.asset import AssetVariant, RigidObjectCfg
 from srb.core.env import Domain
 
 from .asteroid import Asteroid  # noqa: F401
-from .cubesat_debris import CubesatDebris  # noqa: F401
+from .debris import CubesatDebris  # noqa: F401
 from .peg_in_hole import Hole, Peg  # noqa: F401
 from .peg_in_hole_profile import ProfileHole, ProfilePeg, ShortProfilePeg  # noqa: F401
 from .rock_procgen import LunarRock, MarsRock  # noqa: F401
@@ -25,6 +25,7 @@ def rigid_object_from_cfg(
     seed: int,
     num_assets: int,
     prim_path: str = "{ENV_REGEX_NS}/object",
+    init_state: RigidObjectCfg.InitialStateCfg = RigidObjectCfg.InitialStateCfg(),
     scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
     texture_resolution: TexResConfig | None = None,
     **kwargs,
@@ -61,6 +62,7 @@ def rigid_object_from_cfg(
             asset_cfg.spawn.num_assets = num_assets  # type: ignore
 
     asset_cfg.prim_path = prim_path
+    asset_cfg.init_state = init_state
     asset_cfg.spawn.replace(**kwargs)
 
     return asset_cfg

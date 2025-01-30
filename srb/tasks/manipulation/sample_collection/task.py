@@ -62,7 +62,6 @@ def sample_cfg(
     *,
     seed: int,
     num_assets: int,
-    init_state: RigidObjectCfg.InitialStateCfg,
     prim_path: str = "{ENV_REGEX_NS}/sample",
     asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
@@ -106,9 +105,8 @@ def sample_cfg(
         prim_path=prim_path,
         scale=scale,
         texture_resolution=texture_resolution,
+        **kwargs,
     )
-    sample_cfg.init_state = init_state
-    sample_cfg.spawn.replace(**kwargs)
 
     return SampleCfg(
         asset_cfg=sample_cfg,
