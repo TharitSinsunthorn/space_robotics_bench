@@ -33,16 +33,16 @@ class BaseEnvCfg:
         # Gravity
         if self.domain.gravity_variation == 0.0:
             self.events.randomize_gravity = None
-        else:
+        elif self.events.randomize_gravity:
             gravity_z_range = self.domain.gravity_range
-            self.events.randomize_gravity.params["distribution_params"] = (  # type: ignore
+            self.events.randomize_gravity.params["distribution_params"] = (
                 (0, 0, -gravity_z_range[0]),
                 (0, 0, -gravity_z_range[1]),
             )
         # Light
         ## Events
-        if self.domain == Domain.ORBIT:
-            self.events.randomize_sunlight_orientation.params[  # type: ignore
+        if self.domain == Domain.ORBIT and self.events.randomize_sunlight_orientation:
+            self.events.randomize_sunlight_orientation.params[
                 "orientation_distribution_params"
             ] = {
                 "roll": (-20.0 * torch.pi / 180.0, -20.0 * torch.pi / 180.0),
@@ -50,19 +50,19 @@ class BaseEnvCfg:
             }
         if self.domain.light_intensity_variation == 0.0:
             self.events.randomize_sunlight_intensity = None
-        else:
-            self.events.randomize_sunlight_intensity.params[  # type: ignore
-                "distribution_params"
-            ] = self.domain.light_intensity_range
+        elif self.events.randomize_sunlight_intensity:
+            self.events.randomize_sunlight_intensity.params["distribution_params"] = (
+                self.domain.light_intensity_range
+            )
         if self.domain.light_angular_diameter_range == 0.0:
             self.events.randomize_sunlight_angular_diameter = None
-        else:
-            self.events.randomize_sunlight_angular_diameter.params[  # type: ignore
+        elif self.events.randomize_sunlight_angular_diameter:
+            self.events.randomize_sunlight_angular_diameter.params[
                 "distribution_params"
             ] = self.domain.light_angular_diameter_range
         if self.domain.light_color_temperature_variation == 0.0:
             self.events.randomize_sunlight_color_temperature = None
-        else:
-            self.events.randomize_sunlight_color_temperature.params[  # type: ignore
+        elif self.events.randomize_sunlight_color_temperature:
+            self.events.randomize_sunlight_color_temperature.params[
                 "distribution_params"
             ] = self.domain.light_color_temperature_range

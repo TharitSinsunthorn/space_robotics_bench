@@ -1337,7 +1337,6 @@ def parse_cli_args() -> argparse.Namespace:
     mutex_group.add_argument(
         "--continue_training",
         "--continue",
-        "--resume",
         help="Continue training the model from the last checkpoint",
         action="store_true",
         default=False,
