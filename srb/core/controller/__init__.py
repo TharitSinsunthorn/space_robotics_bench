@@ -1,1 +1,1 @@
-from omni.isaac.lab.controllers import *  # noqa: F403
+from isaaclab.controllers import *  # noqa: F403

@@ -2,8 +2,8 @@ from typing import Iterable, List, Tuple
 
 import numpy
 import torch
-from omni.isaac.lab.envs.mdp.events import _randomize_prop_by_op  # noqa: F401
-from omni.isaac.lab.utils.math import (  # noqa: F401
+from isaaclab.envs.mdp.events import _randomize_prop_by_op  # noqa: F401
+from isaaclab.utils.math import (  # noqa: F401
     sample_cylinder,
     sample_gaussian,
     sample_log_uniform,

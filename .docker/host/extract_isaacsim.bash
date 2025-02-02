@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-### Extract Isaac Sim folder from a Docker image
-### Usage: extract_isaac_sim.sh [destination_directory]
+### Extract Isaac Sim from a Docker image
+### Usage: extract_isaacsim.bash [destination_directory]
 set -e
 
 ## Config
@@ -70,12 +70,12 @@ done
 # Ensure the destination directory exists
 mkdir -p "$(dirname "${DEST_DIR}")"
 
-# Copy the Isaac Sim folder
+# Copy the directory from the container
 echo "[INFO] Copying ${CONTAINER_NAME}:${SRC_PATH} to ${DEST_DIR}"
 docker cp "${CONTAINER_NAME}:${SRC_PATH}" "${DEST_DIR}"
 
-# Update pip in the Isaac Sim environment
-echo "[INFO] Updating pip in Isaac Sim Python environment"
+# Update pip in the extracted environment
+echo "[INFO] Updating pip in extracted environment"
 if [[ -f "${DEST_DIR}/python.sh" ]]; then
     "${DEST_DIR}/python.sh" -m pip install --upgrade pip
 else

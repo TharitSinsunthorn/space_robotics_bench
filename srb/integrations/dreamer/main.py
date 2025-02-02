@@ -8,7 +8,7 @@ import numpy
 import portal
 from dreamerv3 import agent as dreamer_agent
 from dreamerv3 import main as dreamer_main
-from omni.isaac.kit import SimulationApp
+from isaacsim import SimulationApp
 from ruamel import yaml
 
 from srb.integrations.dreamer.eval import eval_only

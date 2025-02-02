@@ -1,5 +1,5 @@
-from omni.isaac.lab.envs import ViewerCfg  # noqa: F401
-from omni.isaac.lab.scene import InteractiveScene, InteractiveSceneCfg  # noqa: F401
+from isaaclab.envs import ViewerCfg  # noqa: F401
+from isaaclab.scene import InteractiveScene, InteractiveSceneCfg  # noqa: F401
 
 from .common import (  # noqa: F401
     BaseEnvCfg,

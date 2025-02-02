@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import elements
 import numpy
-from omni.isaac.kit import SimulationApp
+from isaacsim import SimulationApp
 
 from srb.integrations.dreamer.driver import DriverParallelEnv
 

@@ -1,5 +1,5 @@
 import gymnasium
-from omni.isaac.lab.envs import DirectRLEnvCfg as __DirectRLEnvCfg
+from isaaclab.envs import DirectRLEnvCfg as __DirectRLEnvCfg
 
 from srb.utils.cfg import configclass
 
@@ -15,7 +15,7 @@ class DirectEnvCfg(BaseEnvCfg, __DirectRLEnvCfg):
     ## Events
     events: BaseEventCfg = BaseEventCfg()
 
-    ## Patch omni.isaac.lab.envs.DirectRLEnvCfg
+    ## Patch isaaclab.envs.DirectRLEnvCfg
     # Disable UI window by default
     ui_window_class_type: type | None = None
     # Ugly hack to gain compatibility with new Isaac Lab

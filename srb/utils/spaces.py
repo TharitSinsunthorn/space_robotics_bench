@@ -1,1 +1,1 @@
-from omni.isaac.lab.envs.utils.spaces import *  # noqa: F403
+from isaaclab.envs.utils.spaces import *  # noqa: F403

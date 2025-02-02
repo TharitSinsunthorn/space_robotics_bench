@@ -1,4 +1,4 @@
-from omni.isaac.lab.envs import DirectMARLEnv as __DirectMARLEnv
+from isaaclab.envs import DirectMARLEnv as __DirectMARLEnv
 
 from .cfg import DirectMarlEnvCfg
 

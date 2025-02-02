@@ -8,6 +8,8 @@ import omni.kit.app
 
 from srb.utils import logging
 
+# TODO: Fix for Isaac Sim 4.5
+
 
 @cache
 def enable_ros2_bridge():
@@ -23,7 +25,7 @@ def enable_ros2_bridge():
     if ld_library_path:
         ld_library_path = f":{ld_library_path}".replace("::", ":")
     ros2_lib_path = Path(
-        f'{environ.get("ISAAC_PATH")}/exts/omni.isaac.ros2_bridge/{INTERNAL_ROS_DISTRO}/lib'
+        f'{environ.get("ISAAC_PATH")}/exts/isaacsim.ros2.bridge/{INTERNAL_ROS_DISTRO}/lib'
     )
     assert ros2_lib_path.exists()
     environ["LD_LIBRARY_PATH"] = ros2_lib_path.as_posix() + ld_library_path
@@ -33,7 +35,7 @@ def enable_ros2_bridge():
 
     # Load the ROS extension
     for ext in extension_manager.get_extensions():
-        if "omni.isaac.ros2_bridge-" not in ext["id"]:
+        if "isaacsim.ros2.bridge-" not in ext["id"]:
             continue
         logging.debug('Enabling extension "{}"'.format(ext["id"]))
         extension_manager.set_extension_enabled_immediate(ext["id"], True)

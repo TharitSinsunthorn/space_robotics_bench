@@ -1,4 +1,4 @@
-from omni.isaac.lab.envs.common import (  # noqa: F401
+from isaaclab.envs.common import (  # noqa: F401
     ActionType,
     AgentID,
     EnvStepReturn,

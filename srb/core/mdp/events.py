@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
 import torch
 from pxr import Gf
 
-from srb.core.asset import Articulation, RigidObject, XFormPrimView
+from srb.core.asset import Articulation, RigidObject, XFormPrim
 from srb.core.manager import SceneEntityCfg
 from srb.utils.math import quat_from_euler_xyz, quat_mul
 from srb.utils.sampling import (
@@ -40,7 +40,7 @@ def reset_xform_orientation_uniform(
     orientation_distribution_params: Dict[str, Tuple[float, float]],
     asset_cfg: SceneEntityCfg,
 ):
-    asset: XFormPrimView = env.scene[asset_cfg.name]
+    asset: XFormPrim = env.scene[asset_cfg.name]
 
     range_list = [
         orientation_distribution_params.get(key, (0.0, 0.0))
@@ -105,7 +105,7 @@ def randomize_usd_prim_attribute_uniform(
     distribution_params: Tuple[float | Sequence[float], float | Sequence[float]],
     asset_cfg: SceneEntityCfg,
 ):
-    asset: XFormPrimView = env.scene[asset_cfg.name]
+    asset: XFormPrim = env.scene[asset_cfg.name]
     if isinstance(distribution_params[0], Sequence):
         dist_len = len(distribution_params[0])
         distribution_params = (  # type: ignore
@@ -157,7 +157,7 @@ def follow_xform_orientation_linear_trajectory(
     orientation_step_params: Dict[str, float],
     asset_cfg: SceneEntityCfg,
 ):
-    asset: XFormPrimView = env.scene[asset_cfg.name]
+    asset: XFormPrim = env.scene[asset_cfg.name]
 
     _, current_quat = asset.get_world_poses()
 

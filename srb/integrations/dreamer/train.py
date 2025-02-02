@@ -4,7 +4,7 @@ from functools import partial as bind
 import elements
 import embodied
 import numpy
-from omni.isaac.kit import SimulationApp
+from isaacsim import SimulationApp
 
 from srb.integrations.dreamer.driver import DriverParallelEnv
 

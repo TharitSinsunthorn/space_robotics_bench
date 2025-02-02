@@ -1,4 +1,4 @@
-from omni.isaac.lab.envs import ManagerBasedRLEnvCfg as __ManagerBasedRLEnvCfg
+from isaaclab.envs import ManagerBasedRLEnvCfg as __ManagerBasedRLEnvCfg
 
 from srb.utils.cfg import configclass
 

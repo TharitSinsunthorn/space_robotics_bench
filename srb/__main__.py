@@ -16,7 +16,7 @@ from srb.utils.cache import read_env_list_cache, update_env_list_cache
 from srb.utils.path import SRB_APPS_DIR, SRB_DIR
 
 if TYPE_CHECKING:
-    from omni.isaac.kit import SimulationApp
+    from isaacsim import SimulationApp
 
     from srb._typing import AnyEnv
     from srb.interfaces.gui import GuiInterface

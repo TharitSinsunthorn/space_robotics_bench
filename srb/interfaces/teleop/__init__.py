@@ -1,4 +1,4 @@
-from omni.isaac.lab.devices import *  # noqa: F403
+from isaaclab.devices import *  # noqa: F403
 
 from .combined import CombinedTeleopInterface  # noqa: F401
 from .keyboard import (  # noqa: F401

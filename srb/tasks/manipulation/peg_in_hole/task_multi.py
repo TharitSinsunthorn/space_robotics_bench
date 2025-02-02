@@ -3,7 +3,7 @@ from typing import Dict, List, Sequence, Tuple
 
 import torch
 
-from srb.core.asset import RigidObject, RigidObjectCfg, XFormPrimView
+from srb.core.asset import RigidObject, RigidObjectCfg, XFormPrim
 from srb.core.env import ManipulationEnv, ManipulationEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform_poisson_disk_2d
@@ -145,7 +145,7 @@ class MultiTask(ManipulationEnv):
         self._objects: List[RigidObject] = [
             self.scene[f"object{i}"] for i in range(self.cfg.num_problems_per_env)
         ]
-        self._targets: List[XFormPrimView] = [
+        self._targets: List[XFormPrim] = [
             self.scene[f"target{i}"] for i in range(self.cfg.num_problems_per_env)
         ]
 

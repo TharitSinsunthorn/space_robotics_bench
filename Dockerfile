@@ -1,12 +1,11 @@
 ## Base <https://hub.docker.com/_/ubuntu>
 ARG BASE_IMAGE_NAME="ubuntu"
-ARG BASE_IMAGE_TAG="jammy"
+ARG BASE_IMAGE_TAG="22.04"
 
 ## Isaac Sim <https://catalog.ngc.nvidia.com/orgs/nvidia/containers/isaac-sim>
 ## Label as isaac-sim for copying into the final image
 ARG ISAAC_SIM_IMAGE_NAME="nvcr.io/nvidia/isaac-sim"
-# TODO: Update to 4.5.0
-ARG ISAAC_SIM_IMAGE_TAG="4.2.0"
+ARG ISAAC_SIM_IMAGE_TAG="4.5.0"
 FROM ${ISAAC_SIM_IMAGE_NAME}:${ISAAC_SIM_IMAGE_TAG} AS isaac-sim
 
 ## Continue with the base image
@@ -218,14 +217,14 @@ RUN echo -e "\n# Blender ${BLENDER_VERSION}" >> /entrypoint.bash && \
 ARG ISAACLAB_PATH="/root/isaaclab"
 ARG ISAACLAB_REMOTE="https://github.com/isaac-sim/IsaacLab.git"
 ARG ISAACLAB_BRANCH="main"
-ARG ISAACLAB_COMMIT_SHA="b5078debe1896c449d5b3a940cebe21bf1560bd0" # 2025-01-18
+ARG ISAACLAB_COMMIT_SHA="01c8f25f90582acad6cc46c4d86597ebafadee49" # 2025-02-02
 # hadolint ignore=SC2044
 RUN echo -e "\n# Isaac Lab ${ISAACLAB_COMMIT_SHA}" >> /entrypoint.bash && \
     echo "export ISAACLAB_PATH=\"${ISAACLAB_PATH}\"" >> /entrypoint.bash && \
     git clone "${ISAACLAB_REMOTE}" "${ISAACLAB_PATH}" --branch "${ISAACLAB_BRANCH}" && \
     git -C "${ISAACLAB_PATH}" reset --hard "${ISAACLAB_COMMIT_SHA}" && \
-    for extension in $(find -L "${ISAACLAB_PATH}/source/extensions" -mindepth 1 -maxdepth 1 -type d); do \
-    if [ -f "${extension}/setup.py" ]; then \
+    for extension in $(find -L "${ISAACLAB_PATH}/source" -mindepth 1 -maxdepth 1 -type d); do \
+    if [ -f "${extension}/pyproject.toml" ] || [ -f "${extension}/setup.py" ]; then \
     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${extension}" ; \
     fi ; \
     done
@@ -272,7 +271,7 @@ ARG DREAMER_DEV=true
 ARG DREAMER_PATH="/root/dreamerv3"
 ARG DREAMER_REMOTE="https://github.com/danijar/dreamerv3.git"
 ARG DREAMER_BRANCH="main"
-ARG DREAMER_COMMIT_SHA="55c8c67c956fbdace4bf8b594ea12e934a3ae4ba" # 2025-01-11
+ARG DREAMER_COMMIT_SHA="ec19f168526e2a1254eafd315bb08a599e6aabff" # 2025-01-30
 RUN if [[ "${DEV,,}" = true && "${DREAMER_DEV,,}" = true ]]; then \
     git clone "${DREAMER_REMOTE}" "${DREAMER_PATH}" --branch "${DREAMER_BRANCH}" && \
     git -C "${DREAMER_PATH}" reset --hard "${DREAMER_COMMIT_SHA}" && \
@@ -282,7 +281,7 @@ ARG SKRL_DEV=false
 ARG SKRL_PATH="/root/skrl"
 ARG SKRL_REMOTE="https://github.com/Toni-SM/skrl.git"
 ARG SKRL_BRANCH="main"
-ARG SKRL_COMMIT_SHA="d57c8ea138e3356396a8da368f37430f75fb524a" # 2025-01-17
+ARG SKRL_COMMIT_SHA="9642b82234cda7cc3a14ec949a6e66964a202379" # 2025-01-28
 RUN if [[ "${DEV,,}" = true && "${SKRL_DEV,,}" = true ]]; then \
     git clone "${SKRL_REMOTE}" "${SKRL_PATH}" --branch "${SKRL_BRANCH}" && \
     git -C "${SKRL_PATH}" reset --hard "${SKRL_COMMIT_SHA}" && \

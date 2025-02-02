@@ -1,4 +1,4 @@
-from omni.isaac.lab.sim import UsdFileCfg
+from isaaclab.sim import UsdFileCfg
 
 from srb.core.action import WheeledRoverDrive, WheeledRoverDriveActionCfg
 from srb.core.actuator import ImplicitActuatorCfg
@@ -11,7 +11,7 @@ from srb.core.sim import (
 from srb.utils.math import quat_from_rpy
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
-# TODO: Fix Perseverance textures
+# TODO: Improve Perseverance texturing for better performance
 
 
 class Perseverance(WheeledRobot):

@@ -3,7 +3,7 @@ from typing import Sequence
 import gymnasium
 import numpy
 import torch
-from omni.isaac.lab.envs import DirectRLEnv as __DirectRLEnv
+from isaaclab.envs import DirectRLEnv as __DirectRLEnv
 
 from srb.core.manager import ActionManager
 

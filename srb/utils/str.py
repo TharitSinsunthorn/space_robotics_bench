@@ -1,7 +1,7 @@
 import functools
 import re
 
-from omni.isaac.lab.utils.string import *  # noqa: F403
+from isaaclab.utils.string import *  # noqa: F403
 
 _REGEX_SNAKE_CASE_PATTERN = (
     re.compile(r"(.)([A-Z][a-z]+)"),

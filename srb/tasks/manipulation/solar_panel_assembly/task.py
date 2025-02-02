@@ -5,7 +5,7 @@ import torch
 from pydantic import BaseModel
 
 from srb import assets
-from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg, XFormPrimView
+from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg, XFormPrim
 from srb.core.env import ManipulationEnv, ManipulationEnvCfg, ManipulationEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers, VisualizationMarkersCfg
@@ -231,9 +231,7 @@ class Task(ManipulationEnv):
             "contacts_robot_hand_obj"
         ]
         self._objects: List[RigidObject] = [self.scene[f"object{i}"] for i in range(4)]
-        self._targets: List[XFormPrimView] = [
-            self.scene[f"target{i}"] for i in range(4)
-        ]
+        self._targets: List[XFormPrim] = [self.scene[f"target{i}"] for i in range(4)]
         self._panel: RigidObject = self.scene["panel"]
 
         ## Pre-compute metrics used in hot loops

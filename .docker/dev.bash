@@ -16,7 +16,7 @@ DOCKER_DEV_VOLUMES=(
     "${WS_DIR}/simforge:/root/simforge:rw"
     "${WS_DIR}/simforge_foundry:/root/simforge_foundry:rw"
     # "${WS_DIR}/dreamerv3:/root/dreamerv3:rw"
-    "${WS_DIR}/skrl:/root/skrl:rw"
+    # "${WS_DIR}/skrl:/root/skrl:rw"
 )
 # Development environment variables to set inside the container
 DOCKER_DEV_ENVIRON=(

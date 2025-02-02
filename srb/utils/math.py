@@ -2,8 +2,8 @@ import math
 from typing import Tuple
 
 import torch
-from omni.isaac.lab.utils.math import *  # noqa: F403
-from omni.isaac.lab.utils.math import matrix_from_quat, quat_apply, quat_inv, quat_mul
+from isaaclab.utils.math import *  # noqa: F403
+from isaaclab.utils.math import matrix_from_quat, quat_apply, quat_inv, quat_mul
 
 
 def quat_from_rpy(*rpy: float, deg: bool = True) -> Tuple[float, float, float, float]:

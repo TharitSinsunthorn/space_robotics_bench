@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Mapping, Set, Tuple
 
-from omni.isaac.lab.utils.dict import *  # noqa: F403
-from omni.isaac.lab.utils.dict import string_to_slice
+from isaaclab.utils.dict import *  # noqa: F403
+from isaaclab.utils.dict import string_to_slice
 
 
 def replace_slices_with_strings(data: Dict[Any, Any]) -> Dict[Any, Any]:

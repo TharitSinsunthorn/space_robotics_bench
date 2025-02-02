@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Sequence
 
 import numpy
-from omni.isaac.kit import SimulationApp
+from isaacsim import SimulationApp
 from rl_zoo3 import ALGOS
 from stable_baselines3.common.callbacks import tqdm
 

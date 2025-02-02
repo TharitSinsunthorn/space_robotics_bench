@@ -1,4 +1,4 @@
-from omni.isaac.lab.sim import UsdFileCfg
+from isaaclab.sim import UsdFileCfg
 from torch import pi
 
 from srb.core.action import SingleArmIK_BinaryGripper

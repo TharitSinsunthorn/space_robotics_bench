@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 import carb
 import omni
-from omni.isaac.lab.devices import Se3Keyboard as __Se3Keyboard
+from isaaclab.devices import Se3Keyboard as __Se3Keyboard
 
 
 class KeyboardTeleopInterface(__Se3Keyboard):

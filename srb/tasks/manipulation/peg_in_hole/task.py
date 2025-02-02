@@ -10,7 +10,7 @@ from srb.core.asset import (
     AssetVariant,
     RigidObject,
     RigidObjectCfg,
-    XFormPrimView,
+    XFormPrim,
 )
 from srb.core.env import ManipulationEnv, ManipulationEnvCfg, ManipulationEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
@@ -231,7 +231,7 @@ class Task(ManipulationEnv):
             "contacts_robot_hand_obj"
         ]
         self._object: RigidObject = self.scene["object"]
-        self._target: XFormPrimView = self.scene["target"]
+        self._target: XFormPrim = self.scene["target"]
 
         ## Pre-compute metrics used in hot loops
         self._robot_arm_joint_indices, _ = self._robot.find_joints(

@@ -27,8 +27,8 @@ import gymnasium
 import hydra
 import yaml
 from hydra.core.config_store import ConfigStore
+from isaaclab.utils import configclass  # noqa: F401
 from omegaconf import DictConfig, OmegaConf
-from omni.isaac.lab.utils import configclass  # noqa: F401
 from pydantic import BaseModel
 from simforge import Asset as SimForgeAsset
 from simforge import AssetRegistry as SimForgeAssetRegistry

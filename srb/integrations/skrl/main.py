@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-from omni.isaac.kit import SimulationApp
+from isaacsim import SimulationApp
 from skrl.utils.runner.torch import Runner
 
 from srb.integrations.skrl.wrapper import SkrlEnvWrapper

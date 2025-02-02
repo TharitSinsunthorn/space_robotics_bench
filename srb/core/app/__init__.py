@@ -1,1 +1,1 @@
-from omni.isaac.lab.app import AppLauncher  # noqa: F401
+from isaaclab.app import AppLauncher  # noqa: F401

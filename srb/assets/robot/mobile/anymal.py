@@ -1,7 +1,7 @@
-from omni.isaac.lab.sim import UsdFileCfg
-from omni.isaac.lab_assets import ANYDRIVE_3_LSTM_ACTUATOR_CFG
+from isaaclab.sim import UsdFileCfg
 
 from srb.core.action import JointPosition, JointPositionActionCfg
+from srb.core.actuator import ActuatorNetLSTMCfg, DCMotorCfg
 from srb.core.asset import ArticulationCfg, Frame, LeggedRobot
 from srb.core.sim import (
     ArticulationRootPropertiesCfg,
@@ -10,8 +10,24 @@ from srb.core.sim import (
 )
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
-# TODO: Fix the RNN error with contiguous memory
-# TODO: Move RNN weights to assets to avoid loading from nucleus
+ANYDRIVE_3_SIMPLE_ACTUATOR_CFG = DCMotorCfg(
+    joint_names_expr=[".*HAA", ".*HFE", ".*KFE"],
+    saturation_effort=120.0,
+    effort_limit=80.0,
+    velocity_limit=7.5,
+    stiffness={".*": 40.0},
+    damping={".*": 5.0},
+)
+
+ANYDRIVE_3_LSTM_ACTUATOR_CFG = ActuatorNetLSTMCfg(
+    joint_names_expr=[".*HAA", ".*HFE", ".*KFE"],
+    network_file=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
+    .joinpath("anydrive_3_lstm_jit.pt")
+    .as_posix(),
+    saturation_effort=120.0,
+    effort_limit=80.0,
+    velocity_limit=7.5,
+)
 
 
 class AnymalB(LeggedRobot):
@@ -49,7 +65,7 @@ class AnymalB(LeggedRobot):
                 ".*H_KFE": 0.8,  # both hind KFE
             },
         ),
-        actuators={"legs": ANYDRIVE_3_LSTM_ACTUATOR_CFG},
+        actuators={"legs": ANYDRIVE_3_SIMPLE_ACTUATOR_CFG},
         soft_joint_pos_limit_factor=0.95,
     )
 
@@ -97,7 +113,7 @@ class AnymalC(LeggedRobot):
                 ".*H_KFE": 0.8,  # both hind KFE
             },
         ),
-        actuators={"legs": ANYDRIVE_3_LSTM_ACTUATOR_CFG},
+        actuators={"legs": ANYDRIVE_3_SIMPLE_ACTUATOR_CFG},
         soft_joint_pos_limit_factor=0.95,
     )
 
@@ -145,7 +161,7 @@ class AnymalD(LeggedRobot):
                 ".*H_KFE": 0.8,  # both hind KFE
             },
         ),
-        actuators={"legs": ANYDRIVE_3_LSTM_ACTUATOR_CFG},
+        actuators={"legs": ANYDRIVE_3_SIMPLE_ACTUATOR_CFG},
         soft_joint_pos_limit_factor=0.95,
     )
 
@@ -251,7 +267,7 @@ class AnymalMulti(LeggedRobot):
                 ".*H_KFE": 0.8,  # both hind KFE
             },
         ),
-        actuators={"legs": ANYDRIVE_3_LSTM_ACTUATOR_CFG},
+        actuators={"legs": ANYDRIVE_3_SIMPLE_ACTUATOR_CFG},
         soft_joint_pos_limit_factor=0.95,
     )
 

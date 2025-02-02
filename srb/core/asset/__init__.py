@@ -1,5 +1,5 @@
-from omni.isaac.core.prims.xform_prim_view import XFormPrimView  # noqa: F401
-from omni.isaac.lab.assets import *  # noqa: F403
+from isaaclab.assets import *  # noqa: F403
+from isaacsim.core.prims import XFormPrim  # noqa: F401
 
 from .asset import Asset, AssetRegistry  # noqa: F401
 from .asset_type import AssetType  # noqa: F401
