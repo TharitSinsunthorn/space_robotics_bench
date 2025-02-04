@@ -13,7 +13,6 @@ from srb.utils.subprocess import terminate_process
 
 DURATION: float = 30.0
 HEADLESS: bool = True
-NUM_ENVS: int = 2
 TEST_VISUAL_ENVS: bool = True
 
 
@@ -35,7 +34,13 @@ def list_envs() -> Iterable[str] | None:
 
 @pytest.mark.order(after="cli_ls_test.py::test_cli_ls")
 @pytest.mark.parametrize("env", list_envs() or [])
-def test_cli_agent_rand(env: str):
+@pytest.mark.parametrize("num_envs", [1, 32, 512])
+def test_cli_agent_rand(env: str, num_envs: int):
+    if env.endswith("_visual") and num_envs > 32:
+        pytest.skip(
+            f'Skipping visual environment "{env}" with too many environments ({num_envs})'
+        )
+
     cmd = (
         get_isaacsim_python(),
         "-m",
@@ -43,7 +48,7 @@ def test_cli_agent_rand(env: str):
         "agent",
         "rand",
         "--headless" if HEADLESS else "--hide_ui",
-        f"env.scene.num_envs={NUM_ENVS}",
+        f"env.scene.num_envs={num_envs}",
         "--env",
         env,
     )
@@ -65,14 +70,14 @@ def test_cli_agent_rand(env: str):
         start = time.time()
         while time.time() - start < DURATION:
             if process.poll() is not None:
-                logging.critical(f'[{env}] Failed command: {" ".join(cmd)}')
+                logging.critical(f"[{env}] Failed command: {' '.join(cmd)}")
                 stdout, stderr = process.communicate()
                 pytest.fail(
                     f'Process failed for env "{env}"\n[env={env}] STDOUT:\n{stdout}\n[env={env}] STDERR:\n{stderr}'
                 )
             time.sleep(0.1)
     except Exception as e:
-        logging.critical(f'[{env}] Failed command: {" ".join(cmd)}')
+        logging.critical(f"[{env}] Failed command: {' '.join(cmd)}")
         pytest.fail(
             f'Failed to start process for env "{env}"\n[env={env}] Exception: {e}'
         )

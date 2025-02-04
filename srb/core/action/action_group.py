@@ -15,13 +15,12 @@ class ActionGroup:
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        assert (
-            convert_to_snake_case(cls.__name__)
-            not in (
-                convert_to_snake_case(action_group.__name__)
-                for action_group in ActionGroupRegistry.registry
-            )
-        ), f"Cannot register multiple action groups with an identical name: '{cls.__module__}:{cls.__name__}' already exists as '{next(robot for robot in ActionGroupRegistry.registry if convert_to_snake_case(cls.__name__) == convert_to_snake_case(robot.__name__)).__module__}:{cls.__name__}'"
+        assert convert_to_snake_case(cls.__name__) not in (
+            convert_to_snake_case(action_group.__name__)
+            for action_group in ActionGroupRegistry.registry
+        ), (
+            f"Cannot register multiple action groups with an identical name: '{cls.__module__}:{cls.__name__}' already exists as '{next(robot for robot in ActionGroupRegistry.registry if convert_to_snake_case(cls.__name__) == convert_to_snake_case(robot.__name__)).__module__}:{cls.__name__}'"
+        )
         ActionGroupRegistry.registry.append(cls)
 
     @classmethod

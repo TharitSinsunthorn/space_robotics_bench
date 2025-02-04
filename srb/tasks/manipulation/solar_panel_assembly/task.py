@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from srb import assets
 from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg, XFormPrim
-from srb.core.env import ManipulationEnv, ManipulationEnvCfg, ManipulationEventCfg
+from srb.core.env import SingleArmEnv, SingleArmEnvCfg, SingleArmEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers, VisualizationMarkersCfg
 from srb.core.mdp import (
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 
 @configclass
-class EventCfg(ManipulationEventCfg):
+class EventCfg(SingleArmEventCfg):
     randomize_object_state = EventTermCfg(
         func=reset_root_state_uniform_poisson_disk_2d,
         mode="reset",
@@ -90,7 +90,7 @@ class PanelCfg(BaseModel, arbitrary_types_allowed=True):
 
 
 @configclass
-class TaskCfg(ManipulationEnvCfg):
+class TaskCfg(SingleArmEnvCfg):
     ## Environment
     episode_length_s: float = 50.0
 
@@ -220,7 +220,7 @@ class TaskCfg(ManipulationEnvCfg):
 ############
 
 
-class Task(ManipulationEnv):
+class Task(SingleArmEnv):
     cfg: TaskCfg
 
     def __init__(self, cfg: TaskCfg, **kwargs):

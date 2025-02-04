@@ -7,12 +7,7 @@ from simforge import TexResConfig
 
 from srb import assets
 from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg
-from srb.core.env import (
-    Domain,
-    ManipulationEnv,
-    ManipulationEnvCfg,
-    ManipulationEventCfg,
-)
+from srb.core.env import Domain, SingleArmEnv, SingleArmEnvCfg, SingleArmEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers, VisualizationMarkersCfg
 from srb.core.mdp import reset_root_state_uniform
@@ -36,7 +31,7 @@ if TYPE_CHECKING:
 
 
 @configclass
-class EventCfg(ManipulationEventCfg):
+class EventCfg(SingleArmEventCfg):
     ## Object
     randomize_object_state: EventTermCfg | None = EventTermCfg(
         func=reset_root_state_uniform,
@@ -123,7 +118,7 @@ def sample_cfg(
 
 
 @configclass
-class TaskCfg(ManipulationEnvCfg):
+class TaskCfg(SingleArmEnvCfg):
     ## Environment
     episode_length_s: float = 7.5
 
@@ -182,7 +177,7 @@ class TaskCfg(ManipulationEnvCfg):
 ############
 
 
-class Task(ManipulationEnv):
+class Task(SingleArmEnv):
     cfg: TaskCfg
 
     def __init__(self, cfg: TaskCfg, **kwargs):

@@ -4,12 +4,7 @@ import torch
 
 from srb import assets
 from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg, Terrain
-from srb.core.env import (
-    Domain,
-    ManipulationEnv,
-    ManipulationEnvCfg,
-    ManipulationEventCfg,
-)
+from srb.core.env import Domain, SingleArmEnv, SingleArmEnvCfg, SingleArmEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform
 from srb.core.sensor import ContactSensor, ContactSensorCfg
@@ -28,7 +23,7 @@ from srb.utils.math import (
 
 
 @configclass
-class EventCfg(ManipulationEventCfg):
+class EventCfg(SingleArmEventCfg):
     ## Object
     randomize_object_state: EventTermCfg | None = EventTermCfg(
         func=reset_root_state_uniform,
@@ -56,7 +51,7 @@ class EventCfg(ManipulationEventCfg):
 
 
 @configclass
-class TaskCfg(ManipulationEnvCfg):
+class TaskCfg(SingleArmEnvCfg):
     ## Scenario
     domain: Domain = Domain.ORBIT
 
@@ -103,7 +98,7 @@ class TaskCfg(ManipulationEnvCfg):
 ############
 
 
-class Task(ManipulationEnv):
+class Task(SingleArmEnv):
     cfg: TaskCfg
 
     def __init__(self, cfg: TaskCfg, **kwargs):

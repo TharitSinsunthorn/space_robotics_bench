@@ -32,12 +32,12 @@ class Robot(Asset, asset_entrypoint=AssetType.ROBOT):
             **kwargs,
         )
         if robot_entrypoint is not None:
-            assert isinstance(
-                robot_entrypoint, RobotType
-            ), f"Class '{cls.__name__}' is marked as a robot entrypoint, but '{robot_entrypoint}' is not a valid {RobotType}"
-            assert (
-                robot_entrypoint not in RobotRegistry.base_types.keys()
-            ), f"Class '{cls.__name__}' is marked as '{robot_entrypoint}' robot entrypoint, but it was already marked by '{RobotRegistry.base_types[robot_entrypoint].__name__}'"
+            assert isinstance(robot_entrypoint, RobotType), (
+                f"Class '{cls.__name__}' is marked as a robot entrypoint, but '{robot_entrypoint}' is not a valid {RobotType}"
+            )
+            assert robot_entrypoint not in RobotRegistry.base_types.keys(), (
+                f"Class '{cls.__name__}' is marked as '{robot_entrypoint}' robot entrypoint, but it was already marked by '{RobotRegistry.base_types[robot_entrypoint].__name__}'"
+            )
             RobotRegistry.base_types[robot_entrypoint] = cls
         elif robot_metaclass:
             RobotRegistry.meta_types.append(cls)
@@ -47,13 +47,12 @@ class Robot(Asset, asset_entrypoint=AssetType.ROBOT):
                     if robot_type not in RobotRegistry.registry.keys():
                         RobotRegistry.registry[robot_type] = []
                     else:
-                        assert (
-                            convert_to_snake_case(cls.__name__)
-                            not in (
-                                convert_to_snake_case(robot.__name__)
-                                for robot in RobotRegistry.registry[robot_type]
-                            )
-                        ), f"Cannot register multiple robots with an identical name: '{cls.__module__}:{cls.__name__}' already exists as '{next(robot for robot in RobotRegistry.registry[robot_type] if convert_to_snake_case(cls.__name__) == convert_to_snake_case(robot.__name__)).__module__}:{cls.__name__}'"
+                        assert convert_to_snake_case(cls.__name__) not in (
+                            convert_to_snake_case(robot.__name__)
+                            for robot in RobotRegistry.registry[robot_type]
+                        ), (
+                            f"Cannot register multiple robots with an identical name: '{cls.__module__}:{cls.__name__}' already exists as '{next(robot for robot in RobotRegistry.registry[robot_type] if convert_to_snake_case(cls.__name__) == convert_to_snake_case(robot.__name__)).__module__}:{cls.__name__}'"
+                        )
                     RobotRegistry.registry[robot_type].append(cls)
 
     @cached_property

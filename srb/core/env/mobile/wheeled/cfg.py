@@ -2,29 +2,26 @@ import torch
 from simforge import BakeType
 
 from srb import assets
-from srb.core.asset import AerialRobot, AssetVariant
-from srb.core.env import BaseEventCfg, BaseSceneCfg, DirectEnvCfg, Domain, ViewerCfg
+from srb.core.asset import AssetVariant, WheeledRobot
+from srb.core.env import BaseEventCfg, BaseSceneCfg, DirectEnvCfg, ViewerCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform
 from srb.utils.cfg import configclass
 
 
 @configclass
-class AerialSceneCfg(BaseSceneCfg):
+class WheeledSceneCfg(BaseSceneCfg):
     pass
 
 
 @configclass
-class AerialEventCfg(BaseEventCfg):
-    randomize_robot_state: EventTermCfg | None = EventTermCfg(
+class WheeledEventCfg(BaseEventCfg):
+    randomize_robot_state: EventTermCfg = EventTermCfg(
         func=reset_root_state_uniform,
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("robot"),
             "pose_range": {
-                "x": (-5.0, 5.0),
-                "y": (-5.0, 5.0),
-                "z": (10.0, 10.0),
                 "yaw": (
                     -torch.pi,
                     torch.pi,
@@ -36,26 +33,23 @@ class AerialEventCfg(BaseEventCfg):
 
 
 @configclass
-class AerialEnvCfg(DirectEnvCfg):
-    ## Scenario
-    domain: Domain = Domain.MARS
-
+class WheeledEnvCfg(DirectEnvCfg):
     ## Assets
-    robot: AerialRobot | AssetVariant = assets.Ingenuity()
+    robot: WheeledRobot | AssetVariant = assets.Perseverance()
 
     ## Scene
-    scene: AerialSceneCfg = AerialSceneCfg(env_spacing=64.0)
+    scene: WheeledSceneCfg = WheeledSceneCfg(env_spacing=64.0)
 
     ## Events
-    events: AerialEventCfg = AerialEventCfg()
+    events: WheeledEventCfg = WheeledEventCfg()
 
     ## Time
-    env_rate: float = 1.0 / 50.0
-    agent_rate: float = 1.0 / 10.0
+    env_rate: float = 1.0 / 100.0
+    agent_rate: float = 1.0 / 25.0
 
     ## Viewer
     viewer = ViewerCfg(
-        eye=(24.0, -24.0, 24.0),
+        eye=(8.0, -8.0, 8.0),
         lookat=(0.0, 0.0, 0.0),
         origin_type="env",
     )
@@ -66,9 +60,9 @@ class AerialEnvCfg(DirectEnvCfg):
         ## Assets -> Scene
         # Robot
         if isinstance(self.robot, AssetVariant):
-            # TODO: Implement AerialRobot from AssetVariant
+            # TODO: Implement WheeledRobot from AssetVariant
             raise NotImplementedError()
-            self.robot: AerialRobot = ...
+            self.robot: WheeledRobot = ...
             self.scene.robot = self.robot.asset_cfg
             self.actions = self.robot.action_cfg
         # Terrain
@@ -78,10 +72,11 @@ class AerialEnvCfg(DirectEnvCfg):
             num_assets=1 if self.stack else self.scene.num_envs,
             prim_path="/World/terrain" if self.stack else "{ENV_REGEX_NS}/terrain",
             scale=(64.0, 64.0),
-            density=0.5,
+            density=0.2,
             texture_resolution={
                 BakeType.ALBEDO: 4096,
                 BakeType.NORMAL: 2048,
                 BakeType.ROUGHNESS: 1024,
             },
+            flat_area_size=4.0,
         )

@@ -2,17 +2,13 @@ from isaaclab.envs import ManagerBasedRLEnvCfg as __ManagerBasedRLEnvCfg
 
 from srb.utils.cfg import configclass
 
-from ..cfg import BaseEnvCfg
-from ..event_cfg import BaseEventCfg
+from ..env_cfg import BaseEnvCfg
 
 
 @configclass
 class ManagedEnvCfg(BaseEnvCfg, __ManagerBasedRLEnvCfg):
-    ## Scenario
-    seed: int = 0
-
-    ## Events
-    events: BaseEventCfg = BaseEventCfg()
+    # Disable UI window by default
+    ui_window_class_type: type | None = None
 
     def __post_init__(self):
         BaseEnvCfg.__post_init__(self)

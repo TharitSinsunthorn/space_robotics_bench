@@ -65,7 +65,7 @@ class AnymalB(LeggedRobot):
                 ".*H_KFE": 0.8,  # both hind KFE
             },
         ),
-        actuators={"legs": ANYDRIVE_3_SIMPLE_ACTUATOR_CFG},
+        actuators={"legs": ANYDRIVE_3_LSTM_ACTUATOR_CFG},
         soft_joint_pos_limit_factor=0.95,
     )
 
@@ -113,7 +113,7 @@ class AnymalC(LeggedRobot):
                 ".*H_KFE": 0.8,  # both hind KFE
             },
         ),
-        actuators={"legs": ANYDRIVE_3_SIMPLE_ACTUATOR_CFG},
+        actuators={"legs": ANYDRIVE_3_LSTM_ACTUATOR_CFG},
         soft_joint_pos_limit_factor=0.95,
     )
 
@@ -161,7 +161,7 @@ class AnymalD(LeggedRobot):
                 ".*H_KFE": 0.8,  # both hind KFE
             },
         ),
-        actuators={"legs": ANYDRIVE_3_SIMPLE_ACTUATOR_CFG},
+        actuators={"legs": ANYDRIVE_3_LSTM_ACTUATOR_CFG},
         soft_joint_pos_limit_factor=0.95,
     )
 
@@ -267,7 +267,7 @@ class AnymalMulti(LeggedRobot):
                 ".*H_KFE": 0.8,  # both hind KFE
             },
         ),
-        actuators={"legs": ANYDRIVE_3_SIMPLE_ACTUATOR_CFG},
+        actuators={"legs": ANYDRIVE_3_LSTM_ACTUATOR_CFG},
         soft_joint_pos_limit_factor=0.95,
     )
 

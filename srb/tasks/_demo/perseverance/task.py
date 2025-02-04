@@ -2,7 +2,7 @@ from typing import Dict, Sequence, Tuple
 
 import torch
 
-from srb.core.env import MobileRoboticsEnv, MobileRoboticsEnvCfg
+from srb.core.env import WheeledEnv, WheeledEnvCfg
 from srb.utils.cfg import configclass
 
 ##############
@@ -11,8 +11,8 @@ from srb.utils.cfg import configclass
 
 
 @configclass
-class TaskCfg(MobileRoboticsEnvCfg):
-    pass
+class TaskCfg(WheeledEnvCfg):
+    episode_length_s: float = 60.0
 
 
 ############
@@ -20,7 +20,7 @@ class TaskCfg(MobileRoboticsEnvCfg):
 ############
 
 
-class Task(MobileRoboticsEnv):
+class Task(WheeledEnv):
     cfg: TaskCfg
 
     def __init__(self, cfg: TaskCfg, **kwargs):

@@ -1,17 +1,17 @@
 from typing import TYPE_CHECKING
 
 from srb.core.asset import StaticVehicle
-from srb.core.env import Domain
+from srb.core.env.common.domain import Domain
 
 from .construction_rover import ConstructionRover
 from .gateway import Gateway
 
 if TYPE_CHECKING:
-    from srb.core.env import ManipulationEnvCfg
+    from srb.core.env import SingleArmEnvCfg
 
 
 def vehicle_from_cfg(
-    cfg: "ManipulationEnvCfg",
+    cfg: "SingleArmEnvCfg",
     *,
     prim_path: str = "{ENV_REGEX_NS}/vehicle",
     **kwargs,

@@ -1,17 +1,13 @@
 from dataclasses import MISSING
 from typing import Dict, Literal, Sequence, Tuple
 
-from srb.core.env import InteractiveSceneCfg
+from srb.core.env.common.base.env_cfg import BaseEnvCfg
 from srb.core.sensor import CameraCfg
 from srb.utils.cfg import configclass
 
 
 @configclass
-class VisualExtCfg:
-    ## Subclass requirements
-    scene: InteractiveSceneCfg = MISSING  # type: ignore
-    agent_rate: int = MISSING  # type: ignore
-
+class VisualExtCfg(BaseEnvCfg):
     ## Camera sensors
     cameras_cfg: Dict[str, CameraCfg] = MISSING  # type: ignore
     camera_resolution: Tuple[int, int] | None = (64, 64)
@@ -40,7 +36,16 @@ class VisualExtCfg:
         | None
     ) = ("rgb", "depth")
 
+    ## Rendering
+    rerender_on_reset: bool = True
+
     def __post_init__(self):
+        ## Never stack visual environments
+        self.stack = False
+
+        ## Re-render frames on reset for visual observations
+        self.rerender_on_reset = True
+
         ## Add camera sensors to the scene
         for key, camera_cfg in self.cameras_cfg.items():
             if self.camera_resolution is not None:

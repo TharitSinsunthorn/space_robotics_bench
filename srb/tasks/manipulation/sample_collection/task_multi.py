@@ -4,7 +4,7 @@ from typing import Dict, List, Sequence, Tuple
 import torch
 
 from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg
-from srb.core.env import ManipulationEnv, ManipulationEventCfg
+from srb.core.env import SingleArmEnv, SingleArmEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers
 from srb.core.mdp import reset_root_state_uniform_poisson_disk_2d
@@ -26,7 +26,7 @@ from .task import TaskCfg, sample_cfg
 
 
 @configclass
-class EventCfg(ManipulationEventCfg):
+class EventCfg(SingleArmEventCfg):
     ## Object
     randomize_object_state: EventTermCfg | None = EventTermCfg(
         func=reset_root_state_uniform_poisson_disk_2d,
@@ -100,7 +100,7 @@ class MultiTaskCfg(TaskCfg):
 ############
 
 
-class MultiTask(ManipulationEnv):
+class MultiTask(SingleArmEnv):
     cfg: MultiTaskCfg
 
     def __init__(self, cfg: MultiTaskCfg, **kwargs):

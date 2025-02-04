@@ -2,17 +2,17 @@ from typing import Dict
 
 import torch
 
-from srb.core.env import MobileRoboticsEnvVisualExtCfg, VisualExt
+from srb.core.env import VisualExt, WheeledEnvVisualExtCfg
 from srb.utils.cfg import configclass
 
 from .task import Task, TaskCfg
 
 
 @configclass
-class VisualTaskCfg(TaskCfg, MobileRoboticsEnvVisualExtCfg):
+class VisualTaskCfg(TaskCfg, WheeledEnvVisualExtCfg):
     def __post_init__(self):
         TaskCfg.__post_init__(self)
-        MobileRoboticsEnvVisualExtCfg.__post_init__(self)
+        WheeledEnvVisualExtCfg.__post_init__(self)
 
 
 class VisualTask(Task, VisualExt):

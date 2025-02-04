@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Tuple
 from simforge import TexResConfig
 
 from srb.core.asset import AssetVariant, RigidObjectCfg
-from srb.core.env import Domain
+from srb.core.env.common.domain import Domain
 
 from .asteroid import Asteroid  # noqa: F401
 from .debris import CubesatDebris  # noqa: F401

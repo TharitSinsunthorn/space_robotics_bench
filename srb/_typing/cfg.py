@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, TypeAlias
 
 if TYPE_CHECKING:
     from srb.core.env import (
+        BaseEnvCfg,
         DirectEnv,
         DirectEnvCfg,
         DirectMarlEnv,
@@ -11,4 +12,4 @@ if TYPE_CHECKING:
     )
 
 AnyEnv: TypeAlias = "DirectEnv | ManagedEnv | DirectMarlEnv"
-AnyEnvCfg: TypeAlias = "DirectEnvCfg | ManagedEnvCfg | DirectMarlEnvCfg"
+AnyEnvCfg: TypeAlias = "BaseEnvCfg | DirectEnvCfg | ManagedEnvCfg | DirectMarlEnvCfg"

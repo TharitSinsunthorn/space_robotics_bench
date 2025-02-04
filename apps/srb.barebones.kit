@@ -61,18 +61,13 @@ renderer.active = "rtx"
 renderer.enabled = "rtx"
 renderer.multiGpu.enabled = false
 renderer.multiGpu.maxGpuCount = 1
-rtx-transient.dldenoiser.enabled = false
 rtx-transient.dlssg.enabled = true
 rtx-transient.resourcemanager.enableTextureStreaming = true
-rtx.directLighting.sampledLighting.samplesPerPixel = 1
 rtx.hydra.enableSemanticSchema = true
-rtx.indirectDiffuse.denoiser.enabled = false
 rtx.mdltranslator.mdlDistilling = false
 rtx.newDenoiser.enabled = false
 rtx.pathtracing.optixDenoiser.enabled = false
 rtx.post.aa.op = 3 # 3 (DLSS) | 4 (DLAA)
-rtx.post.dlss.execMode = 0 # 0 (Performance) | 1 (Balanced) | 2 (Quality) | 3 (Auto)
-rtx.reflections.denoiser.enabled = false
 
 ## Physics
 physics.autoPopupSimulationOutputWindow = false
@@ -111,7 +106,6 @@ app.audio.enabled = false
 ## Suppress errors and warnings
 app.settings.fabricDefaultStageFrameHistoryCount = 3
 app.vulkan = true
-rtx.pathtracing.maxSamplesPerLaunch = 1000000
 
 ## Performance
 exts."omni.replicator.core".Orchestrator.enabled = false

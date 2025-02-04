@@ -76,7 +76,7 @@ def run_agent_with_env(
     # Preprocess kwargs
     kwargs["enable_cameras"] = video_enable or env_id.endswith("_visual")
     kwargs["experience"] = SRB_APPS_DIR.joinpath(
-        f'srb.{"headless." if kwargs["headless"] else ""}{"rendering." if video_enable or kwargs["enable_cameras"] else ""}kit'
+        f"srb.{'headless.' if kwargs['headless'] else ''}{'rendering.' if video_enable or kwargs['enable_cameras'] else ''}kit"
     )
 
     # Launch Isaac Sim
@@ -123,7 +123,7 @@ def run_agent_with_env(
 
     @hydra_task_config(
         task_name=env_id,
-        agent_cfg_entry_point=f'{kwargs["algo"]}_cfg' if kwargs.get("algo") else None,
+        agent_cfg_entry_point=f"{kwargs['algo']}_cfg" if kwargs.get("algo") else None,
     )
     def hydra_main(env_cfg: dict | None = None, agent_cfg: dict | None = None):
         import gymnasium
@@ -901,7 +901,7 @@ def enter_repl(hide_ui: bool, **kwargs):
     # Preprocess kwargs
     kwargs["enable_cameras"] = True
     kwargs["experience"] = SRB_APPS_DIR.joinpath(
-        f'srb.{"headless." if kwargs["headless"] else ""}rendering.kit'
+        f"srb.{'headless.' if kwargs['headless'] else ''}rendering.kit"
     )
 
     # Launch Isaac Sim
@@ -1379,7 +1379,7 @@ def parse_cli_args() -> argparse.Namespace:
         import string
 
         raise ValueError(
-            f'Unsupported CLI argument{"s" if len(unsupported_args) > 1 else ""}: '
+            f"Unsupported CLI argument{'s' if len(unsupported_args) > 1 else ''}: "
             + ", ".join(
                 f'"{arg}"' if any(c in string.whitespace for c in arg) else arg
                 for arg in unsupported_args

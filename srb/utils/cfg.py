@@ -440,7 +440,7 @@ def reconstruct_object(obj: Any, updates: Mapping[str, Any]) -> Any:
                 type_hints = {k: type(v) for k, v in obj.__dict__.items()}
             new_kwargs = {}
             for field_name, field_type in type_hints.items():
-                if field_name.startswith("_"):
+                if field_name.startswith("__"):
                     continue
                 current_value = getattr(obj, field_name, None)
                 update_value = updates.get(field_name, None)
@@ -461,7 +461,7 @@ def reconstruct_object(obj: Any, updates: Mapping[str, Any]) -> Any:
                 type_hints = {k: type(v) for k, v in obj.__dict__.items()}
             new_kwargs = {}
             for field_name, field_type in type_hints.items():
-                if field_name.startswith("_"):
+                if field_name.startswith("__"):
                     continue
                 current_value = getattr(obj, field_name, None)
                 update_value = updates.get(field_name, None)

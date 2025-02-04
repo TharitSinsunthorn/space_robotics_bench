@@ -12,6 +12,8 @@ from srb.utils.cfg import configclass
 
 @configclass
 class TaskCfg(AerialEnvCfg):
+    episode_length_s: float = 60.0
+
     ## Scenario
     domain: Domain = Domain.MARS
 

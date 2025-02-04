@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Tuple
 from simforge import TexResConfig
 
 from srb.core.asset import AssetBaseCfg, AssetVariant
-from srb.core.env import Domain
+from srb.core.env.common.domain import Domain
 
 from .ground_plane import GroundPlane
 from .planetary_surface import MarsSurface, MoonSurface
@@ -22,7 +22,7 @@ def terrain_from_cfg(
     scale: Tuple[float, float] | Tuple[float, float, float] = (10.0, 10.0),
     texture_resolution: TexResConfig | None = None,
     density: float | None = None,
-    flat_area_size: int | None = None,
+    flat_area_size: float | None = None,
     **kwargs,
 ) -> AssetBaseCfg | None:
     if not cfg.domain.requires_terrain:

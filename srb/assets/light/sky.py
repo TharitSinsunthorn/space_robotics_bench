@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from srb.core.asset import AssetBaseCfg
-from srb.core.env import Domain
+from srb.core.env.common.domain import Domain
 from srb.core.sim import DomeLightCfg
 from srb.core.visuals import rtx_post
 from srb.utils.nucleus import ISAAC_NUCLEUS_DIR

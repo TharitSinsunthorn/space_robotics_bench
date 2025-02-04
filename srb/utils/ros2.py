@@ -25,7 +25,7 @@ def enable_ros2_bridge():
     if ld_library_path:
         ld_library_path = f":{ld_library_path}".replace("::", ":")
     ros2_lib_path = Path(
-        f'{environ.get("ISAAC_PATH")}/exts/isaacsim.ros2.bridge/{INTERNAL_ROS_DISTRO}/lib'
+        f"{environ.get('ISAAC_PATH')}/exts/isaacsim.ros2.bridge/{INTERNAL_ROS_DISTRO}/lib"
     )
     assert ros2_lib_path.exists()
     environ["LD_LIBRARY_PATH"] = ros2_lib_path.as_posix() + ld_library_path

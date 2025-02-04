@@ -22,7 +22,7 @@ def test_cli_ls():
         )
 
         if process.wait(timeout=600.0) != 0:
-            logging.critical(f'Failed command: {" ".join(cmd)}')
+            logging.critical(f"Failed command: {' '.join(cmd)}")
             stdout, stderr = process.communicate()
             pytest.fail(f"Process failed\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}")
     except Exception as e:

@@ -29,12 +29,14 @@ class Manipulator(Robot, robot_entrypoint=RobotType.MANIPULATOR):
             **kwargs,
         )
         if manipulator_entrypoint is not None:
-            assert isinstance(
-                manipulator_entrypoint, ManipulatorType
-            ), f"Class '{cls.__name__}' is marked as a manipulator entrypoint, but '{manipulator_entrypoint}' is not a valid {ManipulatorType}"
+            assert isinstance(manipulator_entrypoint, ManipulatorType), (
+                f"Class '{cls.__name__}' is marked as a manipulator entrypoint, but '{manipulator_entrypoint}' is not a valid {ManipulatorType}"
+            )
             assert (
                 manipulator_entrypoint not in ManipulatorRegistry.base_types.keys()
-            ), f"Class '{cls.__name__}' is marked as '{manipulator_entrypoint}' manipulator entrypoint, but it was already marked by '{ManipulatorRegistry.base_types[manipulator_entrypoint].__name__}'"
+            ), (
+                f"Class '{cls.__name__}' is marked as '{manipulator_entrypoint}' manipulator entrypoint, but it was already marked by '{ManipulatorRegistry.base_types[manipulator_entrypoint].__name__}'"
+            )
             ManipulatorRegistry.base_types[manipulator_entrypoint] = cls
         elif manipulator_metaclass:
             ManipulatorRegistry.meta_types.append(cls)
@@ -44,15 +46,14 @@ class Manipulator(Robot, robot_entrypoint=RobotType.MANIPULATOR):
                     if manipulator_type not in ManipulatorRegistry.registry.keys():
                         ManipulatorRegistry.registry[manipulator_type] = []
                     else:
-                        assert (
-                            convert_to_snake_case(cls.__name__)
-                            not in (
-                                convert_to_snake_case(manipulator.__name__)
-                                for manipulator in ManipulatorRegistry.registry[
-                                    manipulator_type
-                                ]
-                            )
-                        ), f"Cannot register multiple manipulators with an identical name: '{cls.__module__}:{cls.__name__}' already exists as '{next(manipulator for manipulator in ManipulatorRegistry.registry[manipulator_type] if convert_to_snake_case(cls.__name__) == convert_to_snake_case(manipulator.__name__)).__module__}:{cls.__name__}'"
+                        assert convert_to_snake_case(cls.__name__) not in (
+                            convert_to_snake_case(manipulator.__name__)
+                            for manipulator in ManipulatorRegistry.registry[
+                                manipulator_type
+                            ]
+                        ), (
+                            f"Cannot register multiple manipulators with an identical name: '{cls.__module__}:{cls.__name__}' already exists as '{next(manipulator for manipulator in ManipulatorRegistry.registry[manipulator_type] if convert_to_snake_case(cls.__name__) == convert_to_snake_case(manipulator.__name__)).__module__}:{cls.__name__}'"
+                        )
                     ManipulatorRegistry.registry[manipulator_type].append(cls)
 
     @cached_property

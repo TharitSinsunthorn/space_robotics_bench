@@ -9,6 +9,9 @@ from srb.core.asset.robot.mobile.mobile_robot_type import MobileRobotType
 
 
 class AerialRobot(MobileRobot, mobile_robot_entrypoint=MobileRobotType.AERIAL):
+    ## Frames
+    frame_camera_bottom: Frame
+
     @classmethod
     def mobile_robot_registry(cls) -> Sequence[Type[AerialRobot]]:
         return MobileRobotRegistry.registry.get(MobileRobotType.AERIAL, [])  # type: ignore
@@ -19,9 +22,6 @@ class MultiCopter(
 ):
     ## Actions
     action_cfg: MultiCopterBodyVelocity
-
-    ## Frames
-    frame_camera_bottom: Frame
 
     ## Links
     regex_links_rotors: str

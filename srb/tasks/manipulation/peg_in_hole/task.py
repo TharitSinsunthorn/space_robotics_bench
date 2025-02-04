@@ -12,7 +12,7 @@ from srb.core.asset import (
     RigidObjectCfg,
     XFormPrim,
 )
-from srb.core.env import ManipulationEnv, ManipulationEnvCfg, ManipulationEventCfg
+from srb.core.env import SingleArmEnv, SingleArmEnvCfg, SingleArmEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform
 from srb.core.sensor import ContactSensor, ContactSensorCfg
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 ## Events
 @configclass
-class EventCfg(ManipulationEventCfg):
+class EventCfg(SingleArmEventCfg):
     ## Object
     randomize_object_state: EventTermCfg | None = EventTermCfg(
         func=reset_root_state_uniform,
@@ -179,7 +179,7 @@ def peg_and_hole_cfg(
 
 
 @configclass
-class TaskCfg(ManipulationEnvCfg):
+class TaskCfg(SingleArmEnvCfg):
     ## Environment
     episode_length_s: float = 10.0
 
@@ -220,7 +220,7 @@ class TaskCfg(ManipulationEnvCfg):
 ############
 
 
-class Task(ManipulationEnv):
+class Task(SingleArmEnv):
     cfg: TaskCfg
 
     def __init__(self, cfg: TaskCfg, **kwargs):

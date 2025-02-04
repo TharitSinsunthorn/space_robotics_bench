@@ -1,25 +1,21 @@
-import math
-
 import torch
 
 from srb import assets
 from srb.core.asset import AssetVariant, Spacecraft, Terrain
-from srb.core.env import (
-    BaseEventCfg,
-    DirectEnvCfg,
-    Domain,
-    InteractiveSceneCfg,
-    ViewerCfg,
-)
+from srb.core.env import BaseEventCfg, BaseSceneCfg, DirectEnvCfg, Domain, ViewerCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform
-from srb.core.sim import PhysxCfg, RenderCfg, RigidBodyMaterialCfg, SimulationCfg
+from srb.core.sim import SimforgeAssetCfg
 from srb.utils.cfg import configclass
 
 
 @configclass
+class SpacecraftSceneCfg(BaseSceneCfg):
+    pass
+
+
+@configclass
 class SpacecraftEventCfg(BaseEventCfg):
-    ## Robot
     randomize_robot_state: EventTermCfg | None = EventTermCfg(
         func=reset_root_state_uniform,
         mode="reset",
@@ -60,98 +56,39 @@ class SpacecraftEnvCfg(DirectEnvCfg):
     domain: Domain = Domain.ORBIT
 
     ## Assets
+    robot: Spacecraft | AssetVariant = assets.Cubesat()
     terrain: Terrain | AssetVariant | None = None
 
-    ## Environment
-    episode_length_s: float = 50.0
-    env_rate: float = 1.0 / 50.0
-
-    ## Agent
-    agent_rate: float = 1.0 / 50.0
-
-    ## Assets
-    robot: Spacecraft | AssetVariant | None = AssetVariant.PROCEDURAL
-
-    ## Simulation
-    sim = SimulationCfg(
-        disable_contact_processing=True,
-        physx=PhysxCfg(
-            enable_ccd=False,
-            enable_stabilization=False,
-            bounce_threshold_velocity=0.0,
-            friction_correlation_distance=0.02,
-            min_velocity_iteration_count=1,
-            # GPU settings
-            gpu_temp_buffer_capacity=2 ** (24 - 5),
-            gpu_max_rigid_contact_count=2 ** (22 - 4),
-            gpu_max_rigid_patch_count=2 ** (13 - 1),
-            gpu_heap_capacity=2 ** (26 - 6),
-            gpu_found_lost_pairs_capacity=2 ** (18 - 2),
-            gpu_found_lost_aggregate_pairs_capacity=2 ** (10 - 1),
-            gpu_total_aggregate_pairs_capacity=2 ** (10 - 1),
-            gpu_max_soft_body_contacts=2 ** (20 - 3),
-            gpu_max_particle_contacts=2 ** (20 - 3),
-            gpu_collision_stack_size=2 ** (26 - 4),
-            gpu_max_num_partitions=8,
-        ),
-        render=RenderCfg(
-            enable_reflections=True,
-        ),
-        physics_material=RigidBodyMaterialCfg(
-            static_friction=1.0,
-            dynamic_friction=1.0,
-            restitution=0.0,
-            friction_combine_mode="multiply",
-            restitution_combine_mode="multiply",
-        ),
-    )
-
-    ## Viewer
-    viewer = ViewerCfg(
-        lookat=(0.0, 0.0, 0.0),
-        eye=(-2.0, 2.0, 2.0),
-        origin_type="env",
-        env_index=0,
-    )
-
     ## Scene
-    scene: InteractiveSceneCfg = InteractiveSceneCfg(
-        num_envs=1, env_spacing=1.5, replicate_physics=False
-    )
+    scene: SpacecraftSceneCfg = SpacecraftSceneCfg(env_spacing=2.0)
 
     ## Events
     events: SpacecraftEventCfg = SpacecraftEventCfg()
 
+    ## Time
+    env_rate: float = 1.0 / 50.0
+    agent_rate: float = 1.0 / 10.0
+
+    ## Viewer
+    viewer = ViewerCfg(
+        eye=(16.0, -16.0, 16.0),
+        lookat=(0.0, 0.0, 0.0),
+        origin_type="env",
+    )
+
     def __post_init__(self):
         super().__post_init__()
 
-        ## Simulation
-        self.decimation = int(self.agent_rate / self.env_rate)
-        self.sim.dt = self.env_rate
-        self.sim.render_interval = self.decimation
-        self.sim.gravity = (0.0, 0.0, -self.domain.gravity_magnitude)
-        # Increase GPU settings based on the number of environments
-        gpu_capacity_factor = self.scene.num_envs
-        self.sim.physx.gpu_heap_capacity *= gpu_capacity_factor
-        self.sim.physx.gpu_collision_stack_size *= gpu_capacity_factor
-        self.sim.physx.gpu_temp_buffer_capacity *= gpu_capacity_factor
-        self.sim.physx.gpu_max_rigid_contact_count *= gpu_capacity_factor
-        self.sim.physx.gpu_max_rigid_patch_count *= gpu_capacity_factor
-        self.sim.physx.gpu_found_lost_pairs_capacity *= gpu_capacity_factor
-        self.sim.physx.gpu_found_lost_aggregate_pairs_capacity *= gpu_capacity_factor
-        self.sim.physx.gpu_total_aggregate_pairs_capacity *= gpu_capacity_factor
-        self.sim.physx.gpu_max_soft_body_contacts *= gpu_capacity_factor
-        self.sim.physx.gpu_max_particle_contacts *= gpu_capacity_factor
-        self.sim.physx.gpu_max_num_partitions = min(
-            2 ** math.floor(1.0 + math.pow(self.scene.num_envs, 0.2)), 32
-        )
-
-        ## Scene
-        self.scene.light = assets.sunlight_from_cfg(self)
-        self.scene.sky = assets.sky_from_cfg(self)
-        self.robot = assets.Cubesat()
-        self.robot.asset_cfg.spawn.num_assets = self.scene.num_envs
-        self.scene.robot = self.robot.asset_cfg
-
-        ## Actions
-        self.actions = self.robot.action_cfg
+        ## Assets -> Scene
+        # Robot
+        if isinstance(self.robot, AssetVariant):
+            # TODO: Implement Spacecraft from AssetVariant
+            raise NotImplementedError()
+            self.robot: Spacecraft = ...
+            self.scene.robot = self.robot.asset_cfg
+            self.actions = self.robot.action_cfg
+        if isinstance(self.robot.asset_cfg.spawn, SimforgeAssetCfg):
+            # TODO: Set the number of procedural variants in a better way
+            self.robot.asset_cfg.spawn.num_assets = self.scene.num_envs
+            self.robot.asset_cfg.spawn.seed = self.seed
+            self.scene.robot = self.robot.asset_cfg

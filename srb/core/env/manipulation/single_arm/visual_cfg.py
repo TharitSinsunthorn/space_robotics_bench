@@ -1,21 +1,21 @@
+from srb.core.asset import SingleArmManipulator, StaticVehicle
 from srb.core.env.common.extension.visual import VisualExtCfg
 from srb.core.sensor import CameraCfg, PinholeCameraCfg
 from srb.utils.cfg import configclass
 from srb.utils.math import quat_from_rpy
 
-from .cfg import ManipulationEnvCfg
+from .cfg import SingleArmEnvCfg
 
 
 @configclass
-class ManipulationEnvVisualExtCfg(ManipulationEnvCfg, VisualExtCfg):
-    rerender_on_reset: bool = True
-
+class SingleArmEnvVisualExtCfg(SingleArmEnvCfg, VisualExtCfg):
     def __post_init__(self):
-        ManipulationEnvCfg.__post_init__(self)
+        SingleArmEnvCfg.__post_init__(self)
+        assert isinstance(self.robot, SingleArmManipulator)
 
         self.cameras_cfg = {
             "cam_scene": CameraCfg(
-                prim_path="{ENV_REGEX_NS}/camera_scene",
+                prim_path=f"{self.scene.robot.prim_path}{('/' + self.robot.frame_base.prim_relpath) if self.robot.frame_base.prim_relpath else ''}/camera_scene",
                 offset=CameraCfg.OffsetCfg(
                     convention="world",
                     pos=(1.2, 0.0, 0.8),
@@ -53,7 +53,8 @@ class ManipulationEnvVisualExtCfg(ManipulationEnvCfg, VisualExtCfg):
             ),
         }
 
-        if self.vehicle and self.vehicle.frame_camera_base:
+        if isinstance(self.vehicle, StaticVehicle) and self.vehicle.frame_camera_base:
+            assert self.scene.vehicle is not None
             cam = self.cameras_cfg["cam_base"]
             cam.prim_path = f"{self.scene.vehicle.prim_path}/{self.vehicle.frame_camera_base.prim_relpath}"
             cam.offset = CameraCfg.OffsetCfg(

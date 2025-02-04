@@ -1,21 +1,21 @@
+from srb.core.asset import WheeledRobot
 from srb.core.env.common.extension.visual import VisualExtCfg
 from srb.core.sensor import CameraCfg, PinholeCameraCfg
 from srb.utils.cfg import configclass
 from srb.utils.math import quat_from_rpy
 
-from .cfg import MobileRoboticsEnvCfg
+from .cfg import WheeledEnvCfg
 
 
 @configclass
-class MobileRoboticsEnvVisualExtCfg(MobileRoboticsEnvCfg, VisualExtCfg):
-    rerender_on_reset: bool = True
-
+class WheeledEnvVisualExtCfg(WheeledEnvCfg, VisualExtCfg):
     def __post_init__(self):
-        MobileRoboticsEnvCfg.__post_init__(self)
+        WheeledEnvCfg.__post_init__(self)
+        assert isinstance(self.robot, WheeledRobot)
 
         self.cameras_cfg = {
             "cam_scene": CameraCfg(
-                prim_path=f"{self.scene.robot.prim_path}/{self.robot.frame_base.prim_relpath}/camera_scene",
+                prim_path=f"{self.scene.robot.prim_path}{('/' + self.robot.frame_base.prim_relpath) if self.robot.frame_base.prim_relpath else ''}/camera_scene",
                 offset=CameraCfg.OffsetCfg(
                     convention="world",
                     pos=(0.0, 7.5, 5.0),

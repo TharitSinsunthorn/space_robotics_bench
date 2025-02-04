@@ -3,14 +3,8 @@ from typing import Dict, Sequence, Tuple
 import torch
 
 from srb import assets
-from srb.core.asset import Articulation, AssetVariant, Manipulator
-from srb.core.env import (
-    DirectEnv,
-    Domain,
-    ManipulationEnv,
-    ManipulationEnvCfg,
-    ViewerCfg,
-)
+from srb.core.asset import Articulation, AssetVariant, Manipulator, StaticVehicle
+from srb.core.env import DirectEnv, Domain, SingleArmEnv, SingleArmEnvCfg, ViewerCfg
 from srb.utils.cfg import configclass
 
 ##############
@@ -19,10 +13,13 @@ from srb.utils.cfg import configclass
 
 
 @configclass
-class TaskCfg(ManipulationEnvCfg):
+class TaskCfg(SingleArmEnvCfg):
+    episode_length_s: float = 60.0
+
     ## Scenario
     domain: Domain = Domain.ORBIT
-    robot: Manipulator | AssetVariant | None = assets.Canadarm3Large()
+    robot: Manipulator | AssetVariant = assets.Canadarm3Large()
+    vehicle: StaticVehicle | AssetVariant | None = assets.Gateway()
 
     viewer = ViewerCfg(
         lookat=(0.0, 0.0, 2.5),
@@ -34,17 +31,13 @@ class TaskCfg(ManipulationEnvCfg):
     def __post_init__(self):
         super().__post_init__()
 
-        ## Sensors
-        self.scene.tf_robot_ee = None
-        self.scene.contacts_robot = None
-
 
 ############
 ### Task ###
 ############
 
 
-class Task(ManipulationEnv):
+class Task(SingleArmEnv):
     cfg: TaskCfg
 
     def __init__(self, cfg: TaskCfg, **kwargs):

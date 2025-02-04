@@ -70,6 +70,9 @@ def debris_cfg(
 class TaskCfg(SpacecraftEnvCfg):
     num_problems_per_env: int = 8
 
+    ## Environment
+    episode_length_s: float = 20.0
+
     ## Task
     is_finite_horizon: bool = False
 

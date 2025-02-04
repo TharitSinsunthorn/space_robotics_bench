@@ -12,7 +12,7 @@ from srb.utils.cfg import configclass
 
 @configclass
 class TaskCfg(SpacecraftEnvCfg):
-    pass
+    episode_length_s: float = 60.0
 
 
 ############

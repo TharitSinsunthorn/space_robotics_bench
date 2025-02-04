@@ -29,12 +29,14 @@ class MobileRobot(Robot, robot_entrypoint=RobotType.MOBILE_ROBOT):
             **kwargs,
         )
         if mobile_robot_entrypoint is not None:
-            assert isinstance(
-                mobile_robot_entrypoint, MobileRobotType
-            ), f"Class '{cls.__name__}' is marked as a mobile robot entrypoint, but '{mobile_robot_entrypoint}' is not a valid {MobileRobotType}"
+            assert isinstance(mobile_robot_entrypoint, MobileRobotType), (
+                f"Class '{cls.__name__}' is marked as a mobile robot entrypoint, but '{mobile_robot_entrypoint}' is not a valid {MobileRobotType}"
+            )
             assert (
                 mobile_robot_entrypoint not in MobileRobotRegistry.base_types.keys()
-            ), f"Class '{cls.__name__}' is marked as '{mobile_robot_entrypoint}' mobile robot entrypoint, but it was already marked by '{MobileRobotRegistry.base_types[mobile_robot_entrypoint].__name__}'"
+            ), (
+                f"Class '{cls.__name__}' is marked as '{mobile_robot_entrypoint}' mobile robot entrypoint, but it was already marked by '{MobileRobotRegistry.base_types[mobile_robot_entrypoint].__name__}'"
+            )
             MobileRobotRegistry.base_types[mobile_robot_entrypoint] = cls
         elif mobile_robot_metaclass:
             MobileRobotRegistry.meta_types.append(cls)
@@ -44,15 +46,14 @@ class MobileRobot(Robot, robot_entrypoint=RobotType.MOBILE_ROBOT):
                     if mobile_robot_type not in MobileRobotRegistry.registry.keys():
                         MobileRobotRegistry.registry[mobile_robot_type] = []
                     else:
-                        assert (
-                            convert_to_snake_case(cls.__name__)
-                            not in (
-                                convert_to_snake_case(mobile_robot.__name__)
-                                for mobile_robot in MobileRobotRegistry.registry[
-                                    mobile_robot_type
-                                ]
-                            )
-                        ), f"Cannot register multiple mobile robots with an identical name: '{cls.__module__}:{cls.__name__}' already exists as '{next(mobile_robot for mobile_robot in MobileRobotRegistry.registry[mobile_robot_type] if convert_to_snake_case(cls.__name__) == convert_to_snake_case(mobile_robot.__name__)).__module__}:{cls.__name__}'"
+                        assert convert_to_snake_case(cls.__name__) not in (
+                            convert_to_snake_case(mobile_robot.__name__)
+                            for mobile_robot in MobileRobotRegistry.registry[
+                                mobile_robot_type
+                            ]
+                        ), (
+                            f"Cannot register multiple mobile robots with an identical name: '{cls.__module__}:{cls.__name__}' already exists as '{next(mobile_robot for mobile_robot in MobileRobotRegistry.registry[mobile_robot_type] if convert_to_snake_case(cls.__name__) == convert_to_snake_case(mobile_robot.__name__)).__module__}:{cls.__name__}'"
+                        )
                     MobileRobotRegistry.registry[mobile_robot_type].append(cls)
 
     @cached_property

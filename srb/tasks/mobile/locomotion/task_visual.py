@@ -2,17 +2,17 @@ from typing import Dict
 
 import torch
 
-from srb.core.env import SingleArmEnvVisualExtCfg, VisualExt
+from srb.core.env import LocomotionEnvVisualExtCfg, VisualExt
 from srb.utils.cfg import configclass
 
 from .task import Task, TaskCfg
 
 
 @configclass
-class VisualTaskCfg(TaskCfg, SingleArmEnvVisualExtCfg):
+class VisualTaskCfg(TaskCfg, LocomotionEnvVisualExtCfg):
     def __post_init__(self):
         TaskCfg.__post_init__(self)
-        SingleArmEnvVisualExtCfg.__post_init__(self)
+        LocomotionEnvVisualExtCfg.__post_init__(self)
 
 
 class VisualTask(Task, VisualExt):
