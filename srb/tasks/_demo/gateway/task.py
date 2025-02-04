@@ -3,8 +3,15 @@ from typing import Dict, Sequence, Tuple
 import torch
 
 from srb import assets
-from srb.core.asset import Articulation, AssetVariant, Manipulator, StaticVehicle
-from srb.core.env import DirectEnv, Domain, SingleArmEnv, SingleArmEnvCfg, ViewerCfg
+from srb.core.asset import AssetVariant, SingleArmManipulator, StaticVehicle, Terrain
+from srb.core.domain import Domain
+from srb.core.env import (
+    SingleArmEnv,
+    SingleArmEnvCfg,
+    SingleArmEventCfg,
+    SingleArmSceneCfg,
+    ViewerCfg,
+)
 from srb.utils.cfg import configclass
 
 ##############
@@ -13,23 +20,41 @@ from srb.utils.cfg import configclass
 
 
 @configclass
-class TaskCfg(SingleArmEnvCfg):
-    episode_length_s: float = 60.0
+class SceneCfg(SingleArmSceneCfg):
+    pass
 
+
+@configclass
+class EventCfg(SingleArmEventCfg):
+    pass
+
+
+@configclass
+class TaskCfg(SingleArmEnvCfg):
     ## Scenario
     domain: Domain = Domain.ORBIT
-    robot: Manipulator | AssetVariant = assets.Canadarm3Large()
-    vehicle: StaticVehicle | AssetVariant | None = assets.Gateway()
 
+    ## Assets
+    robot: SingleArmManipulator | AssetVariant = assets.Canadarm3Large()
+    terrain: Terrain | AssetVariant | None = None
+    vehicle: StaticVehicle | AssetVariant = assets.Gateway()
+
+    ## Scene
+    scene: SceneCfg = SceneCfg()
+
+    ## Events
+    events: EventCfg = EventCfg()
+
+    ## Time
+    episode_length_s: float = 60.0
+
+    ## Viewer
     viewer = ViewerCfg(
         lookat=(0.0, 0.0, 2.5),
         eye=(15.0, 0.0, 12.5),
         origin_type="env",
         env_index=0,
     )
-
-    def __post_init__(self):
-        super().__post_init__()
 
 
 ############
@@ -41,11 +66,8 @@ class Task(SingleArmEnv):
     cfg: TaskCfg
 
     def __init__(self, cfg: TaskCfg, **kwargs):
-        # super().__init__(cfg, **kwargs)
-        DirectEnv.__init__(self, cfg, **kwargs)
-
-        ## Get handles to scene assets
-        self._robot: Articulation = self.scene["robot"]
+        super().__init__(cfg, **kwargs)
+        assert isinstance(self.cfg.robot, SingleArmManipulator)
 
         ## Pre-compute metrics used in hot loops
         self._max_episode_length = self.max_episode_length
@@ -57,7 +79,6 @@ class Task(SingleArmEnv):
         super()._reset_idx(env_ids)
 
     def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Note: This assumes that `_get_dones()` is called before `_get_rewards()` and `_get_observations()` in `step()`
         self._update_intermediate_state()
 
         if not self.cfg.enable_truncation:
@@ -69,16 +90,9 @@ class Task(SingleArmEnv):
         return self._rewards
 
     def _get_observations(self) -> Dict[str, torch.Tensor]:
-        return {
-            "robot_joint_pos": self._robot.data.joint_pos,
-        }
-
-    ########################
-    ### Helper Functions ###
-    ########################
+        return {}
 
     def _update_intermediate_state(self):
-        ## Compute other intermediate states
         (
             self._remaining_time,
             self._rewards,
@@ -90,11 +104,6 @@ class Task(SingleArmEnv):
             episode_length_buf=self.episode_length_buf,
             max_episode_length=self._max_episode_length,
         )
-
-
-#############################
-### TorchScript functions ###
-#############################
 
 
 @torch.jit.script

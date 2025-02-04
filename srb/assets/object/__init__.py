@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Tuple
 from simforge import TexResConfig
 
 from srb.core.asset import AssetVariant, RigidObjectCfg
-from srb.core.env.common.domain import Domain
+from srb.core.domain import Domain
 
 from .asteroid import Asteroid  # noqa: F401
 from .debris import CubesatDebris  # noqa: F401
@@ -17,6 +17,8 @@ from .static_vehicle import *  # noqa: F403
 
 if TYPE_CHECKING:
     from srb._typing import AnyEnvCfg
+
+# TODO: Add random pastel-like mat for procedural objects without baked-in textures
 
 
 def rigid_object_from_cfg(

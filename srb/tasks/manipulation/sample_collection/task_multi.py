@@ -3,11 +3,17 @@ from typing import Dict, List, Sequence, Tuple
 
 import torch
 
-from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg
-from srb.core.env import SingleArmEnv, SingleArmEventCfg
+from srb.core.asset import (
+    AssetVariant,
+    RigidObjectCfg,
+    RigidObjectCollection,
+    RigidObjectCollectionCfg,
+    SingleArmManipulator,
+)
+from srb.core.env import SingleArmEnv
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers
-from srb.core.mdp import reset_root_state_uniform_poisson_disk_2d
+from srb.core.mdp import reset_collection_root_state_uniform_poisson_disk_2d
 from srb.core.sensor import ContactSensor
 from srb.utils.cfg import configclass
 from srb.utils.math import (
@@ -18,7 +24,8 @@ from srb.utils.math import (
     subtract_frame_transforms,
 )
 
-from .task import TaskCfg, sample_cfg
+from .asset import sample_cfg
+from .task import EventCfg, SceneCfg, TaskCfg
 
 ##############
 ### Config ###
@@ -26,13 +33,20 @@ from .task import TaskCfg, sample_cfg
 
 
 @configclass
-class EventCfg(SingleArmEventCfg):
-    ## Object
-    randomize_object_state: EventTermCfg | None = EventTermCfg(
-        func=reset_root_state_uniform_poisson_disk_2d,
+class MultiSceneCfg(SceneCfg):
+    object: None = None
+    objects: RigidObjectCollectionCfg = RigidObjectCollectionCfg(
+        rigid_objects=MISSING,  # type: ignore
+    )
+
+
+@configclass
+class MultiEventCfg(EventCfg):
+    randomize_object_state: EventTermCfg = EventTermCfg(
+        func=reset_collection_root_state_uniform_poisson_disk_2d,
         mode="reset",
         params={
-            "asset_cfg": MISSING,
+            "asset_cfg": SceneEntityCfg("objects"),
             "pose_range": MISSING,
             "velocity_range": MISSING,
             "radius": MISSING,
@@ -42,19 +56,27 @@ class EventCfg(SingleArmEventCfg):
 
 @configclass
 class MultiTaskCfg(TaskCfg):
-    ## Environment
+    ## Scene
+    scene: MultiSceneCfg = MultiSceneCfg()
     num_problems_per_env: int = 8
 
     ## Events
-    events: EventCfg = EventCfg()
+    events: MultiEventCfg = MultiEventCfg()
+
+    ## Time
+    episode_length_s: float = MISSING  # type: ignore
+    _base_episode_length_s: float = 7.5
 
     def __post_init__(self):
         super().__post_init__()
+        assert isinstance(self.robot, SingleArmManipulator)
 
-        ## Environment
-        self.episode_length_s *= self.num_problems_per_env
+        ## Time
+        self.episode_length_s = self.num_problems_per_env * self._base_episode_length_s
 
-        ## Scene
+        ## Assets -> Scene
+        # Object
+        self.scene.object = None
         self.object = [
             sample_cfg(
                 self,
@@ -67,30 +89,22 @@ class MultiTaskCfg(TaskCfg):
             )
             for i in range(self.num_problems_per_env)
         ]
-        self.scene.object = None
-        for i, cfg in enumerate(self.object):
-            setattr(self.scene, f"object{i}", cfg.asset_cfg)
-
-        ## Sensors
+        self.scene.objects.rigid_objects = {
+            f"obj{i}": cfg.asset_cfg for i, cfg in enumerate(self.object)
+        }
+        # Sensor: Contacts | Robot hand <--> Object
         self.scene.contacts_robot_hand_obj.filter_prim_paths_expr = [
-            asset.prim_path
-            for asset in [
-                getattr(self.scene, f"object{i}")
-                for i in range(self.num_problems_per_env)
-            ]
+            f"{{ENV_REGEX_NS}}/sample{i}" for i in range(self.num_problems_per_env)
         ]
 
         ## Events
-        self.events.randomize_object_state.params["asset_cfg"] = [  # type: ignore
-            SceneEntityCfg(f"object{i}") for i in range(self.num_problems_per_env)
-        ]
-        self.events.randomize_object_state.params["pose_range"] = (  # type: ignore
-            self.object[0].state_randomizer.params["pose_range"]
-        )
-        self.events.randomize_object_state.params["velocity_range"] = (  # type: ignore
-            self.object[0].state_randomizer.params["velocity_range"]
-        )
-        self.events.randomize_object_state.params["radius"] = (  # type: ignore
+        self.events.randomize_object_state.params["pose_range"] = self.object[
+            0
+        ].state_randomizer.params["pose_range"]
+        self.events.randomize_object_state.params["velocity_range"] = self.object[
+            0
+        ].state_randomizer.params["velocity_range"]
+        self.events.randomize_object_state.params["radius"] = (
             0.225 if self.object == AssetVariant.DATASET else 0.06
         )
 
@@ -105,14 +119,13 @@ class MultiTask(SingleArmEnv):
 
     def __init__(self, cfg: MultiTaskCfg, **kwargs):
         super().__init__(cfg, **kwargs)
+        assert isinstance(self.cfg.robot, SingleArmManipulator)
 
         ## Get handles to scene assets
         self._contacts_robot_hand_obj: ContactSensor = self.scene[
             "contacts_robot_hand_obj"
         ]
-        self._object: List[RigidObject] = [
-            self.scene[f"object{i}"] for i in range(self.cfg.num_problems_per_env)
-        ]
+        self._objects: RigidObjectCollection = self.scene["objects"]
 
         ## Pre-compute metrics used in hot loops
         self._robot_arm_joint_indices, _ = self._robot.find_joints(
@@ -122,12 +135,8 @@ class MultiTask(SingleArmEnv):
             self.cfg.robot.regex_joints_hand
         )
         self._max_episode_length = self.max_episode_length
-        self._obj_com_offset = torch.stack(
-            [
-                self._object[i].data._root_physx_view.get_coms().to(self.device)
-                for i in range(self.cfg.num_problems_per_env)
-            ],
-            dim=1,
+        self._obj_com_offset = torch.cat(
+            (self._objects.data.com_pos_b, self._objects.data.com_quat_b), dim=-1
         )
 
         ## Initialize buffers
@@ -158,16 +167,11 @@ class MultiTask(SingleArmEnv):
         super()._reset_idx(env_ids)
 
         # Update the initial height of the objects
-        self._initial_obj_height_w[env_ids] = torch.stack(
-            [
-                self._object[i].data.root_pos_w[env_ids, 2]
-                for i in range(self.cfg.num_problems_per_env)
-            ],
-            dim=1,
-        )
+        self._initial_obj_height_w[env_ids] = self._objects.data.object_pos_w[
+            env_ids, :, 2
+        ]
 
     def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Note: This assumes that `_get_dones()` is called before `_get_rewards()` and `_get_observations()` in `step()`
         self._update_intermediate_state()
 
         if not self.cfg.enable_truncation:
@@ -191,10 +195,6 @@ class MultiTask(SingleArmEnv):
             target_pos_wrt_obj_com=self._target_pos_wrt_obj_com,
             target_rotmat_wrt_obj_com=self._target_rotmat_wrt_obj_com,
         )
-
-    ########################
-    ### Helper Functions ###
-    ########################
 
     def _update_intermediate_state(self):
         ## Extract intermediate states
@@ -232,30 +232,13 @@ class MultiTask(SingleArmEnv):
             robot_ee_quat_wrt_base=self._tf_robot_ee.data.target_quat_source[:, 0, :],
             robot_arm_contact_net_forces=self._contacts_robot.data.net_forces_w,
             robot_hand_obj_contact_force_matrix=self._contacts_robot_hand_obj.data.force_matrix_w,
-            obj_pos_w=torch.stack(
-                [
-                    self._object[i].data.root_pos_w
-                    for i in range(self.cfg.num_problems_per_env)
-                ],
-                dim=1,
-            ),
-            obj_quat_w=torch.stack(
-                [
-                    self._object[i].data.root_quat_w
-                    for i in range(self.cfg.num_problems_per_env)
-                ],
-                dim=1,
-            ),
+            obj_pos_w=self._objects.data.object_pos_w,
+            obj_quat_w=self._objects.data.object_quat_w,
             obj_com_offset=self._obj_com_offset,
             target_pos_w=self._target_pos_w,
             target_quat_w=self._target_quat_w,
             initial_obj_height_w=self._initial_obj_height_w,
         )
-
-
-#############################
-### TorchScript functions ###
-#############################
 
 
 @torch.jit.script
@@ -312,6 +295,7 @@ def _compute_intermediate_state(
     robot_ee_rotmat_wrt_base = matrix_from_quat(robot_ee_quat_wrt_base)
 
     # Transformation | Object origin -> Object CoM
+    # TODO: Use CoM directly instead of computing it now that it is available (update all tasks)
     obj_com_pos_w, obj_com_quat_w = combine_frame_transforms(
         t01=obj_pos_w,
         q01=obj_quat_w,

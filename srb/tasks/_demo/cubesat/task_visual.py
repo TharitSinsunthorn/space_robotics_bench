@@ -9,13 +9,13 @@ from .task import Task, TaskCfg
 
 
 @configclass
-class VisualTaskCfg(TaskCfg, SpacecraftEnvVisualExtCfg):
+class VisualTaskCfg(SpacecraftEnvVisualExtCfg, TaskCfg):
     def __post_init__(self):
         TaskCfg.__post_init__(self)
-        SpacecraftEnvVisualExtCfg.__post_init__(self)
+        SpacecraftEnvVisualExtCfg.wrap(self, env_cfg=self)
 
 
-class VisualTask(Task, VisualExt):
+class VisualTask(VisualExt, Task):
     cfg: VisualTaskCfg
 
     def __init__(self, cfg: VisualTaskCfg, **kwargs):

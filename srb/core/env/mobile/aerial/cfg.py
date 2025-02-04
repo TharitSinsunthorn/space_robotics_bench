@@ -3,7 +3,8 @@ from simforge import BakeType
 
 from srb import assets
 from srb.core.asset import AerialRobot, AssetVariant
-from srb.core.env import BaseEventCfg, BaseSceneCfg, DirectEnvCfg, Domain, ViewerCfg
+from srb.core.domain import Domain
+from srb.core.env import BaseEventCfg, BaseSceneCfg, DirectEnvCfg, ViewerCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform
 from srb.utils.cfg import configclass
@@ -11,12 +12,12 @@ from srb.utils.cfg import configclass
 
 @configclass
 class AerialSceneCfg(BaseSceneCfg):
-    pass
+    env_spacing = 64.0
 
 
 @configclass
 class AerialEventCfg(BaseEventCfg):
-    randomize_robot_state: EventTermCfg | None = EventTermCfg(
+    randomize_robot_state: EventTermCfg = EventTermCfg(
         func=reset_root_state_uniform,
         mode="reset",
         params={
@@ -44,7 +45,7 @@ class AerialEnvCfg(DirectEnvCfg):
     robot: AerialRobot | AssetVariant = assets.Ingenuity()
 
     ## Scene
-    scene: AerialSceneCfg = AerialSceneCfg(env_spacing=64.0)
+    scene: AerialSceneCfg = AerialSceneCfg()
 
     ## Events
     events: AerialEventCfg = AerialEventCfg()

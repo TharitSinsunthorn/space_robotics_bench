@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 FRAMEWORK_NAME = "sb3"
 OFF_POLICY_ALGOS: Sequence[str] = ("qrdqn", "dqn", "ddpg", "sac", "her", "td3", "tqc")
 
+# TODO: Apply enhancements from PR
+
 
 def run(
     workflow: Literal["train", "eval"],

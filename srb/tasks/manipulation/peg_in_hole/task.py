@@ -1,18 +1,15 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Sequence, Tuple
+from dataclasses import MISSING
+from typing import Dict, List, Sequence, Tuple
 
 import torch
-from pydantic import BaseModel, NonNegativeInt
-from simforge import TexResConfig
 
-from srb import assets
-from srb.core.asset import (
-    AssetBaseCfg,
-    AssetVariant,
-    RigidObject,
-    RigidObjectCfg,
-    XFormPrim,
+from srb.core.asset import RigidObject, RigidObjectCfg, SingleArmManipulator
+from srb.core.env import (
+    SingleArmEnv,
+    SingleArmEnvCfg,
+    SingleArmEventCfg,
+    SingleArmSceneCfg,
 )
-from srb.core.env import SingleArmEnv, SingleArmEnvCfg, SingleArmEventCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform
 from srb.core.sensor import ContactSensor, ContactSensorCfg
@@ -25,23 +22,30 @@ from srb.utils.math import (
     subtract_frame_transforms,
 )
 
-if TYPE_CHECKING:
-    from srb._typing import AnyEnvCfg
+from .asset import peg_and_hole_cfg
 
 ##############
 ### Config ###
 ##############
 
 
-## Events
+@configclass
+class SceneCfg(SingleArmSceneCfg):
+    obj: RigidObjectCfg = MISSING  # type: ignore
+    target: RigidObjectCfg = MISSING  # type: ignore
+    contacts_robot_hand_obj = ContactSensorCfg(
+        prim_path=MISSING,  # type: ignore
+        filter_prim_paths_expr=MISSING,  # type: ignore
+    )
+
+
 @configclass
 class EventCfg(SingleArmEventCfg):
-    ## Object
-    randomize_object_state: EventTermCfg | None = EventTermCfg(
+    randomize_object_state: EventTermCfg = EventTermCfg(
         func=reset_root_state_uniform,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("object"),
+            "asset_cfg": SceneEntityCfg("obj"),
             "pose_range": {
                 "x": (-0.25 - 0.025, -0.25 + 0.0125),
                 "y": (-0.05, 0.05),
@@ -56,143 +60,24 @@ class EventCfg(SingleArmEventCfg):
     )
 
 
-class PegCfg(BaseModel, arbitrary_types_allowed=True):
-    ## Model
-    asset_cfg: RigidObjectCfg
-
-    ## Geometry
-    offset_pos_ends: Tuple[
-        Tuple[float, float, float],
-        Tuple[float, float, float],
-    ]
-
-    ## Rotational symmetry of the peg represented as integer
-    #  0: Circle (infinite symmetry)
-    #  1: No symmetry (exactly one fit)
-    #  n: n-fold symmetry (360/n deg between each symmetry)
-    rot_symmetry_n: NonNegativeInt = 1
-
-
-class HoleCfg(BaseModel):
-    ## Model
-    asset_cfg: AssetBaseCfg
-
-    ## Geometry
-    offset_pos_bottom: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    offset_pos_entrance: Tuple[float, float, float]
-
-
-class PegInHoleCfg(BaseModel):
-    peg: PegCfg
-    hole: HoleCfg
-
-
-def peg_in_hole_from_cfg(
-    cfg: "AnyEnvCfg",
-    *,
-    seed: int,
-    num_assets: int,
-    prim_path_peg: str = "{ENV_REGEX_NS}/peg",
-    prim_path_hole: str = "{ENV_REGEX_NS}/hole",
-    scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
-    texture_resolution: TexResConfig | None = None,
-    short_peg: bool = False,
-    peg_kwargs: Dict[str, Any],
-    hole_kwargs: Dict[str, Any],
-    **kwargs,
-) -> Tuple[RigidObjectCfg, AssetBaseCfg]:
-    match cfg.obj:
-        case AssetVariant.DATASET:
-            peg_cfg = (
-                assets.ShortProfilePeg() if short_peg else assets.ProfilePeg()
-            ).asset_cfg
-            hole_cfg = assets.ProfileHole().asset_cfg
-
-        case AssetVariant.PROCEDURAL:
-            peg_cfg = assets.Peg(
-                scale=scale, texture_resolution=texture_resolution
-            ).asset_cfg
-            peg_cfg.spawn.seed = seed  # type: ignore
-            peg_cfg.spawn.num_assets = num_assets  # type: ignore
-
-            hole_cfg = assets.Hole(
-                scale=scale, texture_resolution=texture_resolution
-            ).asset_cfg
-            hole_cfg.spawn.seed = seed  # type: ignore
-            hole_cfg.spawn.num_assets = num_assets  # type: ignore
-
-    peg_cfg.prim_path = prim_path_peg
-    peg_kwargs.update(**kwargs)
-    peg_cfg.spawn.replace(**peg_kwargs)
-
-    hole_cfg.prim_path = prim_path_hole
-    hole_kwargs.update(**kwargs)
-    hole_cfg.spawn.replace(**hole_kwargs)
-
-    return peg_cfg, hole_cfg
-
-
-def peg_and_hole_cfg(
-    env_cfg: "AnyEnvCfg",
-    *,
-    seed: int,
-    init_state: RigidObjectCfg.InitialStateCfg,
-    num_assets: int = 1,
-    prim_path_peg: str = "{ENV_REGEX_NS}/peg",
-    prim_path_hole: str = "{ENV_REGEX_NS}/hole",
-    asset_cfg_peg: SceneEntityCfg = SceneEntityCfg("object"),
-    scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
-    peg_kwargs: Dict[str, Any] = {},
-    hole_kwargs: Dict[str, Any] = {},
-    **kwargs,
-) -> PegInHoleCfg:
-    rot_symmetry_n = 4
-    offset_pos_ends = ((0.0, 0.0, 0.0), (0.0, 0.0, 0.2))
-    offset_pos_entrance = (0.0, 0.0, 0.02)
-
-    peg_cfg, hole_cfg = peg_in_hole_from_cfg(
-        env_cfg,
-        seed=seed,
-        num_assets=num_assets,
-        prim_path_peg=prim_path_peg,
-        prim_path_hole=prim_path_hole,
-        scale=scale,
-        peg_kwargs=peg_kwargs,
-        hole_kwargs=hole_kwargs,
-        **kwargs,
-    )
-
-    peg_cfg.init_state = init_state
-    hole_cfg.init_state = init_state
-
-    return PegInHoleCfg(
-        peg=PegCfg(
-            asset_cfg=peg_cfg,
-            offset_pos_ends=offset_pos_ends,
-            rot_symmetry_n=rot_symmetry_n,
-        ),
-        hole=HoleCfg(
-            asset_cfg=hole_cfg,
-            offset_pos_entrance=offset_pos_entrance,
-        ),
-    )
-
-
 @configclass
 class TaskCfg(SingleArmEnvCfg):
-    ## Environment
-    episode_length_s: float = 10.0
-
-    ## Task
-    is_finite_horizon: bool = True
+    ## Scene
+    scene: SceneCfg = SceneCfg()
 
     ## Events
     events: EventCfg = EventCfg()
 
+    ## Time
+    episode_length_s: float = 10.0
+    is_finite_horizon: bool = True
+
     def __post_init__(self):
         super().__post_init__()
+        assert isinstance(self.robot, SingleArmManipulator)
 
-        ## Scene
+        ## Assets -> Scene
+        # Object + Target
         self.problem_cfg = peg_and_hole_cfg(
             self,
             seed=self.seed,
@@ -202,17 +87,17 @@ class TaskCfg(SingleArmEnvCfg):
                 "activate_contact_sensors": True,
             },
         )
-        self.scene.object = self.problem_cfg.peg.asset_cfg
+        # Object
+        self.scene.obj = self.problem_cfg.peg.asset_cfg
+        # Target
         self.scene.target = self.problem_cfg.hole.asset_cfg
-
-        ## Sensors
-        self.scene.contacts_robot_hand_obj = ContactSensorCfg(
-            prim_path=f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}",
-            update_period=0.0,
-            # Note: This causes error 'Filter pattern did not match the correct number of entries'
-            #       However, it seems to function properly anyway...
-            filter_prim_paths_expr=[self.scene.object.prim_path],
+        # Sensor: Contacts | Robot hand <--> Object
+        self.scene.contacts_robot_hand_obj.prim_path = (
+            f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}"
         )
+        self.scene.contacts_robot_hand_obj.filter_prim_paths_expr = [
+            self.scene.obj.prim_path
+        ]
 
 
 ############
@@ -225,13 +110,14 @@ class Task(SingleArmEnv):
 
     def __init__(self, cfg: TaskCfg, **kwargs):
         super().__init__(cfg, **kwargs)
+        assert isinstance(self.cfg.robot, SingleArmManipulator)
 
         ## Get handles to scene assets
         self._contacts_robot_hand_obj: ContactSensor = self.scene[
             "contacts_robot_hand_obj"
         ]
-        self._object: RigidObject = self.scene["object"]
-        self._target: XFormPrim = self.scene["target"]
+        self._object: RigidObject = self.scene["obj"]
+        self._target: RigidObject = self.scene["target"]
 
         ## Pre-compute metrics used in hot loops
         self._robot_arm_joint_indices, _ = self._robot.find_joints(
@@ -280,7 +166,6 @@ class Task(SingleArmEnv):
         self._initial_obj_height_w[env_ids] = self._object.data.root_pos_w[env_ids, 2]
 
     def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Note: This assumes that `_get_dones()` is called before `_get_rewards()` and `_get_observations()` in `step()`
         self._update_intermediate_state()
 
         if not self.cfg.enable_truncation:
@@ -306,10 +191,6 @@ class Task(SingleArmEnv):
             hole_rotmat_wrt_peg=self._hole_rotmat_wrt_peg,
         )
 
-    ########################
-    ### Helper Functions ###
-    ########################
-
     def _update_intermediate_state(self):
         ## Extract intermediate states
         self._robot_ee_pos_wrt_base = self._tf_robot_ee.data.target_pos_source[:, 0, :]
@@ -320,7 +201,6 @@ class Task(SingleArmEnv):
         )
 
         ## Compute other intermediate states
-        target_pos_w, target_quat_w = self._target.get_world_poses()
         (
             self._remaining_time,
             self._robot_joint_pos_arm,
@@ -351,19 +231,14 @@ class Task(SingleArmEnv):
             obj_pos_w=self._object.data.root_pos_w,
             obj_quat_w=self._object.data.root_quat_w,
             obj_com_offset=self._obj_com_offset,
-            target_pos_w=target_pos_w,
-            target_quat_w=target_quat_w,
+            target_pos_w=self._target.data.root_pos_w,
+            target_quat_w=self._target.data.root_quat_w,
             initial_obj_height_w=self._initial_obj_height_w,
             peg_offset_pos_ends=self._peg_offset_pos_ends,
             peg_rot_symmetry_n=self._peg_rot_symmetry_n,
             hole_offset_pos_bottom=self._hole_offset_pos_bottom,
             hole_offset_pos_entrance=self._hole_offset_pos_entrance,
         )
-
-
-#############################
-### TorchScript functions ###
-#############################
 
 
 @torch.jit.script

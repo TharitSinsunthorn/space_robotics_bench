@@ -8,14 +8,13 @@ from .cfg import WheeledEnvCfg
 
 
 @configclass
-class WheeledEnvVisualExtCfg(WheeledEnvCfg, VisualExtCfg):
-    def __post_init__(self):
-        WheeledEnvCfg.__post_init__(self)
-        assert isinstance(self.robot, WheeledRobot)
+class WheeledEnvVisualExtCfg(VisualExtCfg):
+    def wrap(self, env_cfg: WheeledEnvCfg):
+        assert isinstance(env_cfg.robot, WheeledRobot)
 
         self.cameras_cfg = {
             "cam_scene": CameraCfg(
-                prim_path=f"{self.scene.robot.prim_path}{('/' + self.robot.frame_base.prim_relpath) if self.robot.frame_base.prim_relpath else ''}/camera_scene",
+                prim_path=f"{env_cfg.scene.robot.prim_path}{('/' + env_cfg.robot.frame_base.prim_relpath) if env_cfg.robot.frame_base.prim_relpath else ''}/camera_scene",
                 offset=CameraCfg.OffsetCfg(
                     convention="world",
                     pos=(0.0, 7.5, 5.0),
@@ -26,11 +25,11 @@ class WheeledEnvVisualExtCfg(WheeledEnvCfg, VisualExtCfg):
                 ),
             ),
             "cam_front": CameraCfg(
-                prim_path=f"{self.scene.robot.prim_path}/{self.robot.frame_camera_front.prim_relpath}",
+                prim_path=f"{env_cfg.scene.robot.prim_path}/{env_cfg.robot.frame_camera_front.prim_relpath}",
                 offset=CameraCfg.OffsetCfg(
                     convention="world",
-                    pos=self.robot.frame_camera_front.offset.translation,
-                    rot=self.robot.frame_camera_front.offset.rotation,
+                    pos=env_cfg.robot.frame_camera_front.offset.translation,
+                    rot=env_cfg.robot.frame_camera_front.offset.rotation,
                 ),
                 spawn=PinholeCameraCfg(
                     focal_length=5.0,
@@ -40,4 +39,4 @@ class WheeledEnvVisualExtCfg(WheeledEnvCfg, VisualExtCfg):
             ),
         }
 
-        VisualExtCfg.__post_init__(self)
+        super().wrap(env_cfg)

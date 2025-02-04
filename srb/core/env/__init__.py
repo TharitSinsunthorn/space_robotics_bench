@@ -9,12 +9,13 @@ from .common import (  # noqa: F401
     DirectEnvCfg,
     DirectMarlEnv,
     DirectMarlEnvCfg,
-    Domain,
     ManagedEnv,
     ManagedEnvCfg,
     VisualExt,
     VisualExtCfg,
 )
+
+# TODO: Consider implementing MimicGen envs (focus on manipulation)
 
 # isort: split
 

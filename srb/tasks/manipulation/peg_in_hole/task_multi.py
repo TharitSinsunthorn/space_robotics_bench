@@ -3,10 +3,15 @@ from typing import Dict, List, Sequence, Tuple
 
 import torch
 
-from srb.core.asset import RigidObject, RigidObjectCfg, XFormPrim
-from srb.core.env import SingleArmEnv, SingleArmEventCfg
+from srb.core.asset import (
+    RigidObjectCfg,
+    RigidObjectCollection,
+    RigidObjectCollectionCfg,
+    SingleArmManipulator,
+)
+from srb.core.env import SingleArmEnv
 from srb.core.manager import EventTermCfg, SceneEntityCfg
-from srb.core.mdp import reset_root_state_uniform_poisson_disk_2d
+from srb.core.mdp import reset_collection_root_state_uniform_poisson_disk_2d
 from srb.core.sensor import ContactSensor
 from srb.utils.cfg import configclass
 from srb.utils.math import (
@@ -18,7 +23,8 @@ from srb.utils.math import (
 )
 from srb.utils.sampling import sample_grid
 
-from .task import TaskCfg, peg_and_hole_cfg
+from .asset import peg_and_hole_cfg
+from .task import EventCfg, SceneCfg, TaskCfg
 
 ##############
 ### Config ###
@@ -26,13 +32,24 @@ from .task import TaskCfg, peg_and_hole_cfg
 
 
 @configclass
-class EventCfg(SingleArmEventCfg):
-    ## Object
-    randomize_object_state: EventTermCfg | None = EventTermCfg(
-        func=reset_root_state_uniform_poisson_disk_2d,
+class MultiSceneCfg(SceneCfg):
+    object: None = None
+    objects: RigidObjectCollectionCfg = RigidObjectCollectionCfg(
+        rigid_objects=MISSING,  # type: ignore
+    )
+    target: None = None
+    targets: RigidObjectCollectionCfg = RigidObjectCollectionCfg(
+        rigid_objects=MISSING,  # type: ignore
+    )
+
+
+@configclass
+class MultiEventCfg(EventCfg):
+    randomize_object_state: EventTermCfg = EventTermCfg(
+        func=reset_collection_root_state_uniform_poisson_disk_2d,
         mode="reset",
         params={
-            "asset_cfg": MISSING,
+            "asset_cfg": SceneEntityCfg("objects"),
             "pose_range": {
                 "x": MISSING,
                 "y": MISSING,
@@ -48,20 +65,29 @@ class EventCfg(SingleArmEventCfg):
 
 @configclass
 class MultiTaskCfg(TaskCfg):
-    ## Environment
+    ## Scene
+    scene: MultiSceneCfg = MultiSceneCfg()
     num_problems_per_env: int = 6
     problem_spacing: float = 0.15
 
     ## Events
-    events: EventCfg = EventCfg()
+    events: MultiEventCfg = MultiEventCfg()
+
+    ## Time
+    episode_length_s: float = MISSING  # type: ignore
+    _base_episode_length_s: float = 10.0
 
     def __post_init__(self):
         super().__post_init__()
+        assert isinstance(self.robot, SingleArmManipulator)
 
-        ## Environment
-        self.episode_length_s *= self.num_problems_per_env
+        ## Time
+        self.episode_length_s = self.num_problems_per_env * self._base_episode_length_s
 
-        ## Scene
+        ## Assets -> Scene
+        # Object + Target
+        self.scene.object = None
+        self.scene.target = None
         (num_rows, num_cols), (grid_spacing_pos, grid_spacing_rot) = sample_grid(
             num_instances=self.num_problems_per_env,
             spacing=self.problem_spacing,
@@ -74,7 +100,6 @@ class MultiTaskCfg(TaskCfg):
                 num_assets=self.scene.num_envs,
                 prim_path_peg=f"{{ENV_REGEX_NS}}/peg{i}",
                 prim_path_hole=f"{{ENV_REGEX_NS}}/hole{i}",
-                asset_cfg_peg=SceneEntityCfg(f"object{i}"),
                 init_state=RigidObjectCfg.InitialStateCfg(
                     pos=grid_spacing_pos[i],
                     rot=grid_spacing_rot[i],
@@ -85,38 +110,27 @@ class MultiTaskCfg(TaskCfg):
             )
             for i in range(self.num_problems_per_env)
         ]
-        self.scene.object = None
-        self.scene.target = None
-        # TODO: Convert to rigid body collection (here, sample collection, and debris avoidance)
-        for i, cfg in enumerate(self.problem_cfg):
-            setattr(
-                self.scene,
-                f"object{i}",
-                cfg.peg.asset_cfg.replace(
-                    init_state=RigidObjectCfg.InitialStateCfg(
-                        pos=(0.5, 0.0, 0.13),
-                    )
-                ),
+        # Object
+        self.scene.objects.rigid_objects = {
+            f"obj{i}": cfg.peg.asset_cfg.replace(  # type: ignore
+                init_state=RigidObjectCfg.InitialStateCfg(
+                    pos=(0.5, 0.0, 0.13),
+                )
             )
-            setattr(
-                self.scene,
-                f"target{i}",
-                cfg.hole.asset_cfg,
-            )
-
-        ## Sensors
+            for i, cfg in enumerate(self.problem_cfg)
+        }
+        self.scene.targets.rigid_objects = {
+            f"target{i}": cfg.hole.asset_cfg for i, cfg in enumerate(self.problem_cfg)
+        }
+        # Sensor: Contacts | Robot hand <--> Object
+        self.scene.contacts_robot_hand_obj.prim_path = (
+            f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}"
+        )
         self.scene.contacts_robot_hand_obj.filter_prim_paths_expr = [
-            asset.prim_path
-            for asset in [
-                getattr(self.scene, f"object{i}")
-                for i in range(self.num_problems_per_env)
-            ]
+            f"{{ENV_REGEX_NS}}/object{i}" for i in range(self.num_problems_per_env)
         ]
 
         ## Events
-        self.events.randomize_object_state.params["asset_cfg"] = [  # type: ignore
-            SceneEntityCfg(f"object{i}") for i in range(self.num_problems_per_env)
-        ]
         self.events.randomize_object_state.params["pose_range"]["x"] = (  # type: ignore
             -0.5 * (num_rows - 0.5) * self.problem_spacing,
             0.5 * (num_rows - 0.5) * self.problem_spacing,
@@ -137,17 +151,14 @@ class MultiTask(SingleArmEnv):
 
     def __init__(self, cfg: MultiTaskCfg, **kwargs):
         super().__init__(cfg, **kwargs)
+        assert isinstance(self.cfg.robot, SingleArmManipulator)
 
         # Get handles to scene assets
         self._contacts_robot_hand_obj: ContactSensor = self.scene[
             "contacts_robot_hand_obj"
         ]
-        self._objects: List[RigidObject] = [
-            self.scene[f"object{i}"] for i in range(self.cfg.num_problems_per_env)
-        ]
-        self._targets: List[XFormPrim] = [
-            self.scene[f"target{i}"] for i in range(self.cfg.num_problems_per_env)
-        ]
+        self._objects: RigidObjectCollection = self.scene["objects"]
+        self._targets: RigidObjectCollection = self.scene["objects"]
 
         ## Pre-compute metrics used in hot loops
         self._robot_arm_joint_indices, _ = self._robot.find_joints(
@@ -157,12 +168,8 @@ class MultiTask(SingleArmEnv):
             self.cfg.robot.regex_joints_hand
         )
         self._max_episode_length = self.max_episode_length
-        self._obj_com_offset = torch.stack(
-            [
-                self._objects[i].data._root_physx_view.get_coms().to(self.device)
-                for i in range(self.cfg.num_problems_per_env)
-            ],
-            dim=1,
+        self._obj_com_offset = torch.cat(
+            (self._objects.data.com_pos_b, self._objects.data.com_quat_b), dim=-1
         )
 
         ## Initialize buffers
@@ -212,16 +219,11 @@ class MultiTask(SingleArmEnv):
         super()._reset_idx(env_ids)
 
         # Update the initial height of the objects
-        self._initial_obj_height_w[env_ids] = torch.stack(
-            [
-                self._objects[i].data.root_pos_w[env_ids, 2]
-                for i in range(self.cfg.num_problems_per_env)
-            ],
-            dim=1,
-        )
+        self._initial_obj_height_w[env_ids] = self._objects.data.object_pos_w[
+            env_ids, :, 2
+        ]
 
     def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Note: This assumes that `_get_dones()` is called before `_get_rewards()` and `_get_observations()` in `step()`
         self._update_intermediate_state()
 
         if not self.cfg.enable_truncation:
@@ -247,10 +249,6 @@ class MultiTask(SingleArmEnv):
             hole_rotmat_wrt_peg=self._hole_rotmat_wrt_peg,
         )
 
-    ########################
-    ### Helper Functions ###
-    ########################
-
     def _update_intermediate_state(self):
         ## Extract intermediate states
         self._robot_ee_pos_wrt_base = self._tf_robot_ee.data.target_pos_source[:, 0, :]
@@ -261,20 +259,6 @@ class MultiTask(SingleArmEnv):
         )
 
         ## Compute other intermediate states
-        target_pos_w = torch.stack(
-            [
-                self._targets[i].get_world_poses()[0]
-                for i in range(self.cfg.num_problems_per_env)
-            ],
-            dim=1,
-        )
-        target_quat_w = torch.stack(
-            [
-                self._targets[i].get_world_poses()[1]
-                for i in range(self.cfg.num_problems_per_env)
-            ],
-            dim=1,
-        )
         (
             self._remaining_time,
             self._robot_joint_pos_arm,
@@ -302,34 +286,17 @@ class MultiTask(SingleArmEnv):
             robot_ee_quat_wrt_base=self._tf_robot_ee.data.target_quat_source[:, 0, :],
             robot_arm_contact_net_forces=self._contacts_robot.data.net_forces_w,
             robot_hand_obj_contact_force_matrix=self._contacts_robot_hand_obj.data.force_matrix_w,
-            obj_pos_w=torch.stack(
-                [
-                    self._objects[i].data.root_pos_w
-                    for i in range(self.cfg.num_problems_per_env)
-                ],
-                dim=1,
-            ),
-            obj_quat_w=torch.stack(
-                [
-                    self._objects[i].data.root_quat_w
-                    for i in range(self.cfg.num_problems_per_env)
-                ],
-                dim=1,
-            ),
+            obj_pos_w=self._objects.data.object_pos_w,
+            obj_quat_w=self._objects.data.object_quat_w,
             obj_com_offset=self._obj_com_offset,
-            target_pos_w=target_pos_w,
-            target_quat_w=target_quat_w,
+            target_pos_w=self._targets.data.object_pos_w,
+            target_quat_w=self._targets.data.object_quat_w,
             initial_obj_height_w=self._initial_obj_height_w,
             peg_offset_pos_ends=self._peg_offset_pos_ends,
             peg_rot_symmetry_n=self._peg_rot_symmetry_n,
             hole_offset_pos_bottom=self._hole_offset_pos_bottom,
             hole_offset_pos_entrance=self._hole_offset_pos_entrance,
         )
-
-
-#############################
-### TorchScript functions ###
-#############################
 
 
 @torch.jit.script

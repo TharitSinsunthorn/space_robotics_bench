@@ -8,14 +8,13 @@ from .cfg import SpacecraftEnvCfg
 
 
 @configclass
-class SpacecraftEnvVisualExtCfg(SpacecraftEnvCfg, VisualExtCfg):
-    def __post_init__(self):
-        SpacecraftEnvCfg.__post_init__(self)
-        assert isinstance(self.robot, Spacecraft)
+class SpacecraftEnvVisualExtCfg(VisualExtCfg):
+    def wrap(self, env_cfg: SpacecraftEnvCfg):
+        assert isinstance(env_cfg.robot, Spacecraft)
 
         self.cameras_cfg = {
             "cam_scene": CameraCfg(
-                prim_path=f"{self.scene.robot.prim_path}{('/' + self.robot.frame_base.prim_relpath) if self.robot.frame_base.prim_relpath else ''}/camera_scene",
+                prim_path=f"{env_cfg.scene.robot.prim_path}{('/' + env_cfg.robot.frame_base.prim_relpath) if env_cfg.robot.frame_base.prim_relpath else ''}/camera_scene",
                 offset=CameraCfg.OffsetCfg(
                     convention="world",
                     pos=(-2.5, 0.0, 2.5),
@@ -27,4 +26,4 @@ class SpacecraftEnvVisualExtCfg(SpacecraftEnvCfg, VisualExtCfg):
             ),
         }
 
-        VisualExtCfg.__post_init__(self)
+        super().wrap(env_cfg)

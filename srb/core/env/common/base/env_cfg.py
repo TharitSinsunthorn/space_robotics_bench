@@ -5,7 +5,7 @@ import torch
 
 from srb import assets
 from srb.core.asset import AssetVariant, Object, Robot, Terrain
-from srb.core.env.common.domain import Domain
+from srb.core.domain import Domain
 from srb.core.sim import PhysxCfg, RenderCfg, RigidBodyMaterialCfg, SimulationCfg
 from srb.core.visuals import VisualsCfg
 from srb.utils.cfg import configclass
@@ -73,11 +73,9 @@ class BaseEnvCfg:
 
     def __post_init__(self):
         ## Scene
-        if self.stack and not self._original_env_spacing:
+        if not self._original_env_spacing:
             self._original_env_spacing = self.scene.env_spacing
-            self.scene.env_spacing = 0.0
-        elif not self.stack and self._original_env_spacing:
-            self.scene.env_spacing = self._original_env_spacing
+        self.scene.env_spacing = 0.0 if self.stack else self._original_env_spacing
 
         ## Assets -> Scene
         self.scene.light = assets.sunlight_from_cfg(self)

@@ -27,7 +27,7 @@ class LocomotionSceneCfg(BaseSceneCfg):
 
 @configclass
 class LocomotionEventCfg(BaseEventCfg):
-    randomize_robot_state: EventTermCfg | None = EventTermCfg(
+    randomize_robot_state: EventTermCfg = EventTermCfg(
         func=reset_root_state_uniform,
         mode="reset",
         params={
@@ -43,7 +43,7 @@ class LocomotionEventCfg(BaseEventCfg):
             },
         },
     )
-    randomize_robot_joints: EventTermCfg | None = EventTermCfg(
+    randomize_robot_joints: EventTermCfg = EventTermCfg(
         func=reset_joints_by_scale,
         mode="reset",
         params={
@@ -52,7 +52,7 @@ class LocomotionEventCfg(BaseEventCfg):
             "velocity_range": (0.0, 0.0),
         },
     )
-    push_robot: EventTermCfg | None = EventTermCfg(
+    push_robot: EventTermCfg = EventTermCfg(
         func=push_by_setting_velocity,
         mode="interval",
         interval_range_s=(10.0, 15.0),

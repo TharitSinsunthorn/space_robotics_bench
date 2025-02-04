@@ -2,7 +2,14 @@ from typing import Dict, Sequence, Tuple
 
 import torch
 
-from srb.core.env import SpacecraftEnv, SpacecraftEnvCfg
+from srb import assets
+from srb.core.asset import AssetVariant, Spacecraft
+from srb.core.env import (
+    SpacecraftEnv,
+    SpacecraftEnvCfg,
+    SpacecraftEventCfg,
+    SpacecraftSceneCfg,
+)
 from srb.utils.cfg import configclass
 
 ##############
@@ -11,7 +18,27 @@ from srb.utils.cfg import configclass
 
 
 @configclass
+class SceneCfg(SpacecraftSceneCfg):
+    pass
+
+
+@configclass
+class EventCfg(SpacecraftEventCfg):
+    pass
+
+
+@configclass
 class TaskCfg(SpacecraftEnvCfg):
+    ## Assets
+    robot: Spacecraft | AssetVariant = assets.Cubesat()
+
+    ## Scene
+    scene: SceneCfg = SceneCfg()
+
+    ## Events
+    events: EventCfg = EventCfg()
+
+    ## Time
     episode_length_s: float = 60.0
 
 
@@ -25,6 +52,7 @@ class Task(SpacecraftEnv):
 
     def __init__(self, cfg: TaskCfg, **kwargs):
         super().__init__(cfg, **kwargs)
+        assert isinstance(self.cfg.robot, Spacecraft)
 
         ## Pre-compute metrics used in hot loops
         self._max_episode_length = self.max_episode_length
@@ -36,7 +64,6 @@ class Task(SpacecraftEnv):
         super()._reset_idx(env_ids)
 
     def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Note: This assumes that `_get_dones()` is called before `_get_rewards()` and `_get_observations()` in `step()`
         self._update_intermediate_state()
 
         if not self.cfg.enable_truncation:
@@ -50,12 +77,7 @@ class Task(SpacecraftEnv):
     def _get_observations(self) -> Dict[str, torch.Tensor]:
         return {}
 
-    ########################
-    ### Helper Functions ###
-    ########################
-
     def _update_intermediate_state(self):
-        ## Compute other intermediate states
         (
             self._remaining_time,
             self._rewards,
@@ -67,11 +89,6 @@ class Task(SpacecraftEnv):
             episode_length_buf=self.episode_length_buf,
             max_episode_length=self._max_episode_length,
         )
-
-
-#############################
-### TorchScript functions ###
-#############################
 
 
 @torch.jit.script

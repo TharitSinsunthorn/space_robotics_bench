@@ -9,13 +9,13 @@ from .task import Task, TaskCfg
 
 
 @configclass
-class VisualTaskCfg(TaskCfg, LocomotionEnvVisualExtCfg):
+class VisualTaskCfg(LocomotionEnvVisualExtCfg, TaskCfg):
     def __post_init__(self):
         TaskCfg.__post_init__(self)
-        LocomotionEnvVisualExtCfg.__post_init__(self)
+        LocomotionEnvVisualExtCfg.wrap(self, env_cfg=self)
 
 
-class VisualTask(Task, VisualExt):
+class VisualTask(VisualExt, Task):
     cfg: VisualTaskCfg
 
     def __init__(self, cfg: VisualTaskCfg, **kwargs):

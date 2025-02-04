@@ -16,9 +16,7 @@ from srb.utils.cfg import configclass
 @configclass
 class BaseEventCfg:
     # Default reset
-    reset_scene: EventTermCfg | None = EventTermCfg(
-        func=reset_scene_to_default, mode="reset"
-    )
+    reset_scene: EventTermCfg = EventTermCfg(func=reset_scene_to_default, mode="reset")
 
     # Gravity
     randomize_gravity: EventTermCfg | None = EventTermCfg(
@@ -30,7 +28,7 @@ class BaseEventCfg:
     )
 
     # Light
-    randomize_sunlight_orientation: EventTermCfg | None = EventTermCfg(
+    randomize_sunlight_orientation: EventTermCfg = EventTermCfg(
         func=reset_xform_orientation_uniform,
         mode="reset",
         params={
@@ -47,7 +45,7 @@ class BaseEventCfg:
             },
         },
     )
-    # progress_sunlight_orientation: EventTermCfg | None = EventTermCfg(
+    # progress_sunlight_orientation: EventTermCfg  = EventTermCfg(
     #     func=follow_xform_orientation_linear_trajectory,
     #     mode="interval",
     #     interval_range_s=(0.5, 0.5),

@@ -2,7 +2,10 @@ from typing import Dict, Sequence, Tuple
 
 import torch
 
-from srb.core.env import AerialEnv, AerialEnvCfg, Domain
+from srb import assets
+from srb.core.asset import AerialRobot, AssetVariant
+from srb.core.domain import Domain
+from srb.core.env import AerialEnv, AerialEnvCfg, AerialEventCfg, AerialSceneCfg
 from srb.utils.cfg import configclass
 
 ##############
@@ -11,11 +14,31 @@ from srb.utils.cfg import configclass
 
 
 @configclass
-class TaskCfg(AerialEnvCfg):
-    episode_length_s: float = 60.0
+class SceneCfg(AerialSceneCfg):
+    pass
 
+
+@configclass
+class EventCfg(AerialEventCfg):
+    pass
+
+
+@configclass
+class TaskCfg(AerialEnvCfg):
     ## Scenario
     domain: Domain = Domain.MARS
+
+    ## Assets
+    robot: AerialRobot | AssetVariant = assets.Ingenuity()
+
+    ## Scene
+    scene: SceneCfg = SceneCfg()
+
+    ## Events
+    events: EventCfg = EventCfg()
+
+    ## Time
+    episode_length_s: float = 60.0
 
 
 ############
@@ -28,6 +51,7 @@ class Task(AerialEnv):
 
     def __init__(self, cfg: TaskCfg, **kwargs):
         super().__init__(cfg, **kwargs)
+        assert isinstance(self.cfg.robot, AerialRobot)
 
         ## Pre-compute metrics used in hot loops
         self._max_episode_length = self.max_episode_length
@@ -39,7 +63,6 @@ class Task(AerialEnv):
         super()._reset_idx(env_ids)
 
     def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Note: This assumes that `_get_dones()` is called before `_get_rewards()` and `_get_observations()` in `step()`
         self._update_intermediate_state()
 
         if not self.cfg.enable_truncation:
@@ -51,22 +74,9 @@ class Task(AerialEnv):
         return self._rewards
 
     def _get_observations(self) -> Dict[str, torch.Tensor]:
-        return {
-            "robot_base_pose_w": torch.cat(
-                [
-                    self._robot.data.body_pos_w[:, 0],
-                    self._robot.data.body_quat_w[:, 0],
-                ],
-                dim=-1,
-            )
-        }
-
-    ########################
-    ### Helper Functions ###
-    ########################
+        return {}
 
     def _update_intermediate_state(self):
-        ## Compute other intermediate states
         (
             self._remaining_time,
             self._rewards,
@@ -78,11 +88,6 @@ class Task(AerialEnv):
             episode_length_buf=self.episode_length_buf,
             max_episode_length=self._max_episode_length,
         )
-
-
-#############################
-### TorchScript functions ###
-#############################
 
 
 @torch.jit.script

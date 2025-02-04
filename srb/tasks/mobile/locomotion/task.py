@@ -2,7 +2,13 @@ from typing import Dict, List, Sequence, Tuple
 
 import torch
 
-from srb.core.env import LocomotionEnv, LocomotionEnvCfg, LocomotionEventCfg
+from srb.core.asset import LeggedRobot
+from srb.core.env import (
+    LocomotionEnv,
+    LocomotionEnvCfg,
+    LocomotionEventCfg,
+    LocomotionSceneCfg,
+)
 from srb.core.manager import EventTermCfg
 from srb.core.mdp import randomize_command
 from srb.utils.cfg import configclass
@@ -14,6 +20,11 @@ from srb.utils.math import matrix_from_quat, rotmat_to_rot6d
 
 
 @configclass
+class SceneCfg(LocomotionSceneCfg):
+    pass
+
+
+@configclass
 class EventCfg(LocomotionEventCfg):
     command = EventTermCfg(
         func=randomize_command,
@@ -22,7 +33,6 @@ class EventCfg(LocomotionEventCfg):
         interval_range_s=(0.5, 5.0),
         params={
             "env_attr_name": "_command",
-            "length": 3,
             # "magnitude": 1.0,
         },
     )
@@ -30,17 +40,15 @@ class EventCfg(LocomotionEventCfg):
 
 @configclass
 class TaskCfg(LocomotionEnvCfg):
-    ## Environment
-    episode_length_s: float = 15.0
-
-    ## Task
-    is_finite_horizon: bool = False
+    ## Scene
+    scene: SceneCfg = SceneCfg()
 
     ## Events
     events: EventCfg = EventCfg()
 
-    def __post_init__(self):
-        super().__post_init__()
+    ## Time
+    episode_length_s: float = 15.0
+    is_finite_horizon: bool = False
 
 
 ############
@@ -53,6 +61,7 @@ class Task(LocomotionEnv):
 
     def __init__(self, cfg: TaskCfg, **kwargs):
         super().__init__(cfg, **kwargs)
+        assert isinstance(self.cfg.robot, LeggedRobot)
 
         ## Pre-compute metrics used in hot loops
         self._robot_feet_indices, _ = self._robot.find_bodies(".*FOOT")
@@ -70,15 +79,7 @@ class Task(LocomotionEnv):
     def _reset_idx(self, env_ids: Sequence[int]):
         super()._reset_idx(env_ids)
 
-        # self._command[env_ids] = sample_uniform(
-        #     -1.0, 1.0, (len(env_ids), 3), device=self.device
-        # )
-        # self._command[env_ids] = torch.tensor(
-        #     [[1.0, 0.0, 0.0] for _ in range(len(env_ids))], device=self.device
-        # ).reshape(len(env_ids), 3)
-
     def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Note: This assumes that `_get_dones()` is called before `_get_rewards()` and `_get_observations()` in `step()`
         self._update_intermediate_state()
 
         if not self.cfg.enable_truncation:
@@ -95,13 +96,8 @@ class Task(LocomotionEnv):
             robot_joint_pos=self._robot_joint_pos,
             robot_root_rotmat_w=self._robot_root_rotmat_w,
             robot_feet_incoming_force=self._robot_feet_incoming_force,
-            # heightmap=self._heightmap,
             command=self._command,
         )
-
-    ########################
-    ### Helper Functions ###
-    ########################
 
     def _update_intermediate_state(self):
         ## Extract intermediate states
@@ -136,15 +132,8 @@ class Task(LocomotionEnv):
             contact_net_forces=self._contacts_robot.data.net_forces_w,
             first_contact=self._contacts_robot.compute_first_contact(self.step_dt),
             last_air_time=self._contacts_robot.data.last_air_time,
-            # height_scanner_pos_w=self._height_scanner.data.pos_w,
-            # height_scanner_ray_hits_w=self._height_scanner.data.ray_hits_w,
             command=self._command,
         )
-
-
-#############################
-### TorchScript functions ###
-#############################
 
 
 @torch.jit.script
@@ -182,13 +171,6 @@ def _compute_intermediate_state(
 
     # Robot '6D' rotation
     robot_root_rotmat_w = matrix_from_quat(root_quat_w)
-
-    # # Height scanner
-    # heightmap = (
-    #     height_scanner_pos_w[:, 2].unsqueeze(1)
-    #     - height_scanner_ray_hits_w[..., 2]
-    #     - 0.5
-    # ).clip(-1.0, 1.0)
 
     ## Rewards
     # Penalty: Action rate
@@ -311,7 +293,6 @@ def _compute_intermediate_state(
     return (
         remaining_time,
         robot_root_rotmat_w,
-        # heightmap,
         rewards,
         terminations,
         truncations,
@@ -325,7 +306,6 @@ def _construct_observations(
     robot_joint_pos: torch.Tensor,
     robot_root_rotmat_w: torch.Tensor,
     robot_feet_incoming_force: torch.Tensor,
-    # heightmap: torch.Tensor,
     command: torch.Tensor,
 ) -> Dict[str, torch.Tensor]:
     """
@@ -343,7 +323,6 @@ def _construct_observations(
     return {
         # "state": torch.cat(
         #     [
-        #         # heightmap,
         #     ],
         #     dim=-1,
         # ),

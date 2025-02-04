@@ -1,10 +1,24 @@
+from dataclasses import MISSING
 from typing import Dict, List, Sequence, Tuple
 
 import torch
 
 from srb import assets
-from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg, Terrain
-from srb.core.env import Domain, SingleArmEnv, SingleArmEnvCfg, SingleArmEventCfg
+from srb.core.asset import (
+    AssetVariant,
+    RigidObject,
+    RigidObjectCfg,
+    SingleArmManipulator,
+    StaticVehicle,
+    Terrain,
+)
+from srb.core.domain import Domain
+from srb.core.env import (
+    SingleArmEnv,
+    SingleArmEnvCfg,
+    SingleArmEventCfg,
+    SingleArmSceneCfg,
+)
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform
 from srb.core.sensor import ContactSensor, ContactSensorCfg
@@ -23,13 +37,21 @@ from srb.utils.math import (
 
 
 @configclass
+class SceneCfg(SingleArmSceneCfg):
+    obj: RigidObjectCfg = MISSING  # type: ignore
+    contacts_robot_hand_obj = ContactSensorCfg(
+        prim_path=MISSING,  # type: ignore
+        filter_prim_paths_expr=MISSING,  # type: ignore
+    )
+
+
+@configclass
 class EventCfg(SingleArmEventCfg):
-    ## Object
-    randomize_object_state: EventTermCfg | None = EventTermCfg(
+    randomize_obj_state: EventTermCfg = EventTermCfg(
         func=reset_root_state_uniform,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("object"),
+            "asset_cfg": SceneEntityCfg("obj"),
             "pose_range": {
                 "x": (-0.25, 0.25),
                 "y": (-0.25, 0.25),
@@ -57,40 +79,39 @@ class TaskCfg(SingleArmEnvCfg):
 
     ## Assets
     terrain: Terrain | AssetVariant | None = None
+    vehicle: StaticVehicle | AssetVariant = assets.Gateway()
 
-    ## Environment
-    episode_length_s: float = 10.0
-
-    ## Task
-    is_finite_horizon: bool = True
+    ## Scene
+    scene: SceneCfg = SceneCfg()
 
     ## Events
     events: EventCfg = EventCfg()
 
+    ## Time
+    episode_length_s: float = 10.0
+    is_finite_horizon: bool = True
+
     def __post_init__(self):
         super().__post_init__()
+        assert isinstance(self.robot, SingleArmManipulator)
 
-        ## Simulation
-        self.sim.gravity = (0.0, 0.0, 0.0)
-
-        ## Scene
-        self.object = assets.rigid_object_from_cfg(
+        ## Assets -> Scene
+        # Object
+        self.scene.obj = assets.rigid_object_from_cfg(
             self,
             seed=self.seed,
             num_assets=self.scene.num_envs,
+            prim_path="{ENV_REGEX_NS}/debris",
             init_state=RigidObjectCfg.InitialStateCfg(pos=(1.0, 0.0, 0.5)),
             activate_contact_sensors=True,
         )
-        self.scene.object = self.object
-
-        ## Sensors
-        self.scene.contacts_robot_hand_obj = ContactSensorCfg(
-            prim_path=f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}",
-            update_period=0.0,
-            # Note: This causes error 'Filter pattern did not match the correct number of entries'
-            #       However, it seems to function properly anyway...
-            filter_prim_paths_expr=[self.scene.object.prim_path],
+        # Sensor: Contacts | Robot hand <--> Object
+        self.scene.contacts_robot_hand_obj.prim_path = (
+            f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}"
         )
+        self.scene.contacts_robot_hand_obj.filter_prim_paths_expr = [
+            self.scene.obj.prim_path
+        ]
 
 
 ############
@@ -103,12 +124,13 @@ class Task(SingleArmEnv):
 
     def __init__(self, cfg: TaskCfg, **kwargs):
         super().__init__(cfg, **kwargs)
+        assert isinstance(self.cfg.robot, SingleArmManipulator)
 
         ## Get handles to scene assets
         self._contacts_robot_hand_obj: ContactSensor = self.scene[
             "contacts_robot_hand_obj"
         ]
-        self._object: RigidObject = self.scene["object"]
+        self._object: RigidObject = self.scene["obj"]
 
         ## Pre-compute metrics used in hot loops
         self._robot_arm_joint_indices, _ = self._robot.find_joints(
@@ -129,7 +151,6 @@ class Task(SingleArmEnv):
         super()._reset_idx(env_ids)
 
     def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Note: This assumes that `_get_dones()` is called before `_get_rewards()` and `_get_observations()` in `step()`
         self._update_intermediate_state()
 
         if not self.cfg.enable_truncation:
@@ -152,10 +173,6 @@ class Task(SingleArmEnv):
             obj_com_rotmat_wrt_robot_ee=self._obj_com_rotmat_wrt_robot_ee,
             obj_vel_w=self._obj_vel_w,
         )
-
-    ########################
-    ### Helper Functions ###
-    ########################
 
     def _update_intermediate_state(self):
         ## Extract intermediate states
@@ -197,11 +214,6 @@ class Task(SingleArmEnv):
             obj_com_offset=self._obj_com_offset,
             obj_vel_w=self._obj_vel_w,
         )
-
-
-#############################
-### TorchScript functions ###
-#############################
 
 
 @torch.jit.script

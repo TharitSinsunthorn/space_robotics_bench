@@ -105,6 +105,8 @@ class SingleArmEnvCfg(DirectEnvCfg):
         if isinstance(self.vehicle, AssetVariant):
             self.vehicle = assets.vehicle_from_cfg(self)
         if isinstance(self.vehicle, StaticVehicle):
+            if self.stack:
+                self.vehicle.asset_cfg.prim_path = "/World/vehicle"
             self.scene.vehicle = self.vehicle.asset_cfg
             self.scene.vehicle.init_state.pos = (
                 self.vehicle.frame_manipulator_base.offset.translation

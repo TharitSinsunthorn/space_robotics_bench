@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from srb.core.asset import StaticVehicle
-from srb.core.env.common.domain import Domain
+from srb.core.domain import Domain
 
 from .construction_rover import ConstructionRover
 from .gateway import Gateway

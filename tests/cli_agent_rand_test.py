@@ -36,7 +36,7 @@ def list_envs() -> Iterable[str] | None:
 @pytest.mark.parametrize("env", list_envs() or [])
 @pytest.mark.parametrize("num_envs", [1, 32, 512])
 def test_cli_agent_rand(env: str, num_envs: int):
-    if env.endswith("_visual") and num_envs > 32:
+    if TEST_VISUAL_ENVS and env.endswith("_visual") and num_envs > 32:
         pytest.skip(
             f'Skipping visual environment "{env}" with too many environments ({num_envs})'
         )

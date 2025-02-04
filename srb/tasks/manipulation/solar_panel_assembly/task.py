@@ -1,21 +1,33 @@
-import sys
+from dataclasses import MISSING
 from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
 
 import torch
-from pydantic import BaseModel
 
 from srb import assets
-from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg, XFormPrim
-from srb.core.env import SingleArmEnv, SingleArmEnvCfg, SingleArmEventCfg
+from srb.core.asset import (
+    AssetVariant,
+    Object,
+    RigidObject,
+    RigidObjectCfg,
+    RigidObjectCollection,
+    RigidObjectCollectionCfg,
+    SingleArmManipulator,
+)
+from srb.core.env import (
+    SingleArmEnv,
+    SingleArmEnvCfg,
+    SingleArmEventCfg,
+    SingleArmSceneCfg,
+)
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers, VisualizationMarkersCfg
 from srb.core.mdp import (
+    reset_collection_root_state_uniform_poisson_disk_2d,
     reset_root_state_uniform,
-    reset_root_state_uniform_poisson_disk_2d,
 )
 from srb.core.sensor import ContactSensor, ContactSensorCfg
 from srb.core.sim import PreviewSurfaceCfg
-from srb.tasks.manipulation.peg_in_hole.task import peg_and_hole_cfg
+from srb.tasks.manipulation.peg_in_hole.asset import peg_and_hole_cfg
 from srb.utils.cfg import configclass
 from srb.utils.math import (
     combine_frame_transforms,
@@ -25,8 +37,11 @@ from srb.utils.math import (
     subtract_frame_transforms,
 )
 
+from .asset import _panel_cfg
+
 if TYPE_CHECKING:
-    from srb._typing import AnyEnvCfg
+    pass
+
 
 ##############
 ### Config ###
@@ -34,12 +49,27 @@ if TYPE_CHECKING:
 
 
 @configclass
+class SceneCfg(SingleArmSceneCfg):
+    objects: RigidObjectCollectionCfg = RigidObjectCollectionCfg(
+        rigid_objects=MISSING,  # type: ignore
+    )
+    targets: RigidObjectCollectionCfg = RigidObjectCollectionCfg(
+        rigid_objects=MISSING,  # type: ignore
+    )
+    panel: RigidObjectCfg = MISSING  # type: ignore
+    contacts_robot_hand_obj = ContactSensorCfg(
+        prim_path=MISSING,  # type: ignore
+        filter_prim_paths_expr=MISSING,  # type: ignore
+    )
+
+
+@configclass
 class EventCfg(SingleArmEventCfg):
     randomize_object_state = EventTermCfg(
-        func=reset_root_state_uniform_poisson_disk_2d,
+        func=reset_collection_root_state_uniform_poisson_disk_2d,
         mode="reset",
         params={
-            "asset_cfg": [SceneEntityCfg(f"object{i}") for i in range(4)],
+            "asset_cfg": SceneEntityCfg("objects"),
             "pose_range": {
                 "x": (
                     -0.2,
@@ -61,7 +91,7 @@ class EventCfg(SingleArmEventCfg):
             "radius": 0.2,
         },
     )
-    randomize_panel_state: EventTermCfg | None = EventTermCfg(
+    randomize_panel_state: EventTermCfg = EventTermCfg(
         func=reset_root_state_uniform,
         mode="reset",
         params={
@@ -82,19 +112,20 @@ class EventCfg(SingleArmEventCfg):
     )
 
 
-class PanelCfg(BaseModel, arbitrary_types_allowed=True):
-    asset_cfg: RigidObjectCfg
-
-    ## Geometry
-    offset_pos: Tuple[float, float, float] = (0.0, 0.0, 0.15)
-
-
 @configclass
 class TaskCfg(SingleArmEnvCfg):
-    ## Environment
-    episode_length_s: float = 50.0
+    ## Assets
+    robot: SingleArmManipulator | AssetVariant = assets.Franka()
+    obj: Object | AssetVariant = AssetVariant.DATASET
 
-    ## Task
+    ## Scene
+    scene: SceneCfg = SceneCfg()
+
+    ## Events
+    events: EventCfg = EventCfg()
+
+    ## Time
+    episode_length_s: float = 50.0
     is_finite_horizon: bool = True
 
     ## Panel
@@ -103,7 +134,7 @@ class TaskCfg(SingleArmEnvCfg):
     panel_target_marker_cfg = VisualizationMarkersCfg(
         prim_path="/Visuals/panel_target",
         markers={
-            "target": assets.object.SolarPanel().asset_cfg.spawn.replace(
+            "target": assets.object.SolarPanel().asset_cfg.spawn.replace(  # type: ignore
                 visible=False,
                 visual_material=PreviewSurfaceCfg(
                     emissive_color=(0.2, 0.2, 0.2),
@@ -116,27 +147,18 @@ class TaskCfg(SingleArmEnvCfg):
         },
     )
 
-    ## Events
-    events: EventCfg = EventCfg()
-
     def __post_init__(self):
-        if self.obj != AssetVariant.DATASET:
-            print(
-                f"[WARN] Environment requires DATASET object ({self.obj} ignored)",
-                file=sys.stderr,
-            )
-            self.obj = AssetVariant.DATASET
-
         super().__post_init__()
+        assert isinstance(self.robot, SingleArmManipulator)
 
-        ## Scene
-        self.problem_cfgs = [
+        ## Assets -> Scene
+        # Object + Target
+        self.problem_cfg = [
             peg_and_hole_cfg(
                 self,
                 seed=self.seed,
                 prim_path_peg=f"{{ENV_REGEX_NS}}/peg{i}",
                 prim_path_hole=f"{{ENV_REGEX_NS}}/hole{i}",
-                asset_cfg_peg=SceneEntityCfg(f"object{i}"),
                 init_state=RigidObjectCfg.InitialStateCfg(pos=init_pos),
                 short_peg=short_peg,
                 peg_kwargs={
@@ -152,23 +174,21 @@ class TaskCfg(SingleArmEnvCfg):
                 ]
             )
         ]
-        for i, problem_cfg in enumerate(self.problem_cfgs):
-            setattr(
-                self.scene,
-                f"object{i}",
-                problem_cfg.peg.asset_cfg.replace(
-                    # init_state=RigidObjectCfg.InitialStateCfg(
-                    #     pos=(0.55, 0.0, 0.015),
-                    # )
-                ),
+        # Object
+        self.scene.objects.rigid_objects = {
+            f"obj{i}": cfg.peg.asset_cfg.replace(  # type: ignore
+                init_state=RigidObjectCfg.InitialStateCfg(
+                    pos=(0.5, 0.0, 0.13),
+                )
             )
-            setattr(
-                self.scene,
-                f"target{i}",
-                problem_cfg.hole.asset_cfg,
-            )
-
-        self.panel_cfg = self._panel_cfg(
+            for i, cfg in enumerate(self.problem_cfg)
+        }
+        # Target
+        self.scene.targets.rigid_objects = {
+            f"target{i}": cfg.hole.asset_cfg for i, cfg in enumerate(self.problem_cfg)
+        }
+        # Panel
+        self.panel_cfg = _panel_cfg(
             self,
             init_state=RigidObjectCfg.InitialStateCfg(pos=(0.55, 0.0, 0.015)),
         )
@@ -178,41 +198,13 @@ class TaskCfg(SingleArmEnvCfg):
             self.panel_target_pos[1] + self.panel_cfg.offset_pos[1],
             self.panel_target_pos[2] + self.panel_cfg.offset_pos[2] + 0.015,
         )
-
-        ## Sensors
-        self.scene.contacts_robot_hand_obj = ContactSensorCfg(
-            prim_path=f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}",
-            update_period=0.0,
-            # Note: This causes error 'Filter pattern did not match the correct number of entries'
-            #       However, it seems to function properly anyway...
-            filter_prim_paths_expr=[
-                asset.prim_path
-                for asset in [getattr(self.scene, f"object{i}") for i in range(4)]
-            ],
+        # Sensor: Contacts | Robot hand <--> Object
+        self.scene.contacts_robot_hand_obj.prim_path = (
+            f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}"
         )
-
-    ########################
-    ### Helper Functions ###
-    ########################
-
-    @staticmethod
-    def _panel_cfg(
-        env_cfg: "AnyEnvCfg", *, init_state: RigidObjectCfg.InitialStateCfg
-    ) -> PanelCfg:
-        offset_pos = (0.0, 0.0, 0.15)
-        init_state.pos = (
-            init_state.pos[0] + offset_pos[0],
-            init_state.pos[1] + offset_pos[1],
-            init_state.pos[2] + offset_pos[2],
-        )
-
-        cfg = assets.SolarPanel().asset_cfg
-        cfg.init_state = init_state
-
-        return PanelCfg(
-            asset_cfg=cfg,
-            offset_pos=offset_pos,
-        )
+        self.scene.contacts_robot_hand_obj.filter_prim_paths_expr = [
+            f"{{ENV_REGEX_NS}}/object{i}" for i in range(4)
+        ]
 
 
 ############
@@ -225,13 +217,14 @@ class Task(SingleArmEnv):
 
     def __init__(self, cfg: TaskCfg, **kwargs):
         super().__init__(cfg, **kwargs)
+        assert isinstance(self.cfg.robot, SingleArmManipulator)
 
         # Get handles to scene assets
         self._contacts_robot_hand_obj: ContactSensor = self.scene[
             "contacts_robot_hand_obj"
         ]
-        self._objects: List[RigidObject] = [self.scene[f"object{i}"] for i in range(4)]
-        self._targets: List[XFormPrim] = [self.scene[f"target{i}"] for i in range(4)]
+        self._objects: RigidObjectCollection = self.scene["objects"]
+        self._targets: RigidObjectCollection = self.scene["objects"]
         self._panel: RigidObject = self.scene["panel"]
 
         ## Pre-compute metrics used in hot loops
@@ -242,12 +235,8 @@ class Task(SingleArmEnv):
             self.cfg.robot.regex_joints_hand
         )
         self._max_episode_length = self.max_episode_length
-        self._obj_com_offset = torch.stack(
-            [
-                self._objects[i].data._root_physx_view.get_coms().to(self.device)
-                for i in range(4)
-            ],
-            dim=1,
+        self._obj_com_offset = torch.cat(
+            (self._objects.data.com_pos_b, self._objects.data.com_quat_b), dim=-1
         )
         self._panel_com_offset = self._panel.data._root_physx_view.get_coms().to(
             self.device
@@ -260,23 +249,23 @@ class Task(SingleArmEnv):
             device=self.device,
         )
         self._peg_offset_pos_ends = torch.tensor(
-            [self.cfg.problem_cfgs[i].peg.offset_pos_ends for i in range(4)],
+            [self.cfg.problem_cfg[i].peg.offset_pos_ends for i in range(4)],
             dtype=torch.float32,
             device=self.device,
         ).repeat(self.num_envs, 1, 1, 1)
 
         self._peg_rot_symmetry_n = torch.tensor(
-            [self.cfg.problem_cfgs[i].peg.rot_symmetry_n for i in range(4)],
+            [self.cfg.problem_cfg[i].peg.rot_symmetry_n for i in range(4)],
             dtype=torch.int32,
             device=self.device,
         ).repeat(self.num_envs, 1)
         self._hole_offset_pos_bottom = torch.tensor(
-            [self.cfg.problem_cfgs[i].hole.offset_pos_bottom for i in range(4)],
+            [self.cfg.problem_cfg[i].hole.offset_pos_bottom for i in range(4)],
             dtype=torch.float32,
             device=self.device,
         ).repeat(self.num_envs, 1, 1)
         self._hole_offset_pos_entrance = torch.tensor(
-            [self.cfg.problem_cfgs[i].hole.offset_pos_entrance for i in range(4)],
+            [self.cfg.problem_cfg[i].hole.offset_pos_entrance for i in range(4)],
             dtype=torch.float32,
             device=self.device,
         ).repeat(self.num_envs, 1, 1)
@@ -308,14 +297,12 @@ class Task(SingleArmEnv):
         super()._reset_idx(env_ids)
 
         # Update the initial height of the objects
-        self._initial_obj_height_w[env_ids] = torch.stack(
-            [self._objects[i].data.root_pos_w[env_ids, 2] for i in range(4)],
-            dim=1,
-        )
+        self._initial_obj_height_w[env_ids] = self._objects.data.object_pos_w[
+            env_ids, :, 2
+        ]
         self._initial_panel_height_w[env_ids] = self._panel.data.root_pos_w[env_ids, 2]
 
     def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Note: This assumes that `_get_dones()` is called before `_get_rewards()` and `_get_observations()` in `step()`
         self._update_intermediate_state()
 
         if not self.cfg.enable_truncation:
@@ -345,10 +332,6 @@ class Task(SingleArmEnv):
             panel_target_rotmat_wrt_panel_com=self._panel_target_rotmat_wrt_panel_com,
         )
 
-    ########################
-    ### Helper Functions ###
-    ########################
-
     def _update_intermediate_state(self):
         ## Extract intermediate states
         self._robot_ee_pos_wrt_base = self._tf_robot_ee.data.target_pos_source[:, 0, :]
@@ -359,14 +342,6 @@ class Task(SingleArmEnv):
         )
 
         ## Compute other intermediate states
-        target_pos_w = torch.stack(
-            [self._targets[i].get_world_poses()[0] for i in range(4)],
-            dim=1,
-        )
-        target_quat_w = torch.stack(
-            [self._targets[i].get_world_poses()[1] for i in range(4)],
-            dim=1,
-        )
         (
             self._remaining_time,
             self._robot_joint_pos_arm,
@@ -398,17 +373,11 @@ class Task(SingleArmEnv):
             robot_ee_quat_wrt_base=self._tf_robot_ee.data.target_quat_source[:, 0, :],
             robot_arm_contact_net_forces=self._contacts_robot.data.net_forces_w,
             robot_hand_obj_contact_force_matrix=self._contacts_robot_hand_obj.data.force_matrix_w,
-            obj_pos_w=torch.stack(
-                [self._objects[i].data.root_pos_w for i in range(4)],
-                dim=1,
-            ),
-            obj_quat_w=torch.stack(
-                [self._objects[i].data.root_quat_w for i in range(4)],
-                dim=1,
-            ),
+            obj_pos_w=self._objects.data.object_pos_w,
+            obj_quat_w=self._objects.data.object_quat_w,
             obj_com_offset=self._obj_com_offset,
-            target_pos_w=target_pos_w,
-            target_quat_w=target_quat_w,
+            target_pos_w=self._targets.data.object_pos_w,
+            target_quat_w=self._targets.data.object_quat_w,
             panel_pos_w=self._panel.data.root_pos_w,
             panel_quat_w=self._panel.data.root_quat_w,
             panel_com_offset=self._panel_com_offset,
@@ -421,11 +390,6 @@ class Task(SingleArmEnv):
             hole_offset_pos_bottom=self._hole_offset_pos_bottom,
             hole_offset_pos_entrance=self._hole_offset_pos_entrance,
         )
-
-
-#############################
-### TorchScript functions ###
-#############################
 
 
 @torch.jit.script

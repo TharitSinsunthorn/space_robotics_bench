@@ -8,14 +8,13 @@ from .cfg import LocomotionEnvCfg
 
 
 @configclass
-class LocomotionEnvVisualExtCfg(LocomotionEnvCfg, VisualExtCfg):
-    def __post_init__(self):
-        LocomotionEnvCfg.__post_init__(self)
-        assert isinstance(self.robot, LeggedRobot)
+class LocomotionEnvVisualExtCfg(VisualExtCfg):
+    def wrap(self, env_cfg: LocomotionEnvCfg):
+        assert isinstance(env_cfg.robot, LeggedRobot)
 
         self.cameras_cfg = {
             "cam_scene": CameraCfg(
-                prim_path=f"{self.scene.robot.prim_path}{('/' + self.robot.frame_base.prim_relpath) if self.robot.frame_base.prim_relpath else ''}/camera_scene",
+                prim_path=f"{env_cfg.scene.robot.prim_path}{('/' + env_cfg.robot.frame_base.prim_relpath) if env_cfg.robot.frame_base.prim_relpath else ''}/camera_scene",
                 offset=CameraCfg.OffsetCfg(
                     convention="world",
                     pos=(-2.5, 0.0, 2.5),
@@ -27,4 +26,4 @@ class LocomotionEnvVisualExtCfg(LocomotionEnvCfg, VisualExtCfg):
             ),
         }
 
-        VisualExtCfg.__post_init__(self)
+        super().wrap(env_cfg)

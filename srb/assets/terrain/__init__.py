@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Tuple
 from simforge import TexResConfig
 
 from srb.core.asset import AssetBaseCfg, AssetVariant
-from srb.core.env.common.domain import Domain
+from srb.core.domain import Domain
 
 from .ground_plane import GroundPlane
 from .planetary_surface import MarsSurface, MoonSurface

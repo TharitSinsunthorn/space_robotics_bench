@@ -8,14 +8,13 @@ from .cfg import AerialEnvCfg
 
 
 @configclass
-class AerialEnvVisualExtCfg(AerialEnvCfg, VisualExtCfg):
-    def __post_init__(self):
-        AerialEnvCfg.__post_init__(self)
-        assert isinstance(self.robot, AerialRobot)
+class AerialEnvVisualExtCfg(VisualExtCfg):
+    def wrap(self, env_cfg: AerialEnvCfg):
+        assert isinstance(env_cfg.robot, AerialRobot)
 
         self.cameras_cfg = {
             "cam_scene": CameraCfg(
-                prim_path=f"{self.scene.robot.prim_path}{('/' + self.robot.frame_base.prim_relpath) if self.robot.frame_base.prim_relpath else ''}/camera_scene",
+                prim_path=f"{env_cfg.scene.robot.prim_path}{('/' + env_cfg.robot.frame_base.prim_relpath) if env_cfg.robot.frame_base.prim_relpath else ''}/camera_scene",
                 offset=CameraCfg.OffsetCfg(
                     convention="world",
                     pos=(-2.5, 0.0, 2.5),
@@ -26,11 +25,11 @@ class AerialEnvVisualExtCfg(AerialEnvCfg, VisualExtCfg):
                 ),
             ),
             "cam_bottom": CameraCfg(
-                prim_path=f"{self.scene.robot.prim_path}/{self.robot.frame_camera_bottom.prim_relpath}",
+                prim_path=f"{env_cfg.scene.robot.prim_path}/{env_cfg.robot.frame_camera_bottom.prim_relpath}",
                 offset=CameraCfg.OffsetCfg(
                     convention="world",
-                    pos=self.robot.frame_camera_bottom.offset.translation,
-                    rot=self.robot.frame_camera_bottom.offset.rotation,
+                    pos=env_cfg.robot.frame_camera_bottom.offset.translation,
+                    rot=env_cfg.robot.frame_camera_bottom.offset.rotation,
                 ),
                 spawn=PinholeCameraCfg(
                     focal_length=5.0,
@@ -40,4 +39,4 @@ class AerialEnvVisualExtCfg(AerialEnvCfg, VisualExtCfg):
             ),
         }
 
-        VisualExtCfg.__post_init__(self)
+        super().wrap(env_cfg)

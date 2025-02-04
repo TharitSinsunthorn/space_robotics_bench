@@ -2,7 +2,8 @@ import torch
 
 from srb import assets
 from srb.core.asset import AssetVariant, Spacecraft, Terrain
-from srb.core.env import BaseEventCfg, BaseSceneCfg, DirectEnvCfg, Domain, ViewerCfg
+from srb.core.domain import Domain
+from srb.core.env import BaseEventCfg, BaseSceneCfg, DirectEnvCfg, ViewerCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform
 from srb.core.sim import SimforgeAssetCfg
@@ -16,7 +17,7 @@ class SpacecraftSceneCfg(BaseSceneCfg):
 
 @configclass
 class SpacecraftEventCfg(BaseEventCfg):
-    randomize_robot_state: EventTermCfg | None = EventTermCfg(
+    randomize_robot_state: EventTermCfg = EventTermCfg(
         func=reset_root_state_uniform,
         mode="reset",
         params={
@@ -56,6 +57,7 @@ class SpacecraftEnvCfg(DirectEnvCfg):
     domain: Domain = Domain.ORBIT
 
     ## Assets
+    # TODO: Default to AssetVariant.PROCEDURAL robot
     robot: Spacecraft | AssetVariant = assets.Cubesat()
     terrain: Terrain | AssetVariant | None = None
 

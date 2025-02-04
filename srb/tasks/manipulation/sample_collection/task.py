@@ -1,13 +1,20 @@
 from dataclasses import MISSING
-from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 import torch
-from pydantic import BaseModel
-from simforge import TexResConfig
 
-from srb import assets
-from srb.core.asset import AssetVariant, RigidObject, RigidObjectCfg
-from srb.core.env import Domain, SingleArmEnv, SingleArmEnvCfg, SingleArmEventCfg
+from srb.core.asset import (
+    RigidObject,
+    RigidObjectCfg,
+    SingleArmManipulator,
+    StaticVehicle,
+)
+from srb.core.env import (
+    SingleArmEnv,
+    SingleArmEnvCfg,
+    SingleArmEventCfg,
+    SingleArmSceneCfg,
+)
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers, VisualizationMarkersCfg
 from srb.core.mdp import reset_root_state_uniform
@@ -22,8 +29,7 @@ from srb.utils.math import (
     subtract_frame_transforms,
 )
 
-if TYPE_CHECKING:
-    from srb._typing import AnyEnvCfg
+from .asset import sample_cfg
 
 ##############
 ### Config ###
@@ -31,9 +37,17 @@ if TYPE_CHECKING:
 
 
 @configclass
+class SceneCfg(SingleArmSceneCfg):
+    object: RigidObjectCfg = MISSING  # type: ignore
+    contacts_robot_hand_obj = ContactSensorCfg(
+        prim_path=MISSING,  # type: ignore
+        filter_prim_paths_expr=MISSING,  # type: ignore
+    )
+
+
+@configclass
 class EventCfg(SingleArmEventCfg):
-    ## Object
-    randomize_object_state: EventTermCfg | None = EventTermCfg(
+    randomize_object_state: EventTermCfg = EventTermCfg(
         func=reset_root_state_uniform,
         mode="reset",
         params={
@@ -44,85 +58,16 @@ class EventCfg(SingleArmEventCfg):
     )
 
 
-class SampleCfg(BaseModel, arbitrary_types_allowed=True):
-    ## Model
-    asset_cfg: RigidObjectCfg
-
-    ## Randomization
-    state_randomizer: EventTermCfg
-
-
-def sample_cfg(
-    cfg: "AnyEnvCfg",
-    *,
-    seed: int,
-    num_assets: int,
-    prim_path: str = "{ENV_REGEX_NS}/sample",
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
-    scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
-    texture_resolution: TexResConfig | None = None,
-    **kwargs,
-) -> SampleCfg:
-    pose_range = {
-        "x": (-0.2, 0.2),
-        "y": (-0.3, 0.3),
-        "roll": (-torch.pi, torch.pi),
-        "pitch": (-torch.pi, torch.pi),
-        "yaw": (-torch.pi, torch.pi),
-    }
-
-    match cfg.obj:
-        case AssetVariant.PRIMITIVE:
-            pose_range["z"] = (0.1, 0.1)
-        case AssetVariant.DATASET:
-            match cfg.domain:
-                case Domain.MARS:
-                    pose_range.update(
-                        {
-                            "z": (0.05, 0.05),
-                            "roll": (torch.pi / 7, torch.pi / 7),
-                            "pitch": (
-                                87.5 * torch.pi / 180,
-                                87.5 * torch.pi / 180,
-                            ),
-                            "yaw": (-torch.pi, torch.pi),
-                        }
-                    )
-                case _:
-                    pose_range["z"] = (0.07, 0.07)
-        case _:
-            pose_range["z"] = (0.06, 0.06)
-
-    sample_cfg = assets.rigid_object_from_cfg(
-        cfg,
-        seed=seed,
-        num_assets=num_assets,
-        prim_path=prim_path,
-        scale=scale,
-        texture_resolution=texture_resolution,
-        **kwargs,
-    )
-
-    return SampleCfg(
-        asset_cfg=sample_cfg,
-        state_randomizer=EventTermCfg(
-            func=reset_root_state_uniform,
-            mode="reset",
-            params={
-                "asset_cfg": asset_cfg,
-                "pose_range": pose_range,
-                "velocity_range": {},
-            },
-        ),
-    )
-
-
 @configclass
 class TaskCfg(SingleArmEnvCfg):
-    ## Environment
-    episode_length_s: float = 7.5
+    ## Scene
+    scene: SceneCfg = SceneCfg()
 
-    ## Task
+    ## Events
+    events: EventCfg = EventCfg()
+
+    ## Time
+    episode_length_s: float = 7.5
     is_finite_horizon: bool = True
 
     ## Goal
@@ -139,13 +84,12 @@ class TaskCfg(SingleArmEnvCfg):
         },
     )
 
-    ## Events
-    events: EventCfg = EventCfg()
-
     def __post_init__(self):
         super().__post_init__()
+        assert isinstance(self.robot, SingleArmManipulator)
 
-        ## Scene
+        ## Assets -> Scene
+        # Object
         self.object = sample_cfg(
             self,
             seed=self.seed,
@@ -154,20 +98,19 @@ class TaskCfg(SingleArmEnvCfg):
             activate_contact_sensors=True,
         )
         self.scene.object = self.object.asset_cfg
-        if self.vehicle:
+        # Target
+        if isinstance(self.vehicle, StaticVehicle):
             self.target_pos = self.vehicle.frame_cargo_bay.offset.translation
-
-        ## Sensors
-        self.scene.contacts_robot_hand_obj = ContactSensorCfg(
-            prim_path=f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}",
-            update_period=0.0,
-            # Note: This causes error 'Filter pattern did not match the correct number of entries'
-            #       However, it seems to function properly anyway...
-            filter_prim_paths_expr=[self.scene.object.prim_path],
+        # Sensor: Contacts | Robot hand <--> Object
+        self.scene.contacts_robot_hand_obj.prim_path = (
+            f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}"
         )
+        self.scene.contacts_robot_hand_obj.filter_prim_paths_expr = [
+            self.scene.object.prim_path
+        ]
 
         ## Events
-        self.events.randomize_object_state.params["pose_range"] = (  # type: ignore
+        self.events.randomize_object_state.params["pose_range"] = (
             self.object.state_randomizer.params["pose_range"]
         )
 
@@ -182,6 +125,7 @@ class Task(SingleArmEnv):
 
     def __init__(self, cfg: TaskCfg, **kwargs):
         super().__init__(cfg, **kwargs)
+        assert isinstance(self.cfg.robot, SingleArmManipulator)
 
         ## Get handles to scene assets
         self._contacts_robot_hand_obj: ContactSensor = self.scene[
@@ -229,7 +173,6 @@ class Task(SingleArmEnv):
         self._initial_obj_height_w[env_ids] = self._object.data.root_pos_w[env_ids, 2]
 
     def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        # Note: This assumes that `_get_dones()` is called before `_get_rewards()` and `_get_observations()` in `step()`
         self._update_intermediate_state()
 
         if not self.cfg.enable_truncation:
@@ -253,10 +196,6 @@ class Task(SingleArmEnv):
             target_pos_wrt_obj_com=self._target_pos_wrt_obj_com,
             target_rotmat_wrt_obj_com=self._target_rotmat_wrt_obj_com,
         )
-
-    ########################
-    ### Helper Functions ###
-    ########################
 
     def _update_intermediate_state(self):
         ## Extract intermediate states
@@ -301,11 +240,6 @@ class Task(SingleArmEnv):
             target_quat_w=self._target_quat_w,
             initial_obj_height_w=self._initial_obj_height_w,
         )
-
-
-#############################
-### TorchScript functions ###
-#############################
 
 
 @torch.jit.script

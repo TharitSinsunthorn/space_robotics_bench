@@ -1,22 +1,30 @@
 from dataclasses import MISSING
-from typing import Dict, Literal, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, Literal, Sequence, Tuple
 
-from srb.core.env.common.base.env_cfg import BaseEnvCfg
 from srb.core.sensor import CameraCfg
 from srb.utils.cfg import configclass
 
+if TYPE_CHECKING:
+    from srb._typing import AnyEnvCfg
+
 
 @configclass
-class VisualExtCfg(BaseEnvCfg):
+class VisualExtCfg:
+    ## Extension overrides
+    # Never stack visual environments
+    stack: bool = False
+    # Re-render frames on reset for visual observations
+    rerender_on_reset: bool = True
+
     ## Camera sensors
     cameras_cfg: Dict[str, CameraCfg] = MISSING  # type: ignore
     camera_resolution: Tuple[int, int] | None = (64, 64)
-    camera_framerate: int | None = 0
+    camera_framerate: float = 0.0
     camera_data_types: (
         Sequence[
             Literal[
-                "rgb",  # same as "rgba",
-                "depth",  # same as "distance_to_image_plane",
+                "rgb",  # same as "rgba"
+                "depth",  # same as "distance_to_image_plane"
                 "distance_to_camera",
                 "normals",
                 "motion_vectors",
@@ -36,27 +44,14 @@ class VisualExtCfg(BaseEnvCfg):
         | None
     ) = ("rgb", "depth")
 
-    ## Rendering
-    rerender_on_reset: bool = True
-
-    def __post_init__(self):
-        ## Never stack visual environments
-        self.stack = False
-
-        ## Re-render frames on reset for visual observations
-        self.rerender_on_reset = True
-
+    def wrap(self, env_cfg: "AnyEnvCfg"):
         ## Add camera sensors to the scene
-        for key, camera_cfg in self.cameras_cfg.items():
+        for camera_key, camera_cfg in self.cameras_cfg.items():
             if self.camera_resolution is not None:
                 camera_cfg.width = self.camera_resolution[0]
                 camera_cfg.height = self.camera_resolution[1]
             if self.camera_framerate is not None:
-                camera_cfg.update_period = (
-                    self.camera_framerate
-                    if self.camera_framerate > 0
-                    else self.agent_rate
-                )
+                camera_cfg.update_period = self.camera_framerate
             if self.camera_data_types is not None:
                 camera_cfg.data_types = self.camera_data_types  # type: ignore
-            setattr(self.scene, key, camera_cfg)
+            setattr(env_cfg.scene, camera_key, camera_cfg)

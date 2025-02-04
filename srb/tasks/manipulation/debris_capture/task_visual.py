@@ -9,13 +9,13 @@ from .task import Task, TaskCfg
 
 
 @configclass
-class VisualTaskCfg(TaskCfg, SingleArmEnvVisualExtCfg):
+class VisualTaskCfg(SingleArmEnvVisualExtCfg, TaskCfg):
     def __post_init__(self):
         TaskCfg.__post_init__(self)
-        SingleArmEnvVisualExtCfg.__post_init__(self)
+        SingleArmEnvVisualExtCfg.wrap(self, env_cfg=self)
 
 
-class VisualTask(Task, VisualExt):
+class VisualTask(VisualExt, Task):
     cfg: VisualTaskCfg
 
     def __init__(self, cfg: VisualTaskCfg, **kwargs):
