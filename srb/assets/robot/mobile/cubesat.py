@@ -31,7 +31,7 @@ class Cubesat(Spacecraft):
 
     ## Actions
     action_cfg: BodyVelocity = BodyVelocity(
-        vel=BodyVelocityActionCfg(asset_name="robot", scale=0.1)
+        vel=BodyVelocityActionCfg(asset_name="robot", scale=0.01)
     )
 
     ## Frames

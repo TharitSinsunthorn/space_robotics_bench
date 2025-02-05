@@ -11,7 +11,7 @@ class SingleArmEnv(DirectEnv):
     def __init__(self, cfg: SingleArmEnvCfg, **kwargs):
         super().__init__(cfg, **kwargs)
 
-        ## Get handles to scene assets
+        ## Get scene assets
         self._robot: Articulation = self.scene["robot"]
         self._tf_robot_ee: FrameTransformer = self.scene["tf_robot_ee"]
-        self._contacts_robot: ContactSensor = self.scene["contacts_robot"]
+        self._contacts_robot_arm: ContactSensor = self.scene["contacts_robot_arm"]

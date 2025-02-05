@@ -12,7 +12,7 @@ from srb.core.sim import (
 
 class Asteroid(Object):
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/object",
+        prim_path="{ENV_REGEX_NS}/asteroid",
         spawn=SimforgeAssetCfg(
             assets=[simforge_foundry.Asteroid()],
             collision_props=CollisionPropertiesCfg(),

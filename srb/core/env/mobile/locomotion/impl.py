@@ -11,6 +11,6 @@ class LocomotionEnv(DirectEnv):
     def __init__(self, cfg: LocomotionEnvCfg, **kwargs):
         super().__init__(cfg, **kwargs)
 
-        ## Get handles to scene assets
+        ## Get scene assets
         self._robot: Articulation = self.scene["robot"]
         self._contacts_robot: ContactSensor = self.scene["contacts_robot"]

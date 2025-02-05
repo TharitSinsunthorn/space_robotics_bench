@@ -30,7 +30,7 @@ class FogCfg:
 
 @configclass
 class AutoExposureCfg:
-    enable: bool = True
+    enable: bool = False
     filter_type: int = 0  # 0 (Median) | 1 (Average)
     tau: float = 3.5
     white_scale: float = 10.0

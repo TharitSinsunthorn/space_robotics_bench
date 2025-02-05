@@ -12,7 +12,7 @@ from srb.core.sim import (
 
 class CubesatDebris(Object):
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/object",
+        prim_path="{ENV_REGEX_NS}/debris",
         spawn=SimforgeAssetCfg(
             assets=[simforge_foundry.Cubesat()],
             collision_props=CollisionPropertiesCfg(),

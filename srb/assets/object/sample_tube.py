@@ -11,7 +11,7 @@ from srb.utils.path import SRB_ASSETS_DIR_SRB_OBJECT
 
 class SampleTube(Object):
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/object",
+        prim_path="{ENV_REGEX_NS}/sample",
         spawn=UsdFileCfg(
             usd_path=(
                 SRB_ASSETS_DIR_SRB_OBJECT.joinpath("sample_tube")

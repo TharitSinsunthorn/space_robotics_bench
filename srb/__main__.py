@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import sys
 from enum import Enum, auto
 from importlib.util import find_spec
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
 
 def main():
     def impl(
-        subcommand: Literal["agent", "ls", "repl", "gui", "docs", "test"], **kwargs
+        subcommand: Literal["agent", "ls", "gui", "repl", "docs", "test"], **kwargs
     ):
         if not find_spec("omni"):
             raise ImportError(
@@ -41,10 +42,10 @@ def main():
                     run_agent_with_env(**kwargs)
             case "ls":
                 list_registered(**kwargs)
-            case "repl":
-                enter_repl(**kwargs)
             case "gui":
                 launch_gui(**kwargs)
+            case "repl":
+                enter_repl(**kwargs)
             case "docs":
                 serve_docs(**kwargs)
             case "test":
@@ -266,8 +267,8 @@ def teleop_agent(
         )
 
     # Disable truncation
-    if hasattr(env.unwrapped.cfg, "enable_truncation"):  # type: ignore
-        env.unwrapped.cfg.enable_truncation = False  # type: ignore
+    if hasattr(env.unwrapped.cfg, "truncate_episodes"):  # type: ignore
+        env.unwrapped.cfg.truncate_episodes = False  # type: ignore
 
     # Create ROS 2 node
     if InterfaceType.GUI in interface or InterfaceType.ROS2 in interface:
@@ -566,8 +567,8 @@ def ros_agent(env: "AnyEnv", sim_app: "SimulationApp", **kwargs):
     from srb.interfaces.ros2 import ROS2Interface
 
     # Disable truncation
-    if hasattr(env.unwrapped.cfg, "enable_truncation"):  # type: ignore
-        env.unwrapped.cfg.enable_truncation = False  # type: ignore
+    if hasattr(env.unwrapped.cfg, "truncate_episodes"):  # type: ignore
+        env.unwrapped.cfg.truncate_episodes = False  # type: ignore
 
     ## Create ROS 2 interface
     ros2_interface = ROS2Interface(env)
@@ -889,6 +890,39 @@ def list_registered(category: str | Sequence[str], show_all: bool, **kwargs):
     launcher.app.close()
 
 
+### GUI ###
+def launch_gui(forwarded_args: Sequence[str]):
+    import string
+    import subprocess
+
+    from srb.utils import logging
+
+    cmd = (
+        "cargo",
+        "run",
+        "--manifest-path",
+        SRB_DIR.joinpath("Cargo.toml").as_posix(),
+        "--package",
+        "srb_gui",
+        "--bin",
+        "gui",
+        *forwarded_args,
+    )
+    logging.info(
+        "Launching GUI of the Space Robotics Bench with the following command: "
+        + " ".join(
+            (f'"{arg}"' if any(c in string.whitespace for c in arg) else arg)
+            for arg in cmd
+        )
+    )
+
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        logging.critical("Launching GUI failed due to the exception above")
+        exit(e.returncode)
+
+
 ### REPL ###
 def enter_repl(hide_ui: bool, **kwargs):
     from srb.core.app import AppLauncher
@@ -927,45 +961,17 @@ def enter_repl(hide_ui: bool, **kwargs):
     launcher.app.close()
 
 
-### GUI ###
-def launch_gui(forwarded_args: Sequence[str]):
-    import string
-    import subprocess
-
-    from srb.utils import logging
-
-    cmd = (
-        "cargo",
-        "run",
-        "--manifest-path",
-        SRB_DIR.joinpath("Cargo.toml").as_posix(),
-        "--package",
-        "srb_gui",
-        "--bin",
-        "gui",
-        *forwarded_args,
-    )
-    logging.info(
-        "Launching GUI of the Space Robotics Bench with the following command: "
-        + " ".join(
-            (f'"{arg}"' if any(c in string.whitespace for c in arg) else arg)
-            for arg in cmd
-        )
-    )
-
-    try:
-        subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError as e:
-        logging.critical("Launching GUI failed due to the exception above")
-        exit(e.returncode)
-
-
 ### Docs ###
 def serve_docs(forwarded_args: Sequence[str]):
     import string
     import subprocess
 
     from srb.utils import logging
+
+    if not shutil.which("mdbook"):
+        raise FileNotFoundError(
+            'The "mdbook" tool is required to serve the docs of the Space Robotics Bench'
+        )
 
     cmd = (
         "mdbook",
@@ -997,12 +1003,12 @@ def run_tests(language: Sequence[str], forwarded_args: Sequence[str]):
     from srb.utils import logging
     from srb.utils.isaacsim import get_isaacsim_python
 
-    # Standardize category
-    language = (  # type: ignore
-        {Lang.from_str(language)}
-        if isinstance(language, str)
-        else set(map(Lang.from_str, language))
-    )
+    if not find_spec("pytest"):
+        raise ImportError(
+            'The "pytest" package is required to run tests of the Space Robotics Bench'
+        )
+
+    language = list(set(map(Lang.from_str, language)))
 
     for lang in language:
         match lang:
@@ -1111,7 +1117,7 @@ def parse_cli_args() -> argparse.Namespace:
     list_parser = subparsers.add_parser(
         "ls",
         help="List registered assets and environments"
-        + (' (MISSING: "rich" Python package)' if find_spec("rich") else ""),
+        + ("" if find_spec("rich") else ' (MISSING: "rich" Python package)'),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     list_parser.add_argument(
@@ -1130,14 +1136,6 @@ def parse_cli_args() -> argparse.Namespace:
         default=False,
     )
 
-    ## REPL subcommand
-    repl_parser = subparsers.add_parser(
-        "repl",
-        help="Enter REPL"
-        + (' (MISSING: "ptpython" Python package)' if find_spec("ptpython") else ""),
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-
     ## GUI subcommand
     _gui_parser = subparsers.add_parser(
         "gui",
@@ -1145,17 +1143,27 @@ def parse_cli_args() -> argparse.Namespace:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
+    ## REPL subcommand
+    repl_parser = subparsers.add_parser(
+        "repl",
+        help="Enter REPL"
+        + ("" if find_spec("ptpython") else ' (MISSING: "ptpython" Python package)'),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
     ## Docs subcommand
     _docs_parser = subparsers.add_parser(
         "docs",
-        help="Serve documentation",
+        help="Serve documentation"
+        + ("" if shutil.which("mdbook") else ' (MISSING: "mdbook" tool)'),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
     ## Test subcommand
     test_parser = subparsers.add_parser(
         "test",
-        help="Run tests",
+        help="Run tests"
+        + ("" if find_spec("pytest") else ' (MISSING: "pytest" Python package)'),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     test_parser.add_argument(
@@ -1398,7 +1406,7 @@ def parse_cli_args() -> argparse.Namespace:
                         for arg in unsupported_args
                     )
                 )
-                if args.subcommand in ("gui", "test")
+                if args.subcommand in ("gui", "docs", "test")
                 else ""
             )
         )

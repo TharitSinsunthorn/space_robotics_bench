@@ -12,7 +12,7 @@ from srb.core.sim import (
 
 class LunarRock(Object):
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/object",
+        prim_path="{ENV_REGEX_NS}/rock",
         spawn=SimforgeAssetCfg(
             assets=[simforge_foundry.MoonRock()],
             collision_props=CollisionPropertiesCfg(),
@@ -27,7 +27,7 @@ class LunarRock(Object):
 
 class MarsRock(Object):
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/object",
+        prim_path="{ENV_REGEX_NS}/rock",
         spawn=SimforgeAssetCfg(
             assets=[simforge_foundry.MarsRock()],
             collision_props=CollisionPropertiesCfg(),

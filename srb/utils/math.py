@@ -28,13 +28,13 @@ def quat_from_rpy(*rpy: float, deg: bool = True) -> Tuple[float, float, float, f
 
 
 @torch.jit.script
-def quat_to_rot6d(quaternions: torch.Tensor) -> torch.Tensor:
-    return matrix_from_quat(quaternions)[..., :2].reshape(-1, 6)
+def rotmat_to_rot6d(rotmat: torch.Tensor) -> torch.Tensor:
+    return rotmat[..., :, :2].reshape(rotmat.shape[:-2] + (6,))
 
 
 @torch.jit.script
-def rotmat_to_rot6d(rotmat: torch.Tensor) -> torch.Tensor:
-    return rotmat[..., :2].reshape(-1, 6)
+def quat_to_rot6d(quaternions: torch.Tensor) -> torch.Tensor:
+    return rotmat_to_rot6d(matrix_from_quat(quaternions))
 
 
 @torch.jit.script

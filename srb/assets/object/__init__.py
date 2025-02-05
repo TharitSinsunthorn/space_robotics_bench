@@ -24,7 +24,7 @@ def rigid_object_from_cfg(
     *,
     seed: int,
     num_assets: int,
-    prim_path: str = "{ENV_REGEX_NS}/object",
+    prim_path: str = "{ENV_REGEX_NS}/obj",
     init_state: RigidObjectCfg.InitialStateCfg = RigidObjectCfg.InitialStateCfg(),
     scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
     texture_resolution: TexResConfig | None = None,

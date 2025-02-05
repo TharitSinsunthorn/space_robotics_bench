@@ -28,7 +28,7 @@ def sample_cfg(
     seed: int,
     num_assets: int,
     prim_path: str = "{ENV_REGEX_NS}/sample",
-    asset_cfg: SceneEntityCfg = SceneEntityCfg("object"),
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("obj"),
     scale: Tuple[float, float, float] = (0.05, 0.05, 0.05),
     texture_resolution: TexResConfig | None = None,
     **kwargs,

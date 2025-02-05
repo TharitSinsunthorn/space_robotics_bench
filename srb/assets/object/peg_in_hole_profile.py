@@ -12,7 +12,7 @@ from srb.utils.path import SRB_ASSETS_DIR_SRB_OBJECT
 
 class ProfilePeg(Object):
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/object",
+        prim_path="{ENV_REGEX_NS}/peg",
         spawn=UsdFileCfg(
             usd_path=(
                 SRB_ASSETS_DIR_SRB_OBJECT.joinpath("peg_in_hole_profile")
@@ -32,7 +32,7 @@ class ProfilePeg(Object):
 
 class ShortProfilePeg(Object):
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/object",
+        prim_path="{ENV_REGEX_NS}/peg",
         spawn=UsdFileCfg(
             usd_path=(
                 SRB_ASSETS_DIR_SRB_OBJECT.joinpath("peg_in_hole_profile")
@@ -52,7 +52,7 @@ class ShortProfilePeg(Object):
 
 class ProfileHole(Object):
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/object",
+        prim_path="{ENV_REGEX_NS}/hole",
         spawn=UsdFileCfg(
             usd_path=(
                 SRB_ASSETS_DIR_SRB_OBJECT.joinpath("peg_in_hole_profile")

@@ -43,8 +43,12 @@ def _is_visual_env(env: str) -> bool:
     (
         (env, num_envs)
         for env in _list_envs()
-        for num_envs in (1, math.floor(math.sqrt(MAX_NUM_ENVS)), MAX_NUM_ENVS)
-        if (not _is_visual_env(env) or num_envs < MAX_NUM_ENVS)
+        for num_envs in (
+            (1, math.floor(math.sqrt(MAX_NUM_ENVS)), MAX_NUM_ENVS)
+            if MAX_NUM_ENVS > 1
+            else (1,)
+        )
+        if (not _is_visual_env(env) or (num_envs < MAX_NUM_ENVS and MAX_NUM_ENVS > 1))
     ),
 )
 def test_cli_agent_rand(env: str, num_envs: int):

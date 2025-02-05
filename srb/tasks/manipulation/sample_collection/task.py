@@ -3,6 +3,7 @@ from typing import Dict, List, Sequence, Tuple
 
 import torch
 
+from srb._typing import IntermediateTaskState
 from srb.core.asset import (
     RigidObject,
     RigidObjectCfg,
@@ -22,7 +23,6 @@ from srb.core.sensor import ContactSensor, ContactSensorCfg
 from srb.core.sim import PreviewSurfaceCfg, SphereCfg
 from srb.utils.cfg import configclass
 from srb.utils.math import (
-    combine_frame_transforms,
     matrix_from_quat,
     rotmat_to_rot6d,
     scale_transform,
@@ -38,8 +38,8 @@ from .asset import sample_cfg
 
 @configclass
 class SceneCfg(SingleArmSceneCfg):
-    object: RigidObjectCfg = MISSING  # type: ignore
-    contacts_robot_hand_obj = ContactSensorCfg(
+    obj: RigidObjectCfg = MISSING  # type: ignore
+    contacts_robot_hand_obj: ContactSensorCfg = ContactSensorCfg(
         prim_path=MISSING,  # type: ignore
         filter_prim_paths_expr=MISSING,  # type: ignore
     )
@@ -51,7 +51,7 @@ class EventCfg(SingleArmEventCfg):
         func=reset_root_state_uniform,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("object"),
+            "asset_cfg": SceneEntityCfg("obj"),
             "pose_range": MISSING,
             "velocity_range": {},
         },
@@ -70,10 +70,10 @@ class TaskCfg(SingleArmEnvCfg):
     episode_length_s: float = 7.5
     is_finite_horizon: bool = True
 
-    ## Goal
-    target_pos = (-0.6, 0.0, 0.0)
-    target_quat = (1.0, 0.0, 0.0, 0.0)
-    target_marker_cfg = VisualizationMarkersCfg(
+    ## Target
+    target_pos: Tuple[float, float, float] = (-0.6, 0.0, 0.0)
+    target_quat: Tuple[float, float, float, float] = (1.0, 0.0, 0.0, 0.0)
+    target_marker_cfg: VisualizationMarkersCfg = VisualizationMarkersCfg(
         prim_path="/Visuals/target",
         markers={
             "target": SphereCfg(
@@ -90,14 +90,14 @@ class TaskCfg(SingleArmEnvCfg):
 
         ## Assets -> Scene
         # Object
-        self.object = sample_cfg(
+        obj = sample_cfg(
             self,
             seed=self.seed,
             num_assets=self.scene.num_envs,
             init_state=RigidObjectCfg.InitialStateCfg(pos=(0.55, 0.0, 0.0)),
             activate_contact_sensors=True,
         )
-        self.scene.object = self.object.asset_cfg
+        self.scene.obj = obj.asset_cfg
         # Target
         if isinstance(self.vehicle, StaticVehicle):
             self.target_pos = self.vehicle.frame_cargo_bay.offset.translation
@@ -106,12 +106,12 @@ class TaskCfg(SingleArmEnvCfg):
             f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}"
         )
         self.scene.contacts_robot_hand_obj.filter_prim_paths_expr = [
-            self.scene.object.prim_path
+            self.scene.obj.prim_path
         ]
 
         ## Events
         self.events.randomize_object_state.params["pose_range"] = (
-            self.object.state_randomizer.params["pose_range"]
+            obj.state_randomizer.params["pose_range"]
         )
 
 
@@ -127,212 +127,156 @@ class Task(SingleArmEnv):
         super().__init__(cfg, **kwargs)
         assert isinstance(self.cfg.robot, SingleArmManipulator)
 
-        ## Get handles to scene assets
+        ## Get scene assets
         self._contacts_robot_hand_obj: ContactSensor = self.scene[
             "contacts_robot_hand_obj"
         ]
-        self._object: RigidObject = self.scene["object"]
-
-        ## Pre-compute metrics used in hot loops
-        self._robot_arm_joint_indices, _ = self._robot.find_joints(
-            self.cfg.robot.regex_joints_arm
-        )
-        self._robot_hand_joint_indices, _ = self._robot.find_joints(
-            self.cfg.robot.regex_joints_hand
-        )
-        self._max_episode_length = self.max_episode_length
-        self._obj_com_offset = self._object.data._root_physx_view.get_coms().to(
-            self.device
+        self._obj: RigidObject = self.scene["obj"]
+        self._target_marker: VisualizationMarkers = VisualizationMarkers(
+            self.cfg.target_marker_cfg
         )
 
         ## Initialize buffers
-        self._initial_obj_height_w = torch.zeros(
+        self._obj_initial_pos_z = torch.zeros(
             self.num_envs, dtype=torch.float32, device=self.device
         )
-        self._target_pos_w = (
-            torch.tensor(
-                self.cfg.target_pos, dtype=torch.float32, device=self.device
-            ).repeat(self.num_envs, 1)
-            + self.scene.env_origins
-        )
-        self._target_quat_w = torch.tensor(
+        self._target_pos = self.scene.env_origins + torch.tensor(
+            self.cfg.target_pos, dtype=torch.float32, device=self.device
+        ).repeat(self.num_envs, 1)
+        self._target_quat = torch.tensor(
             self.cfg.target_quat, dtype=torch.float32, device=self.device
         ).repeat(self.num_envs, 1)
 
-        ## Create visualization markers
-        self._target_marker = VisualizationMarkers(self.cfg.target_marker_cfg)
-        self._target_marker.visualize(self._target_pos_w, self._target_quat_w)
+        ## Cache metrics
+        self._robot_joint_indices_arm, _ = self._robot.find_joints(
+            self.cfg.robot.regex_joints_arm
+        )
+        self._robot_joint_indices_hand, _ = self._robot.find_joints(
+            self.cfg.robot.regex_joints_hand
+        )
 
-        ## Initialize the intermediate state
-        self._update_intermediate_state()
+        ## Visualize target
+        self._target_marker.visualize(self._target_pos, self._target_quat)
 
     def _reset_idx(self, env_ids: Sequence[int]):
         super()._reset_idx(env_ids)
+        self._obj_initial_pos_z[env_ids] = self._obj.data.root_com_pos_w[env_ids, 2]
 
-        # Update the initial height of the objects
-        self._initial_obj_height_w[env_ids] = self._object.data.root_pos_w[env_ids, 2]
-
-    def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        self._update_intermediate_state()
-
-        if not self.cfg.enable_truncation:
-            self._truncations = torch.zeros_like(self._truncations)
-
-        return self._terminations, self._truncations
-
-    def _get_rewards(self) -> torch.Tensor:
-        return self._rewards
-
-    def _get_observations(self) -> Dict[str, torch.Tensor]:
-        return _construct_observations(
-            remaining_time=self._remaining_time,
-            robot_joint_pos_arm=self._robot_joint_pos_arm,
-            robot_joint_pos_hand=self._robot_joint_pos_hand,
-            robot_ee_pos_wrt_base=self._robot_ee_pos_wrt_base,
-            robot_ee_rotmat_wrt_base=self._robot_ee_rotmat_wrt_base,
-            robot_hand_wrench=self._robot_hand_wrench,
-            obj_com_pos_wrt_robot_ee=self._obj_com_pos_wrt_robot_ee,
-            obj_com_rotmat_wrt_robot_ee=self._obj_com_rotmat_wrt_robot_ee,
-            target_pos_wrt_obj_com=self._target_pos_wrt_obj_com,
-            target_rotmat_wrt_obj_com=self._target_rotmat_wrt_obj_com,
-        )
-
-    def _update_intermediate_state(self):
-        ## Extract intermediate states
-        self._robot_ee_pos_wrt_base = self._tf_robot_ee.data.target_pos_source[:, 0, :]
-        self._robot_hand_wrench = (
-            self._robot.root_physx_view.get_link_incoming_joint_force()[
-                :, self._robot_hand_joint_indices
-            ]
-        )
-
-        ## Compute other intermediate states
-        (
-            self._remaining_time,
-            self._robot_joint_pos_arm,
-            self._robot_joint_pos_hand,
-            self._robot_ee_rotmat_wrt_base,
-            self._obj_com_pos_wrt_robot_ee,
-            self._obj_com_rotmat_wrt_robot_ee,
-            self._target_pos_wrt_obj_com,
-            self._target_rotmat_wrt_obj_com,
-            self._rewards,
-            self._terminations,
-            self._truncations,
-        ) = _compute_intermediate_state(
-            current_action=self.action_manager.action,
-            previous_action=self.action_manager.prev_action,
+    def _update_internal_state(self):
+        self._internal_state = _compute_internal_state(
+            act_current=self.action_manager.action,
+            act_previous=self.action_manager.prev_action,
             episode_length_buf=self.episode_length_buf,
-            max_episode_length=self._max_episode_length,
-            robot_arm_joint_indices=self._robot_arm_joint_indices,
-            robot_hand_joint_indices=self._robot_hand_joint_indices,
-            joint_pos=self._robot.data.joint_pos,
-            soft_joint_pos_limits=self._robot.data.soft_joint_pos_limits,
-            robot_ee_pos_w=self._tf_robot_ee.data.target_pos_w[:, 0, :],
-            robot_ee_quat_w=self._tf_robot_ee.data.target_quat_w[:, 0, :],
+            max_episode_length=self.max_episode_length,
+            obj_initial_pos_z=self._obj_initial_pos_z,
+            obj_pos=self._obj.data.root_com_pos_w,
+            obj_quat=self._obj.data.root_com_quat_w,
+            robot_contact_forces_arm=self._contacts_robot_arm.data.net_forces_w,  # type: ignore
+            robot_contact_forces_hand_matrix=self._contacts_robot_hand_obj.data.force_matrix_w,  # type: ignore
+            robot_ee_pos_wrt_base=self._tf_robot_ee.data.target_pos_source[:, 0, :],
+            robot_ee_pos=self._tf_robot_ee.data.target_pos_w[:, 0, :],
             robot_ee_quat_wrt_base=self._tf_robot_ee.data.target_quat_source[:, 0, :],
-            robot_arm_contact_net_forces=self._contacts_robot.data.net_forces_w,
-            robot_hand_obj_contact_force_matrix=self._contacts_robot_hand_obj.data.force_matrix_w,
-            obj_pos_w=self._object.data.root_pos_w,
-            obj_quat_w=self._object.data.root_quat_w,
-            obj_com_offset=self._obj_com_offset,
-            target_pos_w=self._target_pos_w,
-            target_quat_w=self._target_quat_w,
-            initial_obj_height_w=self._initial_obj_height_w,
+            robot_ee_quat=self._tf_robot_ee.data.target_quat_w[:, 0, :],
+            robot_incoming_forces=self._robot.root_physx_view.get_link_incoming_joint_force(),
+            robot_joint_indices_arm=self._robot_joint_indices_arm,
+            robot_joint_indices_hand=self._robot_joint_indices_hand,
+            robot_joint_pos=self._robot.data.joint_pos,
+            robot_soft_joint_pos_limits=self._robot.data.soft_joint_pos_limits,
+            target_pos=self._target_pos,
+            target_quat=self._target_quat,
+            truncate_episodes=self.cfg.truncate_episodes,
         )
 
 
 @torch.jit.script
-def _compute_intermediate_state(
+def _compute_internal_state(
     *,
-    current_action: torch.Tensor,
-    previous_action: torch.Tensor,
+    act_current: torch.Tensor,
+    act_previous: torch.Tensor,
     episode_length_buf: torch.Tensor,
     max_episode_length: int,
-    robot_arm_joint_indices: List[int],
-    robot_hand_joint_indices: List[int],
-    joint_pos: torch.Tensor,
-    soft_joint_pos_limits: torch.Tensor,
-    robot_ee_pos_w: torch.Tensor,
-    robot_ee_quat_w: torch.Tensor,
+    obj_initial_pos_z: torch.Tensor,
+    obj_pos: torch.Tensor,
+    obj_quat: torch.Tensor,
+    robot_contact_forces_arm: torch.Tensor,
+    robot_contact_forces_hand_matrix: torch.Tensor,
+    robot_ee_pos_wrt_base: torch.Tensor,
+    robot_ee_pos: torch.Tensor,
     robot_ee_quat_wrt_base: torch.Tensor,
-    robot_arm_contact_net_forces: torch.Tensor,
-    robot_hand_obj_contact_force_matrix: torch.Tensor,
-    obj_pos_w: torch.Tensor,
-    obj_quat_w: torch.Tensor,
-    obj_com_offset: torch.Tensor,
-    target_pos_w: torch.Tensor,
-    target_quat_w: torch.Tensor,
-    initial_obj_height_w: torch.Tensor,
-) -> Tuple[
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-]:
-    ## Intermediate states
+    robot_ee_quat: torch.Tensor,
+    robot_incoming_forces: torch.Tensor,
+    robot_joint_indices_arm: List[int],
+    robot_joint_indices_hand: List[int],
+    robot_joint_pos: torch.Tensor,
+    robot_soft_joint_pos_limits: torch.Tensor,
+    target_pos: torch.Tensor,
+    target_quat: torch.Tensor,
+    truncate_episodes: bool,
+) -> (
+    IntermediateTaskState
+    | Dict[
+        str, torch.Tensor | Dict[str, torch.Tensor] | Dict[str, Dict[str, torch.Tensor]]
+    ]
+):
     # Time
     remaining_time = 1 - (episode_length_buf / max_episode_length).unsqueeze(-1)
 
-    # Robot joint positions
+    # Robot joints
     joint_pos_normalized = scale_transform(
-        joint_pos,
-        soft_joint_pos_limits[:, :, 0],
-        soft_joint_pos_limits[:, :, 1],
+        robot_joint_pos,
+        robot_soft_joint_pos_limits[:, :, 0],
+        robot_soft_joint_pos_limits[:, :, 1],
     )
-    robot_joint_pos_arm, robot_joint_pos_hand = (
-        joint_pos_normalized[:, robot_arm_joint_indices],
-        joint_pos_normalized[:, robot_hand_joint_indices],
+    joint_pos_arm_normalized, joint_pos_hand_normalized = (
+        joint_pos_normalized[:, robot_joint_indices_arm],
+        joint_pos_normalized[:, robot_joint_indices_hand],
     )
-
-    # End-effector '6D' rotation
-    robot_ee_rotmat_wrt_base = matrix_from_quat(robot_ee_quat_wrt_base)
-
-    # Transformation | Object origin -> Object CoM
-    obj_com_pos_w, obj_com_quat_w = combine_frame_transforms(
-        t01=obj_pos_w,
-        q01=obj_quat_w,
-        t12=obj_com_offset[:, :3],
-        q12=obj_com_offset[:, 3:],
+    joint_pos_hand_normalized_mean = joint_pos_hand_normalized.mean(
+        dim=-1, keepdim=True
     )
 
-    # Transformation | End-effector -> Object CoM
-    obj_com_pos_wrt_robot_ee, obj_com_quat_wrt_robot_ee = subtract_frame_transforms(
-        t01=robot_ee_pos_w,
-        q01=robot_ee_quat_w,
-        t02=obj_com_pos_w,
-        q02=obj_com_quat_w,
-    )
-    obj_com_rotmat_wrt_robot_ee = matrix_from_quat(obj_com_quat_wrt_robot_ee)
+    # Robot base -> End-effector
+    rotmat_robot_base_to_robot_ee = matrix_from_quat(robot_ee_quat_wrt_base)
+    rot6d_robot_base_to_robot_ee = rotmat_to_rot6d(rotmat_robot_base_to_robot_ee)
 
-    # Transformation | Object CoM -> Target
-    target_pos_wrt_obj_com, target_quat_wrt_obj_com = subtract_frame_transforms(
-        t01=obj_com_pos_w,
-        q01=obj_com_quat_w,
-        t02=target_pos_w,
-        q02=target_quat_w,
+    # End-effector -> Object
+    pos_robot_ee_to_obj, quat_robot_ee_to_obj = subtract_frame_transforms(
+        t01=robot_ee_pos,
+        q01=robot_ee_quat,
+        t02=obj_pos,
+        q02=obj_quat,
     )
-    target_rotmat_wrt_obj_com = matrix_from_quat(target_quat_wrt_obj_com)
+    rotmat_robot_ee_to_obj = matrix_from_quat(quat_robot_ee_to_obj)
+    rot6d_robot_ee_to_obj = rotmat_to_rot6d(rotmat_robot_ee_to_obj)
 
-    ## Rewards
+    # Object -> Target
+    pos_obj_to_target, quat_obj_to_target = subtract_frame_transforms(
+        t01=obj_pos,
+        q01=obj_quat,
+        t02=target_pos,
+        q02=target_quat,
+    )
+    rotmat_obj_to_target = matrix_from_quat(quat_obj_to_target)
+    rot6d_obj_to_target = rotmat_to_rot6d(rotmat_obj_to_target)
+
+    # Robot hand wrench
+    wrench_robot_hand = robot_incoming_forces[:, robot_joint_indices_hand]
+    wrench_robot_hand_mean = wrench_robot_hand.mean(dim=1)
+
+    #############
+    ## Rewards ##
+    #############
     # Penalty: Action rate
     WEIGHT_ACTION_RATE = -0.05
     penalty_action_rate = WEIGHT_ACTION_RATE * torch.sum(
-        torch.square(current_action - previous_action), dim=1
+        torch.square(act_current - act_previous), dim=1
     )
 
     # Penalty: Undesired robot arm contacts
     WEIGHT_UNDERSIRED_ROBOT_ARM_CONTACTS = -0.1
     THRESHOLD_UNDERSIRED_ROBOT_ARM_CONTACTS = 10.0
     penalty_undersired_robot_arm_contacts = WEIGHT_UNDERSIRED_ROBOT_ARM_CONTACTS * (
-        torch.max(torch.norm(robot_arm_contact_net_forces, dim=-1), dim=1)[0]
+        torch.max(torch.norm(robot_contact_forces_arm, dim=-1), dim=1)[0]
         > THRESHOLD_UNDERSIRED_ROBOT_ARM_CONTACTS
     )
 
@@ -342,7 +286,7 @@ def _compute_intermediate_state(
     reward_distance_ee_to_obj = WEIGHT_DISTANCE_EE_TO_OBJ * (
         1.0
         - torch.tanh(
-            torch.norm(obj_com_pos_wrt_robot_ee, dim=-1) / TANH_STD_DISTANCE_EE_TO_OBJ
+            torch.norm(pos_robot_ee_to_obj, dim=-1) / TANH_STD_DISTANCE_EE_TO_OBJ
         )
     )
 
@@ -351,21 +295,19 @@ def _compute_intermediate_state(
     THRESHOLD_OBJ_GRASPED = 5.0
     reward_obj_grasped = WEIGHT_OBJ_GRASPED * (
         torch.mean(
-            torch.max(torch.norm(robot_hand_obj_contact_force_matrix, dim=-1), dim=-1)[
-                0
-            ],
+            torch.max(torch.norm(robot_contact_forces_hand_matrix, dim=-1), dim=-1)[0],
             dim=1,
         )
         > THRESHOLD_OBJ_GRASPED
     )
 
     # Reward: Object lifted
-    WEIGHT_OBJ_LIFTED = 8.0
+    WEIGHT_OBJ_LIFTED = 16.0
     HEIGHT_OFFSET_OBJ_LIFTED = 0.5
     HEIGHT_SPAN_OBJ_LIFTED = 0.25
     TAHN_STD_HEIGHT_OBJ_LIFTED = 0.1
     obj_target_height_offset = (
-        torch.abs(obj_com_pos_w[:, 2] - initial_obj_height_w - HEIGHT_OFFSET_OBJ_LIFTED)
+        torch.abs(obj_pos[:, 2] - obj_initial_pos_z - HEIGHT_OFFSET_OBJ_LIFTED)
         - HEIGHT_SPAN_OBJ_LIFTED
     ).clamp(min=0.0)
     reward_obj_lifted = WEIGHT_OBJ_LIFTED * (
@@ -373,118 +315,58 @@ def _compute_intermediate_state(
     )
 
     # Reward: Distance | Object <--> Target
-    WEIGHT_DISTANCE_OBJ_TO_TARGET = 64.0
+    WEIGHT_DISTANCE_OBJ_TO_TARGET = 32.0
     TANH_STD_DISTANCE_OBJ_TO_TARGET = 0.333
     reward_distance_obj_to_target = WEIGHT_DISTANCE_OBJ_TO_TARGET * (
         1.0
         - torch.tanh(
-            torch.norm(target_pos_wrt_obj_com, dim=-1) / TANH_STD_DISTANCE_OBJ_TO_TARGET
+            torch.norm(pos_obj_to_target, dim=-1) / TANH_STD_DISTANCE_OBJ_TO_TARGET
         )
     )
 
-    # Total reward
-    rewards = torch.sum(
-        torch.stack(
-            [
-                penalty_action_rate,
-                penalty_undersired_robot_arm_contacts,
-                reward_distance_ee_to_obj,
-                reward_obj_grasped,
-                reward_obj_lifted,
-                reward_distance_obj_to_target,
-            ],
-            dim=-1,
-        ),
-        dim=-1,
+    ##################
+    ## Terminations ##
+    ##################
+    termination = torch.zeros(
+        episode_length_buf.size(0), dtype=torch.bool, device=episode_length_buf.device
     )
-
-    ## Termination and truncation
-    truncations = episode_length_buf > (max_episode_length - 1)
-    terminations = torch.zeros_like(truncations)
-
-    # print(
-    #     f"""
-    #     penalty |                   action_rate: {float(penalty_action_rate[0])}
-    #     penalty | undersired_robot_arm_contacts: {float(penalty_undersired_robot_arm_contacts[0])}
-    #     reward  |            distance_ee_to_obj: {float(reward_distance_ee_to_obj[0])}
-    #     reward  |                   obj_grasped: {float(reward_obj_grasped[0])}
-    #     reward  |                    obj_lifted: {float(reward_obj_lifted[0])}
-    #     reward  |        distance_obj_to_target: {float(reward_distance_obj_to_target[0])}
-    #                                       total: {float(rewards[0])}
-    #   """
-    # )
-
-    return (
-        remaining_time,
-        robot_joint_pos_arm,
-        robot_joint_pos_hand,
-        robot_ee_rotmat_wrt_base,
-        obj_com_pos_wrt_robot_ee,
-        obj_com_rotmat_wrt_robot_ee,
-        target_pos_wrt_obj_com,
-        target_rotmat_wrt_obj_com,
-        rewards,
-        terminations,
-        truncations,
+    truncation = (
+        episode_length_buf >= max_episode_length
+        if truncate_episodes
+        else torch.zeros_like(termination)
     )
-
-
-@torch.jit.script
-def _construct_observations(
-    *,
-    remaining_time: torch.Tensor,
-    robot_joint_pos_arm: torch.Tensor,
-    robot_joint_pos_hand: torch.Tensor,
-    robot_ee_pos_wrt_base: torch.Tensor,
-    robot_ee_rotmat_wrt_base: torch.Tensor,
-    robot_hand_wrench: torch.Tensor,
-    obj_com_pos_wrt_robot_ee: torch.Tensor,
-    obj_com_rotmat_wrt_robot_ee: torch.Tensor,
-    target_pos_wrt_obj_com: torch.Tensor,
-    target_rotmat_wrt_obj_com: torch.Tensor,
-) -> Dict[str, torch.Tensor]:
-    """
-    Note: The `robot_hand_wrench` is considered as state (robot without force-torque sensors)
-    """
-
-    num_envs = remaining_time.size(0)
-
-    # Robot joint positions
-    robot_joint_pos_hand_mean = robot_joint_pos_hand.mean(dim=-1, keepdim=True)
-
-    # End-effector pose (position and '6D' rotation)
-    robot_ee_rot6d = rotmat_to_rot6d(robot_ee_rotmat_wrt_base)
-
-    # Wrench
-    robot_hand_wrench_full = robot_hand_wrench.view(num_envs, -1)
-    robot_hand_wrench_mean = robot_hand_wrench.mean(dim=1)
-
-    # Transformation | End-effector -> Object CoM
-    obj_com_rot6d_wrt_robot_ee = rotmat_to_rot6d(obj_com_rotmat_wrt_robot_ee)
-
-    # Transformation | Object CoM -> Target
-    target_rot6d_wrt_obj_com = rotmat_to_rot6d(target_rotmat_wrt_obj_com)
 
     return {
-        "state": torch.cat(
-            [
-                obj_com_pos_wrt_robot_ee,
-                obj_com_rot6d_wrt_robot_ee,
-                target_pos_wrt_obj_com,
-                target_rot6d_wrt_obj_com,
-                robot_hand_wrench_mean,
-            ],
-            dim=-1,
-        ),
-        "state_dyn": torch.cat([robot_hand_wrench_full], dim=-1),
-        "proprio": torch.cat(
-            [
-                remaining_time,
-                robot_ee_pos_wrt_base,
-                robot_ee_rot6d,
-                robot_joint_pos_hand_mean,
-            ],
-            dim=-1,
-        ),
-        "proprio_dyn": torch.cat([robot_joint_pos_arm, robot_joint_pos_hand], dim=-1),
+        "obs": {
+            "state": {
+                "pos_obj_to_target": pos_obj_to_target,
+                "pos_robot_ee_to_obj": pos_robot_ee_to_obj,
+                "rot6d_obj_to_target": rot6d_obj_to_target,
+                "rot6d_robot_ee_to_obj": rot6d_robot_ee_to_obj,
+                "wrench_robot_hand_mean": wrench_robot_hand_mean,
+            },
+            "state_dyn": {
+                "wrench_robot_hand": wrench_robot_hand,
+            },
+            "proprio": {
+                "joint_pos_hand_normalized_mean": joint_pos_hand_normalized_mean,
+                "remaining_time": remaining_time,
+                "robot_ee_pos_wrt_base": robot_ee_pos_wrt_base,
+                "rot6d_robot_base_to_robot_ee": rot6d_robot_base_to_robot_ee,
+            },
+            "proprio_dyn": {
+                "joint_pos_arm_normalized": joint_pos_arm_normalized,
+                "joint_pos_hand_normalized": joint_pos_hand_normalized,
+            },
+        },
+        "rew": {
+            "penalty_action_rate": penalty_action_rate,
+            "penalty_undersired_robot_arm_contacts": penalty_undersired_robot_arm_contacts,
+            "reward_distance_ee_to_obj": reward_distance_ee_to_obj,
+            "reward_distance_obj_to_target": reward_distance_obj_to_target,
+            "reward_obj_grasped": reward_obj_grasped,
+            "reward_obj_lifted": reward_obj_lifted,
+        },
+        "term": termination,
+        "trunc": truncation,
     }

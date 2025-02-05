@@ -36,7 +36,7 @@ class SingleArmSceneCfg(BaseSceneCfg):
         ],
         visualizer_cfg=FRAME_MARKER_SMALL_CFG.replace(prim_path="/Visuals/robot_ee"),
     )
-    contacts_robot: ContactSensorCfg = ContactSensorCfg(
+    contacts_robot_arm: ContactSensorCfg = ContactSensorCfg(
         prim_path=MISSING,  # type: ignore
     )
 
@@ -132,7 +132,9 @@ class SingleArmEnvCfg(DirectEnvCfg):
             rot=self.robot.frame_ee.offset.rotation,
         )
         # Sensor - Contact (robot)
-        self.scene.contacts_robot.prim_path = f"{self.scene.robot.prim_path}/.*"
+        self.scene.contacts_robot_arm.prim_path = (
+            f"{self.scene.robot.prim_path}/{self.robot.regex_links_arm}"
+        )
 
         ## Events
         self.events.randomize_robot_joints.params[

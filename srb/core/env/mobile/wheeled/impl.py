@@ -10,5 +10,5 @@ class WheeledEnv(DirectEnv):
     def __init__(self, cfg: WheeledEnvCfg, **kwargs):
         super().__init__(cfg, **kwargs)
 
-        ## Get handles to scene assets
+        ## Get scene assets
         self._robot: Articulation = self.scene["robot"]

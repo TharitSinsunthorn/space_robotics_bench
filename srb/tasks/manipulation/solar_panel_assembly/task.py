@@ -1,9 +1,10 @@
 from dataclasses import MISSING
-from typing import TYPE_CHECKING, Dict, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, List, Sequence
 
 import torch
 
 from srb import assets
+from srb._typing import IntermediateTaskState
 from srb.core.asset import (
     AssetVariant,
     Object,
@@ -50,14 +51,14 @@ if TYPE_CHECKING:
 
 @configclass
 class SceneCfg(SingleArmSceneCfg):
-    objects: RigidObjectCollectionCfg = RigidObjectCollectionCfg(
+    objs: RigidObjectCollectionCfg = RigidObjectCollectionCfg(
         rigid_objects=MISSING,  # type: ignore
     )
     targets: RigidObjectCollectionCfg = RigidObjectCollectionCfg(
         rigid_objects=MISSING,  # type: ignore
     )
     panel: RigidObjectCfg = MISSING  # type: ignore
-    contacts_robot_hand_obj = ContactSensorCfg(
+    contacts_robot_hand_obj: ContactSensorCfg = ContactSensorCfg(
         prim_path=MISSING,  # type: ignore
         filter_prim_paths_expr=MISSING,  # type: ignore
     )
@@ -65,11 +66,11 @@ class SceneCfg(SingleArmSceneCfg):
 
 @configclass
 class EventCfg(SingleArmEventCfg):
-    randomize_object_state = EventTermCfg(
+    randomize_object_state: EventTermCfg = EventTermCfg(
         func=reset_collection_root_state_uniform_poisson_disk_2d,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("objects"),
+            "asset_cfg": SceneEntityCfg("objs"),
             "pose_range": {
                 "x": (
                     -0.2,
@@ -128,13 +129,13 @@ class TaskCfg(SingleArmEnvCfg):
     episode_length_s: float = 50.0
     is_finite_horizon: bool = True
 
-    ## Panel
+    ## Target - Panel
     panel_target_pos = (0.55, 0.0, 0.0)
     panel_target_quat = (1.0, 0.0, 0.0, 0.0)
     panel_target_marker_cfg = VisualizationMarkersCfg(
         prim_path="/Visuals/panel_target",
         markers={
-            "target": assets.object.SolarPanel().asset_cfg.spawn.replace(  # type: ignore
+            "target": assets.SolarPanel().asset_cfg.spawn.replace(  # type: ignore
                 visible=False,
                 visual_material=PreviewSurfaceCfg(
                     emissive_color=(0.2, 0.2, 0.2),
@@ -175,7 +176,7 @@ class TaskCfg(SingleArmEnvCfg):
             )
         ]
         # Object
-        self.scene.objects.rigid_objects = {
+        self.scene.objs.rigid_objects = {
             f"obj{i}": cfg.peg.asset_cfg.replace(  # type: ignore
                 init_state=RigidObjectCfg.InitialStateCfg(
                     pos=(0.5, 0.0, 0.13),
@@ -203,7 +204,7 @@ class TaskCfg(SingleArmEnvCfg):
             f"{self.scene.robot.prim_path}/{self.robot.regex_links_hand}"
         )
         self.scene.contacts_robot_hand_obj.filter_prim_paths_expr = [
-            f"{{ENV_REGEX_NS}}/object{i}" for i in range(4)
+            f"{{ENV_REGEX_NS}}/obj{i}" for i in range(4)
         ]
 
 
@@ -219,31 +220,27 @@ class Task(SingleArmEnv):
         super().__init__(cfg, **kwargs)
         assert isinstance(self.cfg.robot, SingleArmManipulator)
 
-        # Get handles to scene assets
+        ## Get scene assets
         self._contacts_robot_hand_obj: ContactSensor = self.scene[
             "contacts_robot_hand_obj"
         ]
-        self._objects: RigidObjectCollection = self.scene["objects"]
-        self._targets: RigidObjectCollection = self.scene["objects"]
+        self._objs: RigidObjectCollection = self.scene["objs"]
+        self._targets: RigidObjectCollection = self.scene["targets"]
         self._panel: RigidObject = self.scene["panel"]
+        self._panel_target_marker: VisualizationMarkers = VisualizationMarkers(
+            self.cfg.panel_target_marker_cfg
+        )
 
-        ## Pre-compute metrics used in hot loops
-        self._robot_arm_joint_indices, _ = self._robot.find_joints(
+        ## Cache metrics
+        self._robot_joint_indices_arm, _ = self._robot.find_joints(
             self.cfg.robot.regex_joints_arm
         )
-        self._robot_hand_joint_indices, _ = self._robot.find_joints(
+        self._robot_joint_indices_hand, _ = self._robot.find_joints(
             self.cfg.robot.regex_joints_hand
-        )
-        self._max_episode_length = self.max_episode_length
-        self._obj_com_offset = torch.cat(
-            (self._objects.data.com_pos_b, self._objects.data.com_quat_b), dim=-1
-        )
-        self._panel_com_offset = self._panel.data._root_physx_view.get_coms().to(
-            self.device
         )
 
         ## Initialize buffers
-        self._initial_obj_height_w = torch.zeros(
+        self._obj_initial_pos_z = torch.zeros(
             (self.num_envs, 4),
             dtype=torch.float32,
             device=self.device,
@@ -269,7 +266,7 @@ class Task(SingleArmEnv):
             dtype=torch.float32,
             device=self.device,
         ).repeat(self.num_envs, 1, 1)
-        self._initial_panel_height_w = torch.zeros(
+        self._panel_initial_pos_z = torch.zeros(
             self.num_envs, dtype=torch.float32, device=self.device
         )
         self._panel_target_pos_w = (
@@ -282,334 +279,238 @@ class Task(SingleArmEnv):
             self.cfg.panel_target_quat, dtype=torch.float32, device=self.device
         ).repeat(self.num_envs, 1)
 
-        ## Create visualization markers
-        self._panel_target_marker = VisualizationMarkers(
-            self.cfg.panel_target_marker_cfg
-        )
+        ## Visualize target
         self._panel_target_marker.visualize(
             self._panel_target_pos_w, self._panel_target_quat_w
         )
 
-        ## Initialize the intermediate state
-        self._update_intermediate_state()
-
     def _reset_idx(self, env_ids: Sequence[int]):
         super()._reset_idx(env_ids)
+        self._obj_initial_pos_z[env_ids] = self._objs.data.object_pos_w[env_ids, :, 2]
+        self._panel_initial_pos_z[env_ids] = self._panel.data.root_pos_w[env_ids, 2]
 
-        # Update the initial height of the objects
-        self._initial_obj_height_w[env_ids] = self._objects.data.object_pos_w[
-            env_ids, :, 2
-        ]
-        self._initial_panel_height_w[env_ids] = self._panel.data.root_pos_w[env_ids, 2]
-
-    def _get_dones(self) -> Tuple[torch.Tensor, torch.Tensor]:
-        self._update_intermediate_state()
-
-        if not self.cfg.enable_truncation:
-            self._truncations = torch.zeros_like(self._truncations)
-
-        return self._terminations, self._truncations
-
-    def _get_rewards(self) -> torch.Tensor:
-        return self._rewards
-
-    def _get_observations(self) -> Dict[str, torch.Tensor]:
-        return _construct_observations(
-            remaining_time=self._remaining_time,
-            robot_joint_pos_arm=self._robot_joint_pos_arm,
-            robot_joint_pos_hand=self._robot_joint_pos_hand,
-            robot_ee_pos_wrt_base=self._robot_ee_pos_wrt_base,
-            robot_ee_rotmat_wrt_base=self._robot_ee_rotmat_wrt_base,
-            robot_hand_wrench=self._robot_hand_wrench,
-            obj_com_pos_wrt_robot_ee=self._obj_com_pos_wrt_robot_ee,
-            obj_com_rotmat_wrt_robot_ee=self._obj_com_rotmat_wrt_robot_ee,
-            hole_entrance_pos_wrt_peg_ends=self._hole_entrance_pos_wrt_peg_ends,
-            hole_bottom_pos_wrt_peg_ends=self._hole_bottom_pos_wrt_peg_ends,
-            hole_rotmat_wrt_peg=self._hole_rotmat_wrt_peg,
-            panel_com_pos_wrt_robot_ee=self._panel_com_pos_wrt_robot_ee,
-            panel_com_rotmat_wrt_robot_ee=self._panel_com_rotmat_wrt_robot_ee,
-            panel_target_pos_wrt_panel_com=self._panel_target_pos_wrt_panel_com,
-            panel_target_rotmat_wrt_panel_com=self._panel_target_rotmat_wrt_panel_com,
-        )
-
-    def _update_intermediate_state(self):
-        ## Extract intermediate states
-        self._robot_ee_pos_wrt_base = self._tf_robot_ee.data.target_pos_source[:, 0, :]
-        self._robot_hand_wrench = (
-            self._robot.root_physx_view.get_link_incoming_joint_force()[
-                :, self._robot_hand_joint_indices
-            ]
-        )
-
-        ## Compute other intermediate states
-        (
-            self._remaining_time,
-            self._robot_joint_pos_arm,
-            self._robot_joint_pos_hand,
-            self._robot_ee_rotmat_wrt_base,
-            self._obj_com_pos_wrt_robot_ee,
-            self._obj_com_rotmat_wrt_robot_ee,
-            self._hole_entrance_pos_wrt_peg_ends,
-            self._hole_bottom_pos_wrt_peg_ends,
-            self._hole_rotmat_wrt_peg,
-            self._panel_com_pos_wrt_robot_ee,
-            self._panel_com_rotmat_wrt_robot_ee,
-            self._panel_target_pos_wrt_panel_com,
-            self._panel_target_rotmat_wrt_panel_com,
-            self._rewards,
-            self._terminations,
-            self._truncations,
-        ) = _compute_intermediate_state(
-            current_action=self.action_manager.action,
-            previous_action=self.action_manager.prev_action,
+    def _update_internal_state(self):
+        self._internal_state = _compute_internal_state(
+            act_current=self.action_manager.action,
+            act_previous=self.action_manager.prev_action,
             episode_length_buf=self.episode_length_buf,
-            max_episode_length=self._max_episode_length,
-            robot_arm_joint_indices=self._robot_arm_joint_indices,
-            robot_hand_joint_indices=self._robot_hand_joint_indices,
-            joint_pos=self._robot.data.joint_pos,
-            soft_joint_pos_limits=self._robot.data.soft_joint_pos_limits,
-            robot_ee_pos_w=self._tf_robot_ee.data.target_pos_w[:, 0, :],
-            robot_ee_quat_w=self._tf_robot_ee.data.target_quat_w[:, 0, :],
-            robot_ee_quat_wrt_base=self._tf_robot_ee.data.target_quat_source[:, 0, :],
-            robot_arm_contact_net_forces=self._contacts_robot.data.net_forces_w,
-            robot_hand_obj_contact_force_matrix=self._contacts_robot_hand_obj.data.force_matrix_w,
-            obj_pos_w=self._objects.data.object_pos_w,
-            obj_quat_w=self._objects.data.object_quat_w,
-            obj_com_offset=self._obj_com_offset,
-            target_pos_w=self._targets.data.object_pos_w,
-            target_quat_w=self._targets.data.object_quat_w,
-            panel_pos_w=self._panel.data.root_pos_w,
-            panel_quat_w=self._panel.data.root_quat_w,
-            panel_com_offset=self._panel_com_offset,
-            panel_target_pos_w=self._panel_target_pos_w,
-            panel_target_quat_w=self._panel_target_quat_w,
-            initial_obj_height_w=self._initial_obj_height_w,
-            initial_panel_height_w=self._initial_panel_height_w,
-            peg_offset_pos_ends=self._peg_offset_pos_ends,
-            peg_rot_symmetry_n=self._peg_rot_symmetry_n,
             hole_offset_pos_bottom=self._hole_offset_pos_bottom,
             hole_offset_pos_entrance=self._hole_offset_pos_entrance,
+            max_episode_length=self.max_episode_length,
+            obj_initial_pos_z=self._obj_initial_pos_z,
+            panel_initial_pos_z=self._panel_initial_pos_z,
+            obj_pos=self._objs.data.object_pos_w,
+            obj_quat=self._objs.data.object_quat_w,
+            peg_offset_pos_ends=self._peg_offset_pos_ends,
+            peg_rot_symmetry_n=self._peg_rot_symmetry_n,
+            robot_contact_forces_arm=self._contacts_robot_arm.data.net_forces_w,  # type: ignore
+            robot_contact_forces_hand_matrix=self._contacts_robot_hand_obj.data.force_matrix_w,  # type: ignore
+            robot_ee_pos_wrt_base=self._tf_robot_ee.data.target_pos_source[:, 0, :],
+            robot_ee_pos=self._tf_robot_ee.data.target_pos_w[:, 0, :],
+            robot_ee_quat_wrt_base=self._tf_robot_ee.data.target_quat_source[:, 0, :],
+            robot_ee_quat=self._tf_robot_ee.data.target_quat_w[:, 0, :],
+            robot_incoming_forces=self._robot.root_physx_view.get_link_incoming_joint_force(),
+            robot_joint_indices_arm=self._robot_joint_indices_arm,
+            robot_joint_indices_hand=self._robot_joint_indices_hand,
+            robot_joint_pos=self._robot.data.joint_pos,
+            robot_soft_joint_pos_limits=self._robot.data.soft_joint_pos_limits,
+            target_pos=self._targets.data.object_pos_w,
+            target_quat=self._targets.data.object_quat_w,
+            truncate_episodes=self.cfg.truncate_episodes,
+            panel_pos_w=self._panel.data.root_com_pos_w,
+            panel_quat_w=self._panel.data.root_com_quat_w,
+            panel_target_pos_w=self._panel_target_pos_w,
+            panel_target_quat_w=self._panel_target_quat_w,
         )
 
 
 @torch.jit.script
-def _compute_intermediate_state(
+def _compute_internal_state(
     *,
-    current_action: torch.Tensor,
-    previous_action: torch.Tensor,
+    act_current: torch.Tensor,
+    act_previous: torch.Tensor,
     episode_length_buf: torch.Tensor,
-    max_episode_length: int,
-    robot_arm_joint_indices: List[int],
-    robot_hand_joint_indices: List[int],
-    joint_pos: torch.Tensor,
-    soft_joint_pos_limits: torch.Tensor,
-    robot_ee_pos_w: torch.Tensor,
-    robot_ee_quat_w: torch.Tensor,
-    robot_ee_quat_wrt_base: torch.Tensor,
-    robot_arm_contact_net_forces: torch.Tensor,
-    robot_hand_obj_contact_force_matrix: torch.Tensor,
-    obj_pos_w: torch.Tensor,
-    obj_quat_w: torch.Tensor,
-    obj_com_offset: torch.Tensor,
-    target_pos_w: torch.Tensor,
-    target_quat_w: torch.Tensor,
-    panel_pos_w: torch.Tensor,
-    panel_quat_w: torch.Tensor,
-    panel_com_offset: torch.Tensor,
-    panel_target_pos_w: torch.Tensor,
-    panel_target_quat_w: torch.Tensor,
-    initial_obj_height_w: torch.Tensor,
-    initial_panel_height_w: torch.Tensor,
-    peg_offset_pos_ends: torch.Tensor,
-    peg_rot_symmetry_n: torch.Tensor,
     hole_offset_pos_bottom: torch.Tensor,
     hole_offset_pos_entrance: torch.Tensor,
-) -> Tuple[
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-]:
-    ## Intermediate states
+    max_episode_length: int,
+    obj_initial_pos_z: torch.Tensor,
+    panel_initial_pos_z: torch.Tensor,
+    obj_pos: torch.Tensor,
+    obj_quat: torch.Tensor,
+    peg_offset_pos_ends: torch.Tensor,
+    peg_rot_symmetry_n: torch.Tensor,
+    robot_contact_forces_arm: torch.Tensor,
+    robot_contact_forces_hand_matrix: torch.Tensor,
+    robot_ee_pos_wrt_base: torch.Tensor,
+    robot_ee_pos: torch.Tensor,
+    robot_ee_quat_wrt_base: torch.Tensor,
+    robot_ee_quat: torch.Tensor,
+    robot_incoming_forces: torch.Tensor,
+    robot_joint_indices_arm: List[int],
+    robot_joint_indices_hand: List[int],
+    robot_joint_pos: torch.Tensor,
+    robot_soft_joint_pos_limits: torch.Tensor,
+    target_pos: torch.Tensor,
+    target_quat: torch.Tensor,
+    truncate_episodes: bool,
+    panel_pos_w: torch.Tensor,
+    panel_quat_w: torch.Tensor,
+    panel_target_pos_w: torch.Tensor,
+    panel_target_quat_w: torch.Tensor,
+) -> (
+    IntermediateTaskState
+    | Dict[
+        str, torch.Tensor | Dict[str, torch.Tensor] | Dict[str, Dict[str, torch.Tensor]]
+    ]
+):
+    num_problems_per_env = obj_pos.size(1)
+
     # Time
     remaining_time = 1 - (episode_length_buf / max_episode_length).unsqueeze(-1)
 
-    # Robot joint positions
+    # Robot joints
     joint_pos_normalized = scale_transform(
-        joint_pos,
-        soft_joint_pos_limits[:, :, 0],
-        soft_joint_pos_limits[:, :, 1],
+        robot_joint_pos,
+        robot_soft_joint_pos_limits[:, :, 0],
+        robot_soft_joint_pos_limits[:, :, 1],
     )
-    robot_joint_pos_arm, robot_joint_pos_hand = (
-        joint_pos_normalized[:, robot_arm_joint_indices],
-        joint_pos_normalized[:, robot_hand_joint_indices],
+    joint_pos_arm_normalized, joint_pos_hand_normalized = (
+        joint_pos_normalized[:, robot_joint_indices_arm],
+        joint_pos_normalized[:, robot_joint_indices_hand],
     )
-
-    # End-effector '6D' rotation
-    robot_ee_rotmat_wrt_base = matrix_from_quat(robot_ee_quat_wrt_base)
-
-    # Transformation | Object origin -> Object CoM
-    obj_com_pos_w, obj_com_quat_w = combine_frame_transforms(
-        t01=obj_pos_w,
-        q01=obj_quat_w,
-        t12=obj_com_offset[:, :, :3],
-        q12=obj_com_offset[:, :, 3:],
+    joint_pos_hand_normalized_mean = joint_pos_hand_normalized.mean(
+        dim=-1, keepdim=True
     )
 
-    # Transformation | Object origin -> Peg ends
-    _peg_end0_pos_w, _ = combine_frame_transforms(
-        t01=obj_pos_w,
-        q01=obj_quat_w,
+    # Robot base -> End-effector
+    rotmat_robot_base_to_robot_ee = matrix_from_quat(robot_ee_quat_wrt_base)
+    rot6d_robot_base_to_robot_ee = rotmat_to_rot6d(rotmat_robot_base_to_robot_ee)
+
+    # End-effector -> Object
+    pos_robot_ee_to_obj, quat_robot_ee_to_obj = subtract_frame_transforms(
+        t01=robot_ee_pos.unsqueeze(1).repeat(1, num_problems_per_env, 1),
+        q01=robot_ee_quat.unsqueeze(1).repeat(1, num_problems_per_env, 1),
+        t02=obj_pos,
+        q02=obj_quat,
+    )
+    rotmat_robot_ee_to_obj = matrix_from_quat(quat_robot_ee_to_obj)
+    rot6d_robot_ee_to_obj = rotmat_to_rot6d(rotmat_robot_ee_to_obj)
+
+    # Peg -> Peg ends
+    _pos_peg_end0, _ = combine_frame_transforms(
+        t01=obj_pos,
+        q01=obj_quat,
         t12=peg_offset_pos_ends[:, :, 0],
     )
-    _peg_end1_pos_w, _ = combine_frame_transforms(
-        t01=obj_pos_w,
-        q01=obj_quat_w,
+    _pos_peg_end1, _ = combine_frame_transforms(
+        t01=obj_pos,
+        q01=obj_quat,
         t12=peg_offset_pos_ends[:, :, 1],
     )
-    peg_ends_pos_w = torch.stack([_peg_end0_pos_w, _peg_end1_pos_w], dim=1)
+    pos_peg_ends = torch.stack([_pos_peg_end0, _pos_peg_end1], dim=2)
 
-    # Transformation | Panel origin -> Panel CoM
-    panel_com_pos_w, panel_com_quat_w = combine_frame_transforms(
-        t01=panel_pos_w,
-        q01=panel_quat_w,
-        t12=panel_com_offset[:, :3],
-        q12=panel_com_offset[:, 3:],
-    )
-
-    # Transformation | End-effector -> Panel CoM
-    panel_com_pos_wrt_robot_ee, panel_com_quat_wrt_robot_ee = subtract_frame_transforms(
-        t01=robot_ee_pos_w,
-        q01=robot_ee_quat_w,
-        t02=panel_com_pos_w,
-        q02=panel_com_quat_w,
-    )
-    panel_com_rotmat_wrt_robot_ee = matrix_from_quat(panel_com_quat_wrt_robot_ee)
-
-    # Transformation | Panel CoM -> Panel Target
-    panel_target_pos_wrt_panel_com, panel_target_quat_wrt_panel_com = (
-        subtract_frame_transforms(
-            t01=panel_com_pos_w,
-            q01=panel_com_quat_w,
-            t02=panel_target_pos_w,
-            q02=panel_target_quat_w,
-        )
-    )
-    panel_target_rotmat_wrt_panel_com = matrix_from_quat(
-        panel_target_quat_wrt_panel_com
-    )
-
-    # Transformation | Target origin -> Hole entrance
-    hole_entrance_pos_w, _ = combine_frame_transforms(
-        t01=target_pos_w,
-        q01=target_quat_w,
+    # Hole -> Hole entrance | bottom
+    pos_hole_entrance, _ = combine_frame_transforms(
+        t01=target_pos,
+        q01=target_quat,
         t12=hole_offset_pos_entrance,
     )
-
-    # Transformation | Target origin -> Hole bottom
-    hole_bottom_pos_w, _ = combine_frame_transforms(
-        t01=target_pos_w,
-        q01=target_quat_w,
+    pos_hole_bottom, _ = combine_frame_transforms(
+        t01=target_pos,
+        q01=target_quat,
         t12=hole_offset_pos_bottom,
     )
 
-    # Transformation | End-effector -> Object CoM
-    obj_com_pos_wrt_robot_ee, obj_com_quat_wrt_robot_ee = subtract_frame_transforms(
-        t01=robot_ee_pos_w.unsqueeze(1).repeat(1, 4, 1),
-        q01=robot_ee_quat_w.unsqueeze(1).repeat(1, 4, 1),
-        t02=obj_com_pos_w,
-        q02=obj_com_quat_w,
+    # Peg ends -> Hole entrance
+    _pos_peg_end0_to_hole_entrance, hole_quat_wrt_peg = subtract_frame_transforms(
+        t01=pos_peg_ends[:, :, 0],
+        q01=obj_quat,
+        t02=pos_hole_entrance,
+        q02=target_quat,
     )
-    obj_com_rotmat_wrt_robot_ee = matrix_from_quat(obj_com_quat_wrt_robot_ee)
+    _pos_peg_end1_to_hole_entrance, _ = subtract_frame_transforms(
+        t01=pos_peg_ends[:, :, 1],
+        q01=obj_quat,
+        t02=pos_hole_entrance,
+    )
+    pos_peg_ends_to_hole_entrance = torch.stack(
+        [_pos_peg_end0_to_hole_entrance, _pos_peg_end1_to_hole_entrance], dim=2
+    )
+    rotmat_peg_to_hole = matrix_from_quat(hole_quat_wrt_peg)
+    rot6d_peg_to_hole = rotmat_to_rot6d(rotmat_peg_to_hole)
 
-    # Transformation | Peg ends -> Hole entrance
-    _hole_entrance_pos_wrt_peg_end0, hole_quat_wrt_peg = subtract_frame_transforms(
-        t01=peg_ends_pos_w[:, 0],
-        q01=obj_quat_w,
-        t02=hole_entrance_pos_w,
-        q02=target_quat_w,
+    # Peg ends -> Hole bottom
+    _pos_peg_end0_to_hole_bottom, _ = subtract_frame_transforms(
+        t01=pos_peg_ends[:, :, 0],
+        q01=obj_quat,
+        t02=pos_hole_bottom,
     )
-    _hole_entrance_pos_wrt_peg_end1, _ = subtract_frame_transforms(
-        t01=peg_ends_pos_w[:, 1],
-        q01=obj_quat_w,
-        t02=hole_entrance_pos_w,
+    _pos_peg_end1_to_hole_bottom, _ = subtract_frame_transforms(
+        t01=pos_peg_ends[:, :, 1],
+        q01=obj_quat,
+        t02=pos_hole_bottom,
     )
-    hole_entrance_pos_wrt_peg_ends = torch.stack(
-        [_hole_entrance_pos_wrt_peg_end0, _hole_entrance_pos_wrt_peg_end1], dim=1
-    )
-    hole_rotmat_wrt_peg = matrix_from_quat(hole_quat_wrt_peg)
-
-    # Transformation | Peg ends -> Hole bottom
-    _hole_bottom_pos_wrt_peg_end0, _ = subtract_frame_transforms(
-        t01=peg_ends_pos_w[:, 0],
-        q01=obj_quat_w,
-        t02=hole_bottom_pos_w,
-    )
-    _hole_bottom_pos_wrt_peg_end1, _ = subtract_frame_transforms(
-        t01=peg_ends_pos_w[:, 1],
-        q01=obj_quat_w,
-        t02=hole_bottom_pos_w,
-    )
-    hole_bottom_pos_wrt_peg_ends = torch.stack(
-        [_hole_bottom_pos_wrt_peg_end0, _hole_bottom_pos_wrt_peg_end1], dim=1
+    pos_peg_ends_to_hole_bottom = torch.stack(
+        [_pos_peg_end0_to_hole_bottom, _pos_peg_end1_to_hole_bottom], dim=1
     )
 
-    ## Rewards
+    # End-effector -> Panel CoM
+    pos_robot_ee_to_panel, quat_robot_ee_to_panel = subtract_frame_transforms(
+        t01=robot_ee_pos,
+        q01=robot_ee_quat,
+        t02=panel_pos_w,
+        q02=panel_quat_w,
+    )
+    rotmat_robot_ee_to_panel = matrix_from_quat(quat_robot_ee_to_panel)
+    rot6d_robot_ee_to_panel = rotmat_to_rot6d(rotmat_robot_ee_to_panel)
+
+    # Panel CoM -> Panel Target
+    pos_panel_to_panel_target, quat_panel_to_panel_target = subtract_frame_transforms(
+        t01=panel_pos_w,
+        q01=panel_quat_w,
+        t02=panel_target_pos_w,
+        q02=panel_target_quat_w,
+    )
+    rotmat_panel_to_panel_target = matrix_from_quat(quat_panel_to_panel_target)
+    rot6d_panel_to_panel_target = rotmat_to_rot6d(rotmat_panel_to_panel_target)
+
+    # Robot hand wrench
+    wrench_robot_hand = robot_incoming_forces[:, robot_joint_indices_hand]
+    wrench_robot_hand_mean = wrench_robot_hand.mean(dim=1)
+
+    #############
+    ## Rewards ##
+    #############
     # Penalty: Action rate
     WEIGHT_ACTION_RATE = -0.05
     penalty_action_rate = WEIGHT_ACTION_RATE * torch.sum(
-        torch.square(current_action - previous_action), dim=1
+        torch.square(act_current - act_previous), dim=1
     )
 
     # Penalty: Undesired robot arm contacts
     WEIGHT_UNDERSIRED_ROBOT_ARM_CONTACTS = -0.1
     THRESHOLD_UNDERSIRED_ROBOT_ARM_CONTACTS = 10.0
     penalty_undersired_robot_arm_contacts = WEIGHT_UNDERSIRED_ROBOT_ARM_CONTACTS * (
-        torch.max(torch.norm(robot_arm_contact_net_forces, dim=-1), dim=1)[0]
+        torch.max(torch.norm(robot_contact_forces_arm, dim=-1), dim=1)[0]
         > THRESHOLD_UNDERSIRED_ROBOT_ARM_CONTACTS
     )
 
     # Reward: Distance | End-effector <--> Object
-    WEIGHT_DISTANCE_EE_TO_OBJ = 1.0
+    WEIGHT_DISTANCE_EE_TO_OBJ = 1.0 / num_problems_per_env
     TANH_STD_DISTANCE_EE_TO_OBJ = 0.25
     reward_distance_ee_to_obj = WEIGHT_DISTANCE_EE_TO_OBJ * (
         1.0
         - torch.tanh(
-            torch.norm(obj_com_pos_wrt_robot_ee, dim=-1) / TANH_STD_DISTANCE_EE_TO_OBJ
+            torch.norm(pos_robot_ee_to_obj, dim=-1) / TANH_STD_DISTANCE_EE_TO_OBJ
         )
     ).sum(dim=-1)
-
-    # Reward: Distance | End-effector <--> Panel
-    WEIGHT_DISTANCE_EE_TO_PANEL = 4.0 * WEIGHT_DISTANCE_EE_TO_OBJ
-    TANH_STD_DISTANCE_EE_TO_PANEL = 0.25
-    reward_distance_ee_to_panel = WEIGHT_DISTANCE_EE_TO_PANEL * (
-        1.0
-        - torch.tanh(
-            torch.norm(panel_com_pos_wrt_robot_ee, dim=-1)
-            / TANH_STD_DISTANCE_EE_TO_PANEL
-        )
-    )
 
     # Reward: Object grasped
     WEIGHT_OBJ_GRASPED = 4.0
     THRESHOLD_OBJ_GRASPED = 5.0
     reward_obj_grasped = WEIGHT_OBJ_GRASPED * (
         torch.mean(
-            torch.max(torch.norm(robot_hand_obj_contact_force_matrix, dim=-1), dim=-1)[
-                0
-            ],
+            torch.max(torch.norm(robot_contact_forces_hand_matrix, dim=-1), dim=-1)[0],
             dim=1,
         )
         > THRESHOLD_OBJ_GRASPED
@@ -621,34 +522,17 @@ def _compute_intermediate_state(
     HEIGHT_SPAN_OBJ_LIFTED = 0.25
     TAHN_STD_HEIGHT_OBJ_LIFTED = 0.05
     obj_target_height_offset = (
-        torch.abs(
-            obj_com_pos_w[:, :, 2] - initial_obj_height_w - HEIGHT_OFFSET_OBJ_LIFTED
-        )
+        torch.abs(obj_pos[:, :, 2] - obj_initial_pos_z - HEIGHT_OFFSET_OBJ_LIFTED)
         - HEIGHT_SPAN_OBJ_LIFTED
     ).clamp(min=0.0)
     reward_obj_lifted = WEIGHT_OBJ_LIFTED * (
         1.0 - torch.tanh(obj_target_height_offset / TAHN_STD_HEIGHT_OBJ_LIFTED)
     ).sum(dim=-1)
 
-    # Reward: Panel lifted
-    WEIGHT_PANEL_LIFTED = 2 * WEIGHT_OBJ_LIFTED
-    HEIGHT_OFFSET_PANEL_LIFTED = 0.5
-    HEIGHT_SPAN_PANEL_LIFTED = 0.25
-    TAHN_STD_HEIGHT_PANEL_LIFTED = 0.1
-    panel_target_height_offset = (
-        torch.abs(
-            panel_com_pos_w[:, 2] - initial_panel_height_w - HEIGHT_OFFSET_PANEL_LIFTED
-        )
-        - HEIGHT_SPAN_PANEL_LIFTED
-    ).clamp(min=0.0)
-    reward_panel_lifted = WEIGHT_PANEL_LIFTED * (
-        1.0 - torch.tanh(panel_target_height_offset / TAHN_STD_HEIGHT_PANEL_LIFTED)
-    )
-
     # Reward: Alignment | Peg -> Hole | Primary Z axis
     WEIGHT_ALIGN_PEG_TO_HOLE_PRIMARY = 8.0
     TANH_STD_ALIGN_PEG_TO_HOLE_PRIMARY = 0.5
-    _peg_to_hole_primary_axis_similarity = torch.abs(hole_rotmat_wrt_peg[:, :, 2, 2])
+    _peg_to_hole_primary_axis_similarity = torch.abs(rotmat_peg_to_hole[:, :, 2, 2])
     reward_align_peg_to_hole_primary = WEIGHT_ALIGN_PEG_TO_HOLE_PRIMARY * (
         1.0
         - torch.tanh(
@@ -661,7 +545,7 @@ def _compute_intermediate_state(
     WEIGHT_ALIGN_PEG_TO_HOLE_SECONDARY = 4.0
     TANH_STD_ALIGN_PEG_TO_HOLE_SECONDARY = 0.2
     _peg_to_hole_yaw = torch.atan2(
-        hole_rotmat_wrt_peg[:, :, 0, 1], hole_rotmat_wrt_peg[:, :, 0, 0]
+        rotmat_peg_to_hole[:, :, 0, 1], rotmat_peg_to_hole[:, :, 0, 0]
     )
     _symmetry_step = 2 * torch.pi / peg_rot_symmetry_n
     _peg_to_hole_yaw_symmetric_directional = _peg_to_hole_yaw % _symmetry_step
@@ -688,11 +572,11 @@ def _compute_intermediate_state(
 
     # Reward: Distance | Peg -> Hole entrance
     WEIGHT_DISTANCE_PEG_TO_HOLE_ENTRANCE = 16.0
-    TANH_STD_DISTANCE_PEG_TO_HOLE_ENTRANCE = 0.025
+    TANH_STD_DISTANCE_PEG_TO_HOLE_ENTRANCE = 0.05
     reward_distance_peg_to_hole_entrance = WEIGHT_DISTANCE_PEG_TO_HOLE_ENTRANCE * (
         1.0
         - torch.tanh(
-            torch.min(torch.norm(hole_entrance_pos_wrt_peg_ends, dim=-1), dim=1)[0]
+            torch.min(torch.norm(pos_peg_ends_to_hole_entrance, dim=-1), dim=1)[0]
             / TANH_STD_DISTANCE_PEG_TO_HOLE_ENTRANCE
         )
     ).sum(dim=-1)
@@ -703,10 +587,33 @@ def _compute_intermediate_state(
     reward_distance_peg_to_hole_bottom = WEIGHT_DISTANCE_PEG_TO_HOLE_BOTTOM * (
         1.0
         - torch.tanh(
-            torch.min(torch.norm(hole_bottom_pos_wrt_peg_ends, dim=-1), dim=1)[0]
+            torch.min(torch.norm(pos_peg_ends_to_hole_bottom, dim=-1), dim=1)[0]
             / TANH_STD_DISTANCE_PEG_TO_HOLE_BOTTOM
         )
     ).sum(dim=-1)
+
+    # Reward: Distance | End-effector <--> Panel
+    WEIGHT_DISTANCE_EE_TO_PANEL = 4.0 * WEIGHT_DISTANCE_EE_TO_OBJ
+    TANH_STD_DISTANCE_EE_TO_PANEL = 0.25
+    reward_distance_ee_to_panel = WEIGHT_DISTANCE_EE_TO_PANEL * (
+        1.0
+        - torch.tanh(
+            torch.norm(pos_robot_ee_to_panel, dim=-1) / TANH_STD_DISTANCE_EE_TO_PANEL
+        )
+    )
+
+    # Reward: Panel lifted
+    WEIGHT_PANEL_LIFTED = 2 * WEIGHT_OBJ_LIFTED
+    HEIGHT_OFFSET_PANEL_LIFTED = 0.5
+    HEIGHT_SPAN_PANEL_LIFTED = 0.25
+    TAHN_STD_HEIGHT_PANEL_LIFTED = 0.1
+    panel_target_height_offset = (
+        torch.abs(panel_pos_w[:, 2] - panel_initial_pos_z - HEIGHT_OFFSET_PANEL_LIFTED)
+        - HEIGHT_SPAN_PANEL_LIFTED
+    ).clamp(min=0.0)
+    reward_panel_lifted = WEIGHT_PANEL_LIFTED * (
+        1.0 - torch.tanh(panel_target_height_offset / TAHN_STD_HEIGHT_PANEL_LIFTED)
+    )
 
     # Reward: Distance | Panel <--> Panel Target
     WEIGHT_DISTANCE_PANEL_TO_TARGET = 4.0 * WEIGHT_DISTANCE_PEG_TO_HOLE_BOTTOM
@@ -714,148 +621,65 @@ def _compute_intermediate_state(
     reward_distance_panel_to_target = WEIGHT_DISTANCE_PANEL_TO_TARGET * (
         1.0
         - torch.tanh(
-            torch.norm(panel_target_pos_wrt_panel_com, dim=-1)
+            torch.norm(pos_panel_to_panel_target, dim=-1)
             / TANH_STD_DISTANCE_PANEL_TO_TARGET
         )
     )
 
-    # Total reward
-    rewards = torch.sum(
-        torch.stack(
-            [
-                penalty_action_rate,
-                penalty_undersired_robot_arm_contacts,
-                reward_distance_ee_to_obj,
-                reward_distance_ee_to_panel,
-                reward_obj_grasped,
-                reward_obj_lifted,
-                reward_panel_lifted,
-                reward_align_peg_to_hole_primary,
-                reward_align_peg_to_hole_secondary,
-                reward_distance_peg_to_hole_entrance,
-                reward_distance_peg_to_hole_bottom,
-                reward_distance_panel_to_target,
-            ],
-            dim=-1,
-        ),
-        dim=-1,
+    ##################
+    ## Terminations ##
+    ##################
+    termination = torch.zeros(
+        episode_length_buf.size(0), dtype=torch.bool, device=episode_length_buf.device
     )
-
-    ## Termination and truncation
-    truncations = episode_length_buf > (max_episode_length - 1)
-    terminations = torch.zeros_like(truncations)
-
-    # print(
-    #     f"""
-    #     penalty |                   action_rate: {float(penalty_action_rate[0])}
-    #     penalty | undersired_robot_arm_contacts: {float(penalty_undersired_robot_arm_contacts[0])}
-    #     reward  |            distance_ee_to_obj: {float(reward_distance_ee_to_obj[0])}
-    #     reward  |          distance_ee_to_panel: {float(reward_distance_ee_to_panel[0])}
-    #     reward  |                   obj_grasped: {float(reward_obj_grasped[0])}
-    #     reward  |                    obj_lifted: {float(reward_obj_lifted[0])}
-    #     reward  |                  panel_lifted: {float(reward_panel_lifted[0])}
-    #     reward  |     align_peg_to_hole_primary: {float(reward_align_peg_to_hole_primary[0])}
-    #     reward  |   align_peg_to_hole_secondary: {float(reward_align_peg_to_hole_secondary[0])}
-    #     reward  | distance_peg_to_hole_entrance: {float(reward_distance_peg_to_hole_entrance[0])}
-    #     reward  |   distance_peg_to_hole_bottom: {float(reward_distance_peg_to_hole_bottom[0])}
-    #     reward  |      distance_panel_to_target: {float(reward_distance_panel_to_target[0])}
-    #                                       total: {float(rewards[0])}
-    #   """
-    # )
-
-    return (
-        remaining_time,
-        robot_joint_pos_arm,
-        robot_joint_pos_hand,
-        robot_ee_rotmat_wrt_base,
-        obj_com_pos_wrt_robot_ee,
-        obj_com_rotmat_wrt_robot_ee,
-        hole_entrance_pos_wrt_peg_ends,
-        hole_bottom_pos_wrt_peg_ends,
-        hole_rotmat_wrt_peg,
-        panel_com_pos_wrt_robot_ee,
-        panel_com_rotmat_wrt_robot_ee,
-        panel_target_pos_wrt_panel_com,
-        panel_target_rotmat_wrt_panel_com,
-        rewards,
-        terminations,
-        truncations,
-    )
-
-
-@torch.jit.script
-def _construct_observations(
-    *,
-    remaining_time: torch.Tensor,
-    robot_joint_pos_arm: torch.Tensor,
-    robot_joint_pos_hand: torch.Tensor,
-    robot_ee_pos_wrt_base: torch.Tensor,
-    robot_ee_rotmat_wrt_base: torch.Tensor,
-    robot_hand_wrench: torch.Tensor,
-    obj_com_pos_wrt_robot_ee: torch.Tensor,
-    obj_com_rotmat_wrt_robot_ee: torch.Tensor,
-    hole_entrance_pos_wrt_peg_ends: torch.Tensor,
-    hole_bottom_pos_wrt_peg_ends: torch.Tensor,
-    hole_rotmat_wrt_peg: torch.Tensor,
-    panel_com_pos_wrt_robot_ee: torch.Tensor,
-    panel_com_rotmat_wrt_robot_ee: torch.Tensor,
-    panel_target_pos_wrt_panel_com: torch.Tensor,
-    panel_target_rotmat_wrt_panel_com: torch.Tensor,
-) -> Dict[str, torch.Tensor]:
-    """
-    Note: The `robot_hand_wrench` is considered as state (robot without force-torque sensors)
-    """
-
-    num_envs = remaining_time.size(0)
-
-    # Robot joint positions
-    robot_joint_pos_hand_mean = robot_joint_pos_hand.mean(dim=-1, keepdim=True)
-
-    # End-effector pose (position and '6D' rotation)
-    robot_ee_rot6d = rotmat_to_rot6d(robot_ee_rotmat_wrt_base)
-
-    # Wrench
-    robot_hand_wrench_full = robot_hand_wrench.view(num_envs, -1)
-    robot_hand_wrench_mean = robot_hand_wrench.mean(dim=1)
-
-    # Transformation | End-effector -> Object CoM
-    obj_com_rot6d_wrt_robot_ee = rotmat_to_rot6d(obj_com_rotmat_wrt_robot_ee)
-
-    # Transformation | Object -> Target
-    hole_rot6d_wrt_peg = rotmat_to_rot6d(hole_rotmat_wrt_peg)
-
-    # Transformation | End-effector -> Panel Target
-    panel_com_rot6d_wrt_robot_ee = rotmat_to_rot6d(panel_com_rotmat_wrt_robot_ee)
-    # Transformation | Panel CoM -> Panel Target
-    panel_target_rot6d_wrt_panel_com = rotmat_to_rot6d(
-        panel_target_rotmat_wrt_panel_com
+    truncation = (
+        episode_length_buf >= max_episode_length
+        if truncate_episodes
+        else torch.zeros_like(termination)
     )
 
     return {
-        "state": torch.cat(
-            [
-                obj_com_pos_wrt_robot_ee.view(num_envs, -1),
-                obj_com_rot6d_wrt_robot_ee.view(num_envs, -1),
-                hole_entrance_pos_wrt_peg_ends.view(num_envs, -1),
-                hole_bottom_pos_wrt_peg_ends.view(num_envs, -1),
-                hole_rot6d_wrt_peg.view(num_envs, -1),
-                panel_com_pos_wrt_robot_ee,
-                panel_com_rot6d_wrt_robot_ee,
-                panel_target_pos_wrt_panel_com,
-                panel_target_rot6d_wrt_panel_com,
-                robot_hand_wrench_mean.view(num_envs, -1),
-            ],
-            dim=-1,
-        ),
-        "state_dyn": torch.cat([robot_hand_wrench_full], dim=-1),
-        "proprio": torch.cat(
-            [
-                remaining_time,
-                robot_ee_pos_wrt_base,
-                robot_ee_rot6d,
-                robot_joint_pos_hand_mean,
-            ],
-            dim=-1,
-        ),
-        "proprio_dyn": torch.cat([robot_joint_pos_arm, robot_joint_pos_hand], dim=-1),
+        "obs": {
+            "state": {
+                "pos_panel_to_panel_target": pos_panel_to_panel_target,
+                "pos_peg_ends_to_hole_bottom": pos_peg_ends_to_hole_bottom,
+                "pos_peg_ends_to_hole_entrance": pos_peg_ends_to_hole_entrance,
+                "pos_robot_ee_to_obj": pos_robot_ee_to_obj,
+                "pos_robot_ee_to_panel": pos_robot_ee_to_panel,
+                "rot6d_panel_to_panel_target": rot6d_panel_to_panel_target,
+                "rot6d_peg_to_hole": rot6d_peg_to_hole,
+                "rot6d_robot_ee_to_obj": rot6d_robot_ee_to_obj,
+                "rot6d_robot_ee_to_panel": rot6d_robot_ee_to_panel,
+                "wrench_robot_hand_mean": wrench_robot_hand_mean,
+            },
+            "state_dyn": {
+                "wrench_robot_hand": wrench_robot_hand,
+            },
+            "proprio": {
+                "joint_pos_hand_normalized_mean": joint_pos_hand_normalized_mean,
+                "remaining_time": remaining_time,
+                "robot_ee_pos_wrt_base": robot_ee_pos_wrt_base,
+                "rot6d_robot_base_to_robot_ee": rot6d_robot_base_to_robot_ee,
+            },
+            "proprio_dyn": {
+                "joint_pos_arm_normalized": joint_pos_arm_normalized,
+                "joint_pos_hand_normalized": joint_pos_hand_normalized,
+            },
+        },
+        "rew": {
+            "penalty_action_rate": penalty_action_rate,
+            "penalty_undersired_robot_arm_contacts": penalty_undersired_robot_arm_contacts,
+            "reward_align_peg_to_hole_primary": reward_align_peg_to_hole_primary,
+            "reward_align_peg_to_hole_secondary": reward_align_peg_to_hole_secondary,
+            "reward_distance_ee_to_obj": reward_distance_ee_to_obj,
+            "reward_distance_ee_to_panel": reward_distance_ee_to_panel,
+            "reward_distance_panel_to_target": reward_distance_panel_to_target,
+            "reward_distance_peg_to_hole_bottom": reward_distance_peg_to_hole_bottom,
+            "reward_distance_peg_to_hole_entrance": reward_distance_peg_to_hole_entrance,
+            "reward_obj_grasped": reward_obj_grasped,
+            "reward_obj_lifted": reward_obj_lifted,
+            "reward_panel_lifted": reward_panel_lifted,
+        },
+        "term": termination,
+        "trunc": truncation,
     }

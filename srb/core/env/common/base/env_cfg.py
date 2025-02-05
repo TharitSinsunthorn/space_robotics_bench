@@ -69,7 +69,8 @@ class BaseEnvCfg:
     visuals: VisualsCfg = VisualsCfg()
 
     ## Misc
-    enable_truncation: bool = True
+    truncate_episodes: bool = True
+    include_extras: bool = False
 
     def __post_init__(self):
         ## Scene
@@ -136,7 +137,7 @@ class BaseEnvCfg:
         self.sim.physx.gpu_found_lost_pairs_capacity = 2 ** (16 + _mem_fac)
         self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 2 ** (20 + _mem_fac)
         self.sim.physx.gpu_total_aggregate_pairs_capacity = 2 ** (16 + _mem_fac)
-        self.sim.physx.gpu_collision_stack_size = 2 ** (17 + _mem_fac)
+        self.sim.physx.gpu_collision_stack_size = 2 ** (20 + _mem_fac)
         self.sim.physx.gpu_heap_capacity = 2 ** (15 + _mem_fac)
         self.sim.physx.gpu_temp_buffer_capacity = 2 ** (12 + _mem_fac)
         self.sim.physx.gpu_max_soft_body_contacts = 2 ** (10 + _mem_fac)
