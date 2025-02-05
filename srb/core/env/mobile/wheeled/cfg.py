@@ -11,7 +11,7 @@ from srb.utils.cfg import configclass
 
 @configclass
 class WheeledSceneCfg(BaseSceneCfg):
-    pass
+    env_spacing = 64.0
 
 
 @configclass
@@ -38,7 +38,7 @@ class WheeledEnvCfg(DirectEnvCfg):
     robot: WheeledRobot | AssetVariant = assets.Perseverance()
 
     ## Scene
-    scene: WheeledSceneCfg = WheeledSceneCfg(env_spacing=64.0)
+    scene: WheeledSceneCfg = WheeledSceneCfg()
 
     ## Events
     events: WheeledEventCfg = WheeledEventCfg()

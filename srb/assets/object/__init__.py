@@ -18,8 +18,6 @@ from .static_vehicle import *  # noqa: F403
 if TYPE_CHECKING:
     from srb._typing import AnyEnvCfg
 
-# TODO: Add random pastel-like mat for procedural objects without baked-in textures
-
 
 def rigid_object_from_cfg(
     cfg: "AnyEnvCfg",

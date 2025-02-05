@@ -8,7 +8,6 @@ from srb.utils.cfg import configclass
 @configclass
 class BaseSceneCfg(InteractiveSceneCfg):
     num_envs: int = 1
-    env_spacing: float = 0.0
     replicate_physics: bool = False
 
     light: AssetBaseCfg | None = None

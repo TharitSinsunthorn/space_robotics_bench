@@ -20,6 +20,8 @@ from srb.utils.cfg import configclass
 
 @configclass
 class SingleArmSceneCfg(BaseSceneCfg):
+    env_spacing = 8.0
+
     ## Assets
     vehicle: AssetBaseCfg | None = None
 
@@ -59,7 +61,7 @@ class SingleArmEnvCfg(DirectEnvCfg):
     vehicle: StaticVehicle | AssetVariant | None = assets.ConstructionRover()
 
     ## Scene
-    scene: SingleArmSceneCfg = SingleArmSceneCfg(env_spacing=8.0)
+    scene: SingleArmSceneCfg = SingleArmSceneCfg()
 
     ## Events
     events: SingleArmEventCfg = SingleArmEventCfg()
@@ -105,8 +107,9 @@ class SingleArmEnvCfg(DirectEnvCfg):
         if isinstance(self.vehicle, AssetVariant):
             self.vehicle = assets.vehicle_from_cfg(self)
         if isinstance(self.vehicle, StaticVehicle):
-            if self.stack:
-                self.vehicle.asset_cfg.prim_path = "/World/vehicle"
+            self.vehicle.asset_cfg.prim_path = (
+                "/World/vehicle" if self.stack else "{ENV_REGEX_NS}/vehicle"
+            )
             self.scene.vehicle = self.vehicle.asset_cfg
             self.scene.vehicle.init_state.pos = (
                 self.vehicle.frame_manipulator_base.offset.translation

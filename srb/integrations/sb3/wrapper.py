@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence
 
 import gymnasium
@@ -14,13 +15,17 @@ if TYPE_CHECKING:
 
 
 class Sb3EnvWrapper(VecEnv):
-    def __init__(self, env: "AnyEnv"):
+    def __init__(self, env: "AnyEnv", ignore_extras: bool = True):
         # Initialize the wrapper
         self.env = env
         # Collect common information
         self.num_envs = self.unwrapped.num_envs
         self.sim_device = self.unwrapped.device
         self.render_mode = self.unwrapped.render_mode
+
+        if ignore_extras:
+            self._default_infos = [{"episode": None} for _ in range(self.num_envs)]
+            self._process_extras = self._process_extras_ignore
 
         # Obtain gym spaces
         # Note: stable-baselines3 does not like when we have unbounded action space so
@@ -227,4 +232,33 @@ class Sb3EnvWrapper(VecEnv):
             else:
                 infos[idx]["terminal_observation"] = None
         # Return list of dictionaries
+        return infos
+
+    def _process_extras_ignore(
+        self,
+        obs: numpy.ndarray,
+        terminated: numpy.ndarray,
+        truncated: numpy.ndarray,
+        extras: Dict[str, Any],
+        reset_ids: numpy.ndarray,
+    ) -> Sequence[Mapping[str, Any]]:
+        infos = deepcopy(self._default_infos)
+
+        for idx in reset_ids:
+            # Fill-in episode monitoring info
+            infos[idx]["episode"] = {
+                "r": float(self._ep_rew_buf[idx]),
+                "l": float(self._ep_len_buf[idx]),
+            }
+
+            # Fill-in bootstrap information
+            infos[idx]["TimeLimit.truncated"] = truncated[idx] and not terminated[idx]
+
+            # Add information about terminal observation separately
+            if isinstance(obs, dict):
+                terminal_obs = {key: value[idx] for key, value in obs.items()}
+            else:
+                terminal_obs = obs[idx]
+            infos[idx]["terminal_observation"] = terminal_obs
+
         return infos

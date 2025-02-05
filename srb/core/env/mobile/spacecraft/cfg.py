@@ -12,7 +12,7 @@ from srb.utils.cfg import configclass
 
 @configclass
 class SpacecraftSceneCfg(BaseSceneCfg):
-    pass
+    env_spacing = 2.0
 
 
 @configclass
@@ -62,7 +62,7 @@ class SpacecraftEnvCfg(DirectEnvCfg):
     terrain: Terrain | AssetVariant | None = None
 
     ## Scene
-    scene: SpacecraftSceneCfg = SpacecraftSceneCfg(env_spacing=2.0)
+    scene: SpacecraftSceneCfg = SpacecraftSceneCfg()
 
     ## Events
     events: SpacecraftEventCfg = SpacecraftEventCfg()

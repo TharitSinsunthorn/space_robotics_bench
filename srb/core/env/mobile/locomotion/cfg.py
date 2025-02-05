@@ -17,6 +17,8 @@ from srb.utils.cfg import configclass
 
 @configclass
 class LocomotionSceneCfg(BaseSceneCfg):
+    env_spacing = 64.0
+
     contacts_robot: ContactSensorCfg = ContactSensorCfg(
         prim_path=MISSING,  # type: ignore
         update_period=0.0,
@@ -69,7 +71,7 @@ class LocomotionEnvCfg(DirectEnvCfg):
     robot: LeggedRobot | AssetVariant = assets.AnymalMulti()
 
     ## Scene
-    scene: LocomotionSceneCfg = LocomotionSceneCfg(env_spacing=64.0)
+    scene: LocomotionSceneCfg = LocomotionSceneCfg()
 
     ## Events
     events: LocomotionEventCfg = LocomotionEventCfg()

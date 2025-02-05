@@ -4,9 +4,9 @@ import pytest
 
 from srb.utils import logging
 from srb.utils.isaacsim import get_isaacsim_python
-from srb.utils.subprocess import terminate_process
 
 
+@pytest.mark.order(2)
 def test_cli_ls():
     cmd = (
         get_isaacsim_python(),
@@ -27,5 +27,3 @@ def test_cli_ls():
             pytest.fail(f"Process failed\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}")
     except Exception as e:
         pytest.fail(f"Failed to start process\nException: {e}")
-    finally:
-        terminate_process(cmd, process)

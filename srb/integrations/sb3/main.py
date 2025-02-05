@@ -1,3 +1,5 @@
+import gc
+import signal
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Sequence
 
@@ -16,8 +18,6 @@ if TYPE_CHECKING:
 
 FRAMEWORK_NAME = "sb3"
 OFF_POLICY_ALGOS: Sequence[str] = ("qrdqn", "dqn", "ddpg", "sac", "her", "td3", "tqc")
-
-# TODO: Apply enhancements from PR
 
 
 def run(
@@ -154,3 +154,14 @@ def run(
                     deterministic=True,
                 )
                 obs, _reward, episode_start, _infos = env.step(action)  # type: ignore
+
+
+def gc_tqdm(*args):
+    tqdm_objects = [obj for obj in gc.get_objects() if "tqdm" in type(obj).__name__]
+    for tqdm_object in tqdm_objects:
+        if "tqdm_rich" in type(tqdm_object).__name__:
+            tqdm_object.close()
+    raise KeyboardInterrupt
+
+
+signal.signal(signal.SIGINT, gc_tqdm)
