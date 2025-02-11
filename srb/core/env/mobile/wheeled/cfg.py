@@ -39,6 +39,7 @@ class WheeledEnvCfg(DirectEnvCfg):
 
     ## Scene
     scene: WheeledSceneCfg = WheeledSceneCfg()
+    stack: bool = True
 
     ## Events
     events: WheeledEventCfg = WheeledEventCfg()

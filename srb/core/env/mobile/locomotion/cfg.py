@@ -72,6 +72,7 @@ class LocomotionEnvCfg(DirectEnvCfg):
 
     ## Scene
     scene: LocomotionSceneCfg = LocomotionSceneCfg()
+    stack: bool = True
 
     ## Events
     events: LocomotionEventCfg = LocomotionEventCfg()
@@ -117,5 +118,4 @@ class LocomotionEnvCfg(DirectEnvCfg):
             flat_area_size=4.0,
         )
         # Sensor - Contact (robot)
-        # TODO: Check only for feel contacts???
         self.scene.contacts_robot.prim_path = f"{self.scene.robot.prim_path}/.*"

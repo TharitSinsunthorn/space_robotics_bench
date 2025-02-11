@@ -15,6 +15,7 @@ from srb.core.sim import (
     RigidBodyPropertiesCfg,
 )
 from srb.utils.math import quat_from_rpy
+from srb.utils.nucleus import ISAACLAB_NUCLEUS_DIR, get_local_or_nucleus_path
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
 
@@ -23,9 +24,12 @@ class Franka(SingleArmManipulator):
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
         spawn=UsdFileCfg(
-            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("franka")
-            .joinpath("panda.usdc")
-            .as_posix(),
+            usd_path=get_local_or_nucleus_path(
+                SRB_ASSETS_DIR_SRB_ROBOT.joinpath("FrankaEmika").joinpath(
+                    "panda_instanceable.usd"
+                ),
+                f"{ISAACLAB_NUCLEUS_DIR}/Robots/FrankaEmika/panda_instanceable.usd",
+            ),
             activate_contact_sensors=True,
             rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=True,

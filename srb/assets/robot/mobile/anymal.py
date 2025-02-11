@@ -8,6 +8,7 @@ from srb.core.sim import (
     MultiAssetSpawnerCfg,
     RigidBodyPropertiesCfg,
 )
+from srb.utils.nucleus import ISAACLAB_NUCLEUS_DIR, get_local_or_nucleus_path
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
 ANYDRIVE_3_SIMPLE_ACTUATOR_CFG = DCMotorCfg(
@@ -21,9 +22,12 @@ ANYDRIVE_3_SIMPLE_ACTUATOR_CFG = DCMotorCfg(
 
 ANYDRIVE_3_LSTM_ACTUATOR_CFG = ActuatorNetLSTMCfg(
     joint_names_expr=[".*HAA", ".*HFE", ".*KFE"],
-    network_file=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
-    .joinpath("anydrive_3_lstm_jit.pt")
-    .as_posix(),
+    network_file=get_local_or_nucleus_path(
+        SRB_ASSETS_DIR_SRB_ROBOT.joinpath("ANYbotics").joinpath(
+            "anydrive_3_lstm_jit.pt"
+        ),
+        f"{ISAACLAB_NUCLEUS_DIR}/ActuatorNets/ANYbotics/anydrive_3_lstm_jit.pt",
+    ),
     saturation_effort=120.0,
     effort_limit=80.0,
     velocity_limit=7.5,
@@ -35,10 +39,12 @@ class AnymalB(LeggedRobot):
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
         spawn=UsdFileCfg(
-            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
-            .joinpath("anymal_b")
-            .joinpath("anymal_b.usd")
-            .as_posix(),
+            usd_path=get_local_or_nucleus_path(
+                SRB_ASSETS_DIR_SRB_ROBOT.joinpath("ANYbotics")
+                .joinpath("ANYmal-B")
+                .joinpath("anymal_b.usd"),
+                f"{ISAACLAB_NUCLEUS_DIR}/Robots/ANYbotics/ANYmal-B/anymal_b.usd",
+            ),
             activate_contact_sensors=True,
             rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=False,
@@ -76,6 +82,10 @@ class AnymalB(LeggedRobot):
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base")
+
+    ## Links
+    regex_links_feet: str = ".*FOOT"
+    regex_links_undesired_contacts: str = "(base|.*THIGH)"
 
 
 class AnymalC(LeggedRobot):
@@ -83,10 +93,12 @@ class AnymalC(LeggedRobot):
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
         spawn=UsdFileCfg(
-            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
-            .joinpath("anymal_c")
-            .joinpath("anymal_c.usd")
-            .as_posix(),
+            usd_path=get_local_or_nucleus_path(
+                SRB_ASSETS_DIR_SRB_ROBOT.joinpath("ANYbotics")
+                .joinpath("ANYmal-C")
+                .joinpath("anymal_c.usd"),
+                f"{ISAACLAB_NUCLEUS_DIR}/Robots/ANYbotics/ANYmal-B/anymal_c.usd",
+            ),
             activate_contact_sensors=True,
             rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=False,
@@ -124,6 +136,10 @@ class AnymalC(LeggedRobot):
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base")
+
+    ## Links
+    regex_links_feet: str = ".*FOOT"
+    regex_links_undesired_contacts: str = "(base|.*THIGH)"
 
 
 class AnymalD(LeggedRobot):
@@ -131,10 +147,12 @@ class AnymalD(LeggedRobot):
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
         spawn=UsdFileCfg(
-            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
-            .joinpath("anymal_d")
-            .joinpath("anymal_d.usd")
-            .as_posix(),
+            usd_path=get_local_or_nucleus_path(
+                SRB_ASSETS_DIR_SRB_ROBOT.joinpath("ANYbotics")
+                .joinpath("ANYmal-D")
+                .joinpath("anymal_d.usd"),
+                f"{ISAACLAB_NUCLEUS_DIR}/Robots/ANYbotics/ANYmal-B/anymal_d.usd",
+            ),
             activate_contact_sensors=True,
             rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=False,
@@ -172,6 +190,10 @@ class AnymalD(LeggedRobot):
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base")
+
+    ## Links
+    regex_links_feet: str = ".*FOOT"
+    regex_links_undesired_contacts: str = "(base|.*THIGH)"
 
 
 class AnymalMulti(LeggedRobot):
@@ -183,10 +205,12 @@ class AnymalMulti(LeggedRobot):
             assets_cfg=[
                 # NOTE: AnymalB seems to be incompatible with AnymalC and AnymalD
                 # UsdFileCfg(
-                #     usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
-                #     .joinpath("anymal_b")
-                #     .joinpath("anymal_b.usd")
-                #     .as_posix(),
+                #     usd_path=get_local_or_nucleus_path(
+                #         SRB_ASSETS_DIR_SRB_ROBOT.joinpath("ANYbotics")
+                #         .joinpath("ANYmal-B")
+                #         .joinpath("anymal_b.usd"),
+                #         f"{ISAACLAB_NUCLEUS_DIR}/Robots/ANYbotics/ANYmal-B/anymal_b.usd",
+                #     ),
                 #     activate_contact_sensors=True,
                 #     rigid_props=RigidBodyPropertiesCfg(
                 #         disable_gravity=False,
@@ -204,10 +228,12 @@ class AnymalMulti(LeggedRobot):
                 #     ),
                 # ),
                 UsdFileCfg(
-                    usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
-                    .joinpath("anymal_c")
-                    .joinpath("anymal_c.usd")
-                    .as_posix(),
+                    usd_path=get_local_or_nucleus_path(
+                        SRB_ASSETS_DIR_SRB_ROBOT.joinpath("ANYbotics")
+                        .joinpath("ANYmal-C")
+                        .joinpath("anymal_c.usd"),
+                        f"{ISAACLAB_NUCLEUS_DIR}/Robots/ANYbotics/ANYmal-B/anymal_c.usd",
+                    ),
                     activate_contact_sensors=True,
                     rigid_props=RigidBodyPropertiesCfg(
                         disable_gravity=False,
@@ -225,10 +251,12 @@ class AnymalMulti(LeggedRobot):
                     ),
                 ),
                 UsdFileCfg(
-                    usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("anymal")
-                    .joinpath("anymal_d")
-                    .joinpath("anymal_d.usd")
-                    .as_posix(),
+                    usd_path=get_local_or_nucleus_path(
+                        SRB_ASSETS_DIR_SRB_ROBOT.joinpath("ANYbotics")
+                        .joinpath("ANYmal-D")
+                        .joinpath("anymal_d.usd"),
+                        f"{ISAACLAB_NUCLEUS_DIR}/Robots/ANYbotics/ANYmal-B/anymal_d.usd",
+                    ),
                     activate_contact_sensors=True,
                     rigid_props=RigidBodyPropertiesCfg(
                         disable_gravity=False,
@@ -278,3 +306,7 @@ class AnymalMulti(LeggedRobot):
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base")
+
+    ## Links
+    regex_links_feet: str = ".*FOOT"
+    regex_links_undesired_contacts: str = "(base|.*THIGH)"

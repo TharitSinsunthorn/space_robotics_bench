@@ -14,7 +14,8 @@ class Ingenuity(MultiCopter):
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
         spawn=UsdFileCfg(
-            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("ingenuity")
+            # TODO: Standardize the custom Ingenuity asset with the version on Nucleus
+            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("Ingenuity")
             .joinpath("ingenuity.usdc")
             .as_posix(),
             articulation_props=ArticulationRootPropertiesCfg(

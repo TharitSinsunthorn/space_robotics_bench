@@ -4,4 +4,9 @@ from simforge.integrations.isaaclab.spawner import (  # noqa: F401
     UsdFileCfg,
 )
 
-from .multi_shape.cfg import MultiShapeSpawnerCfg  # noqa: F401
+from .shapes import (  # noqa: F401
+    ArrowCfg,
+    MultiShapeSpawnerCfg,
+    PinnedArrowCfg,
+    PinnedSphereCfg,
+)

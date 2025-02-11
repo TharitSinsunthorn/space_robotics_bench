@@ -27,7 +27,7 @@ class BaseEnvCfg:
 
     ## Scene
     scene: BaseSceneCfg = BaseSceneCfg()
-    stack: bool = True
+    stack: bool = False
     _original_env_spacing: float | None = None
 
     ## Events
@@ -42,6 +42,7 @@ class BaseEnvCfg:
         dt=MISSING,  # type: ignore
         render_interval=MISSING,  # type: ignore
         gravity=MISSING,  # type: ignore
+        device="cpu",  # Note: Changed to GPU in __main__.py because initializing with CPU improves compatibility
         disable_contact_processing=True,
         physx=PhysxCfg(
             min_position_iteration_count=2,

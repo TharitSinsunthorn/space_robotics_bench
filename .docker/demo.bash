@@ -12,7 +12,7 @@ EXTRA_DOCKER_VOLUMES=(
 EXTRA_DOCKER_ENVIRON=()
 
 ## Parse arguments
-DEFAULT_CMD="cargo run --release --package srb_gui"
+DEFAULT_CMD="srb gui"
 if [ "${#}" -gt "0" ]; then
     CMD=${*:1}
 fi

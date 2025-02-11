@@ -6,7 +6,7 @@ from pxr import Usd
 from srb.core.sim import CapsuleCfg, ConeCfg, CuboidCfg, CylinderCfg, SphereCfg
 
 if TYPE_CHECKING:
-    from srb.core.sim.spawners.multi_shape.cfg import MultiShapeSpawnerCfg
+    from .cfg import MultiShapeSpawnerCfg
 
 IGNORED_SPAWN_ATTRIBUTES = (
     "func",

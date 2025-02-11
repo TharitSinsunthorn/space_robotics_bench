@@ -86,12 +86,15 @@ def run_agent_with_env(
     # Update the offline environment registry
     update_env_list_cache()
 
+    from omni.physx import acquire_physx_interface
+
     from srb.interfaces.teleop import EventKeyboardTeleopInterface
     from srb.utils import logging
     from srb.utils.cfg import hydra_task_config, last_logdir, new_logdir
     from srb.utils.isaacsim import hide_isaacsim_ui
 
     # Post-launch configuration
+    acquire_physx_interface().overwrite_gpu_setting(1)
     if hide_ui:
         hide_isaacsim_ui()
 
@@ -1208,13 +1211,6 @@ def parse_cli_args() -> argparse.Namespace:
             type=int,
             choices={0, 1, 2},
             default=-1,
-        )
-        launcher_group.add_argument(
-            "--device",
-            help="Compute device to use for simulation",
-            type=str,
-            choices=["cpu", "cuda", "cuda:0", "cuda:1", "cuda:2", "cuda:3"],
-            default="cuda:0",
         )
         launcher_group.add_argument(
             "--kit_args",

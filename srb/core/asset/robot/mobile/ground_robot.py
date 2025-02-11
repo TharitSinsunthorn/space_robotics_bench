@@ -29,3 +29,7 @@ class WheeledRobot(GroundRobot, mobile_robot_metaclass=True):
 class LeggedRobot(GroundRobot, mobile_robot_metaclass=True):
     ## Actions
     action_cfg: JointPosition
+
+    ## Links
+    regex_links_feet: str
+    regex_links_undesired_contacts: str

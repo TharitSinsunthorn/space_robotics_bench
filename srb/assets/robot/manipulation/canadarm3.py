@@ -19,7 +19,7 @@ class Canadarm3Large(SingleArmManipulator):
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
         spawn=UsdFileCfg(
-            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("canadarm3_large")
+            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("Canadarm3")
             .joinpath("canadarm3_large.usdc")
             .as_posix(),
             rigid_props=RigidBodyPropertiesCfg(

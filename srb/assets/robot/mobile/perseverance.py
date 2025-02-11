@@ -19,7 +19,7 @@ class Perseverance(WheeledRobot):
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/robot",
         spawn=UsdFileCfg(
-            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("perseverance")
+            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("Perseverance")
             .joinpath("perseverance.usdc")
             .as_posix(),
             collision_props=CollisionPropertiesCfg(

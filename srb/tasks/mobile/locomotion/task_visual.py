@@ -10,6 +10,9 @@ from .task import Task, TaskCfg
 
 @configclass
 class VisualTaskCfg(LocomotionEnvVisualExtCfg, TaskCfg):
+    ## Visualization
+    visualize_commands: bool = False
+
     def __post_init__(self):
         TaskCfg.__post_init__(self)
         LocomotionEnvVisualExtCfg.wrap(self, env_cfg=self)
