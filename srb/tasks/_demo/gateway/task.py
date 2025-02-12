@@ -82,7 +82,11 @@ class Task(SingleArmEnv):
             max_episode_length=self.max_episode_length,
             robot_joint_pos=self._robot.data.joint_pos,
             robot_quat=self._robot.data.root_quat_w,
-            robot_soft_joint_pos_limits=self._robot.data.soft_joint_pos_limits,
+            robot_soft_joint_pos_limits=(
+                self._robot.data.soft_joint_pos_limits
+                if torch.all(torch.isfinite(self._robot.data.soft_joint_pos_limits))
+                else None
+            ),
             truncate_episodes=self.cfg.truncate_episodes,
         )
 
@@ -96,7 +100,7 @@ def _compute_internal_state(
     max_episode_length: int,
     robot_joint_pos: torch.Tensor,
     robot_quat: torch.Tensor,
-    robot_soft_joint_pos_limits: torch.Tensor,
+    robot_soft_joint_pos_limits: torch.Tensor | None,
     truncate_episodes: bool,
 ) -> (
     IntermediateTaskState
@@ -105,11 +109,14 @@ def _compute_internal_state(
     ]
 ):
     # Robot joints
-    joint_pos_normalized = scale_transform(
-        robot_joint_pos,
-        robot_soft_joint_pos_limits[:, :, 0],
-        robot_soft_joint_pos_limits[:, :, 1],
-    )
+    if robot_soft_joint_pos_limits is not None:
+        joint_pos_normalized = scale_transform(
+            robot_joint_pos,
+            robot_soft_joint_pos_limits[:, :, 0],
+            robot_soft_joint_pos_limits[:, :, 1],
+        )
+    else:
+        joint_pos_normalized = robot_joint_pos
 
     # Robot pose
     rotmat_robot = matrix_from_quat(robot_quat)

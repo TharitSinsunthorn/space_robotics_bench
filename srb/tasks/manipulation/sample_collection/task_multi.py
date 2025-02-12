@@ -143,8 +143,10 @@ class MultiTask(SingleArmEnv):
         self._robot_joint_indices_arm, _ = self._robot.find_joints(
             self.cfg.robot.regex_joints_arm
         )
-        self._robot_joint_indices_hand, _ = self._robot.find_joints(
-            self.cfg.robot.regex_joints_hand
+        self._robot_joint_indices_hand, _ = (
+            self._robot.find_joints(self.cfg.robot.regex_joints_hand)
+            if self.cfg.robot.regex_joints_hand
+            else ([], [])
         )
 
         ## Visualize target
@@ -175,7 +177,11 @@ class MultiTask(SingleArmEnv):
             robot_joint_indices_arm=self._robot_joint_indices_arm,
             robot_joint_indices_hand=self._robot_joint_indices_hand,
             robot_joint_pos=self._robot.data.joint_pos,
-            robot_soft_joint_pos_limits=self._robot.data.soft_joint_pos_limits,
+            robot_soft_joint_pos_limits=(
+                self._robot.data.soft_joint_pos_limits
+                if torch.all(torch.isfinite(self._robot.data.soft_joint_pos_limits))
+                else None
+            ),
             target_pos=self._target_pos,
             target_quat=self._target_quat,
             truncate_episodes=self.cfg.truncate_episodes,
@@ -202,7 +208,7 @@ def _compute_internal_state(
     robot_joint_indices_arm: List[int],
     robot_joint_indices_hand: List[int],
     robot_joint_pos: torch.Tensor,
-    robot_soft_joint_pos_limits: torch.Tensor,
+    robot_soft_joint_pos_limits: torch.Tensor | None,
     target_pos: torch.Tensor,
     target_quat: torch.Tensor,
     truncate_episodes: bool,
@@ -218,17 +224,26 @@ def _compute_internal_state(
     remaining_time = 1 - (episode_length_buf / max_episode_length).unsqueeze(-1)
 
     # Robot joints
-    joint_pos_normalized = scale_transform(
-        robot_joint_pos,
-        robot_soft_joint_pos_limits[:, :, 0],
-        robot_soft_joint_pos_limits[:, :, 1],
-    )
+    if robot_soft_joint_pos_limits is not None:
+        joint_pos_normalized = scale_transform(
+            robot_joint_pos,
+            robot_soft_joint_pos_limits[:, :, 0],
+            robot_soft_joint_pos_limits[:, :, 1],
+        )
+    else:
+        joint_pos_normalized = robot_joint_pos
     joint_pos_arm_normalized, joint_pos_hand_normalized = (
         joint_pos_normalized[:, robot_joint_indices_arm],
         joint_pos_normalized[:, robot_joint_indices_hand],
     )
-    joint_pos_hand_normalized_mean = joint_pos_hand_normalized.mean(
-        dim=-1, keepdim=True
+    joint_pos_hand_normalized_mean = (
+        joint_pos_hand_normalized.mean(dim=-1, keepdim=True)
+        if torch.numel(joint_pos_hand_normalized)
+        else torch.zeros(
+            (joint_pos_arm_normalized.shape[0], 1),
+            dtype=joint_pos_arm_normalized.dtype,
+            device=joint_pos_arm_normalized.device,
+        )
     )
 
     # Robot base -> End-effector
@@ -257,7 +272,15 @@ def _compute_internal_state(
 
     # Robot hand wrench
     wrench_robot_hand = robot_incoming_forces[:, robot_joint_indices_hand]
-    wrench_robot_hand_mean = wrench_robot_hand.mean(dim=1)
+    wrench_robot_hand_mean = (
+        wrench_robot_hand.mean(dim=1)
+        if torch.numel(wrench_robot_hand)
+        else torch.zeros(
+            (wrench_robot_hand.shape[0], 1),
+            dtype=wrench_robot_hand.dtype,
+            device=wrench_robot_hand.device,
+        )
+    )
 
     #############
     ## Rewards ##

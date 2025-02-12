@@ -42,7 +42,7 @@ fi
 ## Determine the name of the container to join
 DOCKERHUB_USER="$(${WITH_SUDO} docker info 2>/dev/null | sed '/Username:/!d;s/.* //')"
 PROJECT_NAME="$(basename "${REPOSITORY_DIR}")"
-IMAGE_NAME="${DOCKERHUB_USER:+${DOCKERHUB_USER}/}${PROJECT_NAME}"
+IMAGE_NAME="${DOCKERHUB_USER:+${DOCKERHUB_USER}/}${PROJECT_NAME,,}"
 if [[ -z "$(${WITH_SUDO} docker images -q "${IMAGE_NAME}" 2>/dev/null)" ]] && [[ -n "$(curl -fsSL "https://registry.hub.docker.com/v2/repositories/${DOCKERHUB_IMAGE_NAME}" 2>/dev/null)" ]]; then
     IMAGE_NAME="${DOCKERHUB_IMAGE_NAME}"
 fi

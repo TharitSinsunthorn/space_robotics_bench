@@ -28,7 +28,7 @@ class SingleArmManipulator(
 
     ## Joints
     regex_joints_arm: str
-    regex_joints_hand: str
+    regex_joints_hand: str | None
 
     @classmethod
     def manipulator_registry(cls) -> Sequence[Type[SingleArmManipulator]]:

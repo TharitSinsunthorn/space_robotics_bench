@@ -106,7 +106,11 @@ class Task(LocomotionEnv):
             contact_net_forces=self._contacts_robot.data.net_forces_w,  # type: ignore
             first_contact=self._contacts_robot.compute_first_contact(self.step_dt),
             last_air_time=self._contacts_robot.data.last_air_time,  # type: ignore
-            robot_soft_joint_pos_limits=self._robot.data.soft_joint_pos_limits,
+            robot_soft_joint_pos_limits=(
+                self._robot.data.soft_joint_pos_limits
+                if torch.all(torch.isfinite(self._robot.data.soft_joint_pos_limits))
+                else None
+            ),
             command=self._command,
         )
 
@@ -252,7 +256,7 @@ def _compute_internal_state(
     robot_undesired_contact_body_indices: List[int],
     robot_ang_vel: torch.Tensor,
     robot_projected_gravity: torch.Tensor,
-    robot_soft_joint_pos_limits: torch.Tensor,
+    robot_soft_joint_pos_limits: torch.Tensor | None,
     truncate_episodes: bool,
 ) -> (
     IntermediateTaskState
@@ -261,11 +265,14 @@ def _compute_internal_state(
     ]
 ):
     # Robot joints
-    joint_pos_normalized = scale_transform(
-        robot_joint_pos,
-        robot_soft_joint_pos_limits[:, :, 0],
-        robot_soft_joint_pos_limits[:, :, 1],
-    )
+    if robot_soft_joint_pos_limits is not None:
+        joint_pos_normalized = scale_transform(
+            robot_joint_pos,
+            robot_soft_joint_pos_limits[:, :, 0],
+            robot_soft_joint_pos_limits[:, :, 1],
+        )
+    else:
+        joint_pos_normalized = robot_joint_pos
 
     # Robot pose
     rotmat_robot = matrix_from_quat(robot_quat)
@@ -367,9 +374,10 @@ def _compute_internal_state(
     return {
         "obs": {
             # "state": {},
-            "state_dyn": {
-                "contact_net_forces": contact_net_forces,
-            },
+            # "state_dyn": {
+            #     # TODO: Contact forces always seem to be 0, there is something wrong.
+            #     "contact_net_forces": contact_net_forces,
+            # },
             "proprio": {
                 "rot6d_robot": rot6d_robot,
                 "vel_ang_robot": robot_ang_vel,

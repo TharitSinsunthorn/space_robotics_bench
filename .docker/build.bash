@@ -15,7 +15,7 @@ fi
 ## Determine the name of the image to build
 DOCKERHUB_USER="$(${WITH_SUDO} docker info 2>/dev/null | sed '/Username:/!d;s/.* //')"
 PROJECT_NAME="$(basename "${REPOSITORY_DIR}")"
-IMAGE_NAME="${DOCKERHUB_USER:+${DOCKERHUB_USER}/}${PROJECT_NAME}"
+IMAGE_NAME="${DOCKERHUB_USER:+${DOCKERHUB_USER}/}${PROJECT_NAME,,}"
 
 ## Parse TAG and forward additional build arguments
 if [ "${#}" -gt "0" ]; then

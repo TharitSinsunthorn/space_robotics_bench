@@ -19,7 +19,7 @@ fi
 ## Determine the name of the image to build and the output path
 DOCKERHUB_USER="$(${WITH_SUDO} docker info 2>/dev/null | sed '/Username:/!d;s/.* //')"
 PROJECT_NAME="$(basename "${REPOSITORY_DIR}")"
-IMAGE_NAME="${DOCKERHUB_USER:+${DOCKERHUB_USER}/}${PROJECT_NAME}"
+IMAGE_NAME="${DOCKERHUB_USER:+${DOCKERHUB_USER}/}${PROJECT_NAME,,}"
 OUTPUT_PATH="${IMAGES_DIR}/${PROJECT_NAME}.sif"
 
 ## Parse TAG and forward additional build arguments

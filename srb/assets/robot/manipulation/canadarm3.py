@@ -107,4 +107,4 @@ class Canadarm3Large(SingleArmManipulator):
 
     ## Joints
     regex_joints_arm: str = "canadarm3_large_joint_[1-7]"
-    regex_joints_hand: str = "canadarm3_large_joint_7"
+    regex_joints_hand: str | None = None

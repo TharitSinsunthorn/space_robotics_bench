@@ -118,4 +118,4 @@ class KinovaGen3(SingleArmManipulator):
 
     ## Joints
     regex_joints_arm: str = "joint_.*"
-    regex_joints_hand: str = "joint_7"
+    regex_joints_hand: str | None = None

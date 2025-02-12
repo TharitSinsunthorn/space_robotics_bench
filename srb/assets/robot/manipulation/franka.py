@@ -135,4 +135,4 @@ class Franka(SingleArmManipulator):
 
     ## Joints
     regex_joints_arm: str = "panda_joint.*"
-    regex_joints_hand: str = "panda_finger_joint.*"
+    regex_joints_hand: str | None = "panda_finger_joint.*"
