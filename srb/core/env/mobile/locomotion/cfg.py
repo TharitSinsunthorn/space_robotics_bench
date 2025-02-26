@@ -17,10 +17,10 @@ from srb.utils.cfg import configclass
 
 @configclass
 class LocomotionSceneCfg(BaseSceneCfg):
-    env_spacing = 64.0
+    env_spacing = 16.5
 
     contacts_robot: ContactSensorCfg = ContactSensorCfg(
-        prim_path=MISSING,  # type: ignore
+        prim_path="{ENV_REGEX_NS}/Robot/.*",  # type: ignore
         update_period=0.0,
         history_length=3,
         track_air_time=True,
@@ -68,7 +68,7 @@ class LocomotionEventCfg(BaseEventCfg):
 @configclass
 class LocomotionEnvCfg(DirectEnvCfg):
     ## Assets
-    robot: LeggedRobot | AssetVariant = assets.AnymalMulti()
+    robot: LeggedRobot | AssetVariant = assets.UnitreeGo2()
 
     ## Scene
     scene: LocomotionSceneCfg = LocomotionSceneCfg()
@@ -106,8 +106,8 @@ class LocomotionEnvCfg(DirectEnvCfg):
             num_assets=1 if self.stack else self.scene.num_envs,
             prim_path="/World/terrain" if self.stack else "{ENV_REGEX_NS}/terrain",
             scale=(
-                64.0,
-                64.0,
+                16.0,
+                16.0,
             ),
             density=0.2,
             texture_resolution={

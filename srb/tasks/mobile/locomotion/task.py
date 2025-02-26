@@ -282,7 +282,7 @@ def _compute_internal_state(
     ## Rewards ##
     #############
     # Penalty: Action rate
-    WEIGHT_ACTION_RATE = -0.05
+    WEIGHT_ACTION_RATE = -0.005
     penalty_action_rate = WEIGHT_ACTION_RATE * torch.sum(
         torch.square(act_current - act_previous), dim=1
     )
@@ -342,7 +342,7 @@ def _compute_internal_state(
     )
 
     # Penalty: Joint torque
-    WEIGHT_JOINT_TORQUE = -0.000025
+    WEIGHT_JOINT_TORQUE = -0.0025
     penalty_joint_torque = WEIGHT_JOINT_TORQUE * torch.sum(
         torch.square(robot_joint_applied_torque), dim=1
     )
@@ -354,7 +354,7 @@ def _compute_internal_state(
     )
 
     # Penalty: Minimize rotation with the gravity direction
-    WEIGHT_GRAVITY_ROTATION_ALIGNMENT = -5.0
+    WEIGHT_GRAVITY_ROTATION_ALIGNMENT = -0.05
     penalty_gravity_rotation_alignment = WEIGHT_GRAVITY_ROTATION_ALIGNMENT * torch.sum(
         torch.square(robot_projected_gravity[:, :2]), dim=1
     )
@@ -395,9 +395,9 @@ def _compute_internal_state(
             "penalty_gravity_rotation_alignment": penalty_gravity_rotation_alignment,
             "penalty_joint_acceleration": penalty_joint_acceleration,
             "penalty_joint_torque": penalty_joint_torque,
-            "penalty_undersired_contacts": penalty_undersired_contacts,
+            # "penalty_undersired_contacts": penalty_undersired_contacts,
             "penalty_undesired_ang_vel_xy": penalty_undesired_ang_vel_xy,
-            "penalty_undesired_lin_vel_z": penalty_undesired_lin_vel_z,
+            # "penalty_undesired_lin_vel_z": penalty_undesired_lin_vel_z,
             "reward_cmd_ang_vel_z": reward_cmd_ang_vel_z,
             "reward_cmd_lin_vel_xy": reward_cmd_lin_vel_xy,
             "reward_feet_air_time": reward_feet_air_time,
