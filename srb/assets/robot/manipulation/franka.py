@@ -1,9 +1,16 @@
 from srb.assets.object.tool import FrankaHand
-from srb.core.action import (
+from srb.core.action import (  # noqa: F401
     ActionGroup,
     DifferentialIKControllerCfg,
     DifferentialInverseKinematicsActionCfg,
     InverseKinematicsActionGroup,
+    JointEffortActionCfg,
+    JointEffortActionGroup,
+    JointPositionRelativeActionGroup,
+    OperationalSpaceControlActionGroup,
+    OperationalSpaceControllerActionCfg,
+    OperationalSpaceControllerCfg,
+    RelativeJointPositionActionCfg,
 )
 from srb.core.actuator import ImplicitActuatorCfg
 from srb.core.asset import ArticulationCfg, Frame, SerialManipulator, Tool, Transform
@@ -82,7 +89,7 @@ class Franka(SerialManipulator):
     end_effector: Tool | None = FrankaHand()
 
     ## Actions - Inverse Kinematics action group that drives all joints
-    actions: ActionGroup = InverseKinematicsActionGroup(
+    actions: ActionGroup = InverseKinematicsActionGroup(  # ll203
         DifferentialInverseKinematicsActionCfg(
             asset_name="robot",
             joint_names=["panda_joint[1-7]"],
@@ -97,6 +104,84 @@ class Franka(SerialManipulator):
             body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
         ),
     )
+
+    # ## Actions - Operational Space Control
+    # actions: ActionGroup = OperationalSpaceControlActionGroup(  # Artemis
+    #     OperationalSpaceControllerActionCfg(
+    #         asset_name="robot",
+    #         joint_names=["panda_joint[1-7]"],
+    #         body_name="panda_link7",
+    #         controller_cfg=OperationalSpaceControllerCfg(
+    #             target_types=["pose_rel"],
+    #             impedance_mode="fixed",
+    #             inertial_dynamics_decoupling=True,
+    #             motion_stiffness_task=100.0,
+    #             motion_damping_ratio_task=1.0,
+    #             nullspace_control="position",
+    #         ),
+    #         nullspace_joint_pos_target="center",
+    #         position_scale=0.1,
+    #         orientation_scale=0.1,
+    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+    #     )
+    # )
+
+    # ## Actions - Operational Space Control
+    # actions: ActionGroup = OperationalSpaceControlActionGroup(  # Dart
+    #     OperationalSpaceControllerActionCfg(
+    #         asset_name="robot",
+    #         joint_names=["panda_joint[1-7]"],
+    #         body_name="panda_link7",
+    #         controller_cfg=OperationalSpaceControllerCfg(
+    #             target_types=["pose_rel"],
+    #             impedance_mode="variable_kp",
+    #             inertial_dynamics_decoupling=True,
+    #             motion_stiffness_limits_task=(10.0, 250.0),
+    #             motion_damping_ratio_task=1.0,
+    #             nullspace_control="position",
+    #         ),
+    #         nullspace_joint_pos_target="center",
+    #         position_scale=0.1,
+    #         orientation_scale=0.1,
+    #         stiffness_scale=120.0,
+    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+    #     )
+    # )
+
+    # ## Actions - Operational Space Control
+    # actions: ActionGroup = OperationalSpaceControlActionGroup(  # Gemini
+    #     OperationalSpaceControllerActionCfg(
+    #         asset_name="robot",
+    #         joint_names=["panda_joint[1-7]"],
+    #         body_name="panda_link7",
+    #         controller_cfg=OperationalSpaceControllerCfg(
+    #             target_types=["pose_rel"],
+    #             impedance_mode="variable",
+    #             inertial_dynamics_decoupling=True,
+    #             motion_stiffness_limits_task=(10.0, 250.0),
+    #             motion_damping_ratio_limits_task=(0.5, 2.5),
+    #             nullspace_control="position",
+    #         ),
+    #         nullspace_joint_pos_target="center",
+    #         position_scale=0.1,
+    #         orientation_scale=0.1,
+    #         stiffness_scale=120.0,
+    #         damping_ratio_scale=1.0,
+    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+    #     )
+    # )
+
+    # ## Actions - Joint effort
+    # actions: ActionGroup = JointEffortActionGroup(
+    #     JointEffortActionCfg(asset_name="robot", joint_names=[".*"], scale=0.1)
+    # )
+
+    # ## Actions - Joint position
+    # actions: ActionGroup = JointPositionRelativeActionGroup(
+    #     RelativeJointPositionActionCfg(
+    #         asset_name="robot", joint_names=[".*"], scale=0.1
+    #     )
+    # )
 
     ## Frames - Relevant frames for attaching the robot and mounting tool/sensors
     frame_base: Frame = Frame(prim_relpath="panda_link0")
