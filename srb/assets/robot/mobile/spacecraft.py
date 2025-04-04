@@ -93,14 +93,14 @@ class VenusExpress(OrbitalRobot):
     frame_payload_mount: Frame = Frame(
         prim_relpath="base",
         offset=Transform(
-            pos=(0.0, 0.0, 0.0),
-            rot=rpy_to_quat(0.0, 0.0, 0.0),
+            pos=(0.06691, -0.838982, 0.051877),
+            rot=rpy_to_quat(90.0, 0.0, 0.0),
         ),
     )
     frame_manipulator_mount: Frame = Frame(
         prim_relpath="base",
         offset=Transform(
-            pos=(0.0, 0.0, 0.0),
+            pos=(0.0, -0.543748, 0.417019),
             rot=rpy_to_quat(0.0, 0.0, 0.0),
         ),
     )
