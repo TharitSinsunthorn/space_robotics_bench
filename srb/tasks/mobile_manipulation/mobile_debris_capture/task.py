@@ -404,16 +404,8 @@ def _compute_step_return(
         min=MAX_JOINT_ACCELERATION_PENALTY,
     )
 
-    # Penalty: Undesired robot contacts
-    WEIGHT_UNDESIRED_ROBOT_CONTACTS = -10.0
-    THRESHOLD_UNDESIRED_ROBOT_CONTACTS = 10.0
-    penalty_undesired_robot_contacts = WEIGHT_UNDESIRED_ROBOT_CONTACTS * (
-        torch.max(torch.norm(contact_forces_robot, dim=-1), dim=1)[0]
-        > THRESHOLD_UNDESIRED_ROBOT_CONTACTS
-    )
-
     # Reward: Distance | End-effector <--> Object
-    WEIGHT_DISTANCE_END_EFFECTOR_TO_OBJ = 2.5
+    WEIGHT_DISTANCE_END_EFFECTOR_TO_OBJ = 16.0
     TANH_STD_DISTANCE_END_EFFECTOR_TO_OBJ = 0.2
     reward_distance_end_effector_to_obj = WEIGHT_DISTANCE_END_EFFECTOR_TO_OBJ * (
         1.0
@@ -424,7 +416,7 @@ def _compute_step_return(
     )
 
     # Reward: Grasp object
-    WEIGHT_GRASP = 8.0
+    WEIGHT_GRASP = 32.0
     THRESHOLD_GRASP = 5.0
     reward_grasp = (
         WEIGHT_GRASP
@@ -442,16 +434,16 @@ def _compute_step_return(
     )
 
     # Reward: Minimize relative linear velocity
-    WEIGHT_REL_LIN_VEL = 5.0
-    TANH_STD_REL_LIN_VEL = 0.5
+    WEIGHT_REL_LIN_VEL = 12.0
+    TANH_STD_REL_LIN_VEL = 0.01
     reward_minimize_rel_lin_vel = WEIGHT_REL_LIN_VEL * (
         1.0
         - torch.tanh(torch.norm(vel_lin_robot_to_obj, dim=-1) / TANH_STD_REL_LIN_VEL)
     )
 
     # Reward: Minimize relative angular velocity
-    WEIGHT_REL_ANG_VEL = 3.0
-    TANH_STD_REL_ANG_VEL = 0.5
+    WEIGHT_REL_ANG_VEL = 24.0
+    TANH_STD_REL_ANG_VEL = 0.03
     reward_minimize_rel_ang_vel = WEIGHT_REL_ANG_VEL * (
         1.0
         - torch.tanh(torch.norm(vel_ang_robot_to_obj, dim=-1) / TANH_STD_REL_ANG_VEL)
@@ -508,7 +500,6 @@ def _compute_step_return(
             "penalty_angular_velocity": penalty_angular_velocity,
             "penalty_joint_torque": penalty_joint_torque,
             "penalty_joint_acceleration": penalty_joint_acceleration,
-            "penalty_undesired_robot_contacts": penalty_undesired_robot_contacts,
             "reward_distance_end_effector_to_obj": reward_distance_end_effector_to_obj,
             "reward_grasp": reward_grasp,
             "reward_minimize_rel_lin_vel": reward_minimize_rel_lin_vel,
