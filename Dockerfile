@@ -332,6 +332,9 @@ RUN --mount=type=bind,source="pyproject.toml",target="${SRB_PATH}/pyproject.toml
     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --ignore-installed toml~=0.10 && \
     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir $("${ISAAC_SIM_PYTHON}" -c "f='${SRB_PATH}/pyproject.toml'; from toml import load; print(' '.join(filter(lambda d: not d.startswith(p['name'] + '['), (*p.get('dependencies', ()), *(d for ds in p.get('optional-dependencies', {}).values() for d in ds)))) if (p := load(f).get('project', None)) else '')")
 
+## Install extra direct Python dependencies
+RUN "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir "rl_zoo3@git+https://github.com/AndrejOrsula/rl-baselines3-zoo.git@e04921b4ccbadbc9f6bcc46cc1787ffc1d2c8963"
+
 ###############
 ### Project ###
 ###############
