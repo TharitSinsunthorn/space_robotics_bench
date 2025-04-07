@@ -89,7 +89,7 @@ class Franka(SerialManipulator):
     end_effector: Tool | None = FrankaHand()
 
     ## Actions - Inverse Kinematics action group that drives all joints
-    actions: ActionGroup = InverseKinematicsActionGroup(  # ll203
+    actions: ActionGroup = InverseKinematicsActionGroup(
         DifferentialInverseKinematicsActionCfg(
             asset_name="robot",
             joint_names=["panda_joint[1-7]"],
@@ -106,7 +106,7 @@ class Franka(SerialManipulator):
     )
 
     # ## Actions - Operational Space Control
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(  # Artemis
+    # actions: ActionGroup = OperationalSpaceControlActionGroup(
     #     OperationalSpaceControllerActionCfg(
     #         asset_name="robot",
     #         joint_names=["panda_joint[1-7]"],
@@ -127,7 +127,7 @@ class Franka(SerialManipulator):
     # )
 
     # ## Actions - Operational Space Control
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(  # Dart
+    # actions: ActionGroup = OperationalSpaceControlActionGroup(
     #     OperationalSpaceControllerActionCfg(
     #         asset_name="robot",
     #         joint_names=["panda_joint[1-7]"],
@@ -149,7 +149,7 @@ class Franka(SerialManipulator):
     # )
 
     # ## Actions - Operational Space Control
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(  # Gemini
+    # actions: ActionGroup = OperationalSpaceControlActionGroup(
     #     OperationalSpaceControllerActionCfg(
     #         asset_name="robot",
     #         joint_names=["panda_joint[1-7]"],

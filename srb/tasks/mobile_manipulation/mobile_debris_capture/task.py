@@ -22,7 +22,7 @@ from srb.core.env import (
     ViewerCfg,
 )
 from srb.core.manager import EventTermCfg, SceneEntityCfg
-from srb.core.mdp import push_by_setting_velocity, reset_root_state_uniform
+from srb.core.mdp import reset_root_state_uniform
 from srb.core.sensor import ContactSensor
 from srb.tasks.manipulation.debris_capture.asset import select_debris
 from srb.utils.cfg import configclass
@@ -52,15 +52,15 @@ class EventCfg(OrbitalManipulationEventCfg):
         params={
             "asset_cfg": SceneEntityCfg("debris"),
             "pose_range": {
-                "x": (3.0, 8.0),
-                "y": (-2.0, 2.0),
-                "z": (-2.0, 2.0),
+                "x": (2.0, 4.0),
+                "y": (-1.0, 1.0),
+                "z": (-1.0, 1.0),
                 "roll": (-torch.pi, torch.pi),
                 "pitch": (-torch.pi, torch.pi),
                 "yaw": (-torch.pi, torch.pi),
             },
             "velocity_range": {
-                "x": (-0.5, 0.5),
+                "x": (-2.0, -0.5),
                 "y": (-0.5, 0.5),
                 "z": (-0.5, 0.5),
                 "roll": (-1.0, 1.0),
@@ -69,38 +69,38 @@ class EventCfg(OrbitalManipulationEventCfg):
             },
         },
     )
-    push_robot: EventTermCfg = EventTermCfg(
-        func=push_by_setting_velocity,
-        mode="interval",
-        interval_range_s=(5.0, 15.0),
-        params={
-            "asset_cfg": SceneEntityCfg("robot"),
-            "velocity_range": {
-                "x": (-0.3, 0.3),
-                "y": (-0.3, 0.3),
-                "z": (-0.3, 0.3),
-                "roll": (-0.2, 0.2),
-                "pitch": (-0.2, 0.2),
-                "yaw": (-0.2, 0.2),
-            },
-        },
-    )
-    push_debris: EventTermCfg = EventTermCfg(
-        func=push_by_setting_velocity,
-        mode="interval",
-        interval_range_s=(8.0, 20.0),
-        params={
-            "asset_cfg": SceneEntityCfg("debris"),
-            "velocity_range": {
-                "x": (-0.4, 0.4),
-                "y": (-0.4, 0.4),
-                "z": (-0.4, 0.4),
-                "roll": (-0.5, 0.5),
-                "pitch": (-0.5, 0.5),
-                "yaw": (-0.5, 0.5),
-            },
-        },
-    )
+    # push_robot: EventTermCfg = EventTermCfg(
+    #     func=push_by_setting_velocity,
+    #     mode="interval",
+    #     interval_range_s=(5.0, 15.0),
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot"),
+    #         "velocity_range": {
+    #             "x": (-0.3, 0.3),
+    #             "y": (-0.3, 0.3),
+    #             "z": (-0.3, 0.3),
+    #             "roll": (-0.2, 0.2),
+    #             "pitch": (-0.2, 0.2),
+    #             "yaw": (-0.2, 0.2),
+    #         },
+    #     },
+    # )
+    # push_debris: EventTermCfg = EventTermCfg(
+    #     func=push_by_setting_velocity,
+    #     mode="interval",
+    #     interval_range_s=(8.0, 20.0),
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("debris"),
+    #         "velocity_range": {
+    #             "x": (-0.4, 0.4),
+    #             "y": (-0.4, 0.4),
+    #             "z": (-0.4, 0.4),
+    #             "roll": (-0.5, 0.5),
+    #             "pitch": (-0.5, 0.5),
+    #             "yaw": (-0.5, 0.5),
+    #         },
+    #     },
+    # )
 
 
 @configclass
@@ -136,7 +136,7 @@ class TaskCfg(OrbitalManipulationEnvCfg):
             init_state=RigidObjectCfg.InitialStateCfg(pos=(5.0, 0.0, 0.0)),
             activate_contact_sensors=True,
         )
-        self.scene.debris.spawn.seed += self.scene.num_envs  # type: ignore
+        self.scene.debris.spawn.seed = self.seed + self.scene.num_envs  # type: ignore
 
         # Update seed & number of variants for procedural assets
         self._update_procedural_assets()

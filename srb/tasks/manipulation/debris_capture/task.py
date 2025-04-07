@@ -111,7 +111,7 @@ class TaskCfg(ManipulationEnvCfg):
         self.scene.debris = select_debris(
             self,
             prim_path="{ENV_REGEX_NS}/debris",
-            init_state=RigidObjectCfg.InitialStateCfg(pos=(1.0, 0.0, 0.5)),
+            init_state=RigidObjectCfg.InitialStateCfg(pos=(1.5, 0.0, 0.5)),
             activate_contact_sensors=True,
         )
 

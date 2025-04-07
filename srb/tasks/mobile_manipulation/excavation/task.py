@@ -14,14 +14,12 @@ from srb.core.env import (
     ViewerCfg,
 )
 from srb.core.manager import EventTermCfg, SceneEntityCfg
-from srb.core.marker import CUBOID_CFG, VisualizationMarkers
+from srb.core.marker import ARROW_CFG, VisualizationMarkers
 from srb.core.mdp import push_by_setting_velocity
-from srb.core.sim import PyramidParticlesSpawnerCfg, PreviewSurfaceCfg
+from srb.core.sim import PreviewSurfaceCfg, PyramidParticlesSpawnerCfg
 from srb.core.sim.spawners.particles.utils import (
-    particle_positions,
     count_particles_in_region,
-    calculate_excavated_volume,
-    calculate_collection_efficiency,
+    particle_positions,
 )
 from srb.utils.cfg import configclass
 from srb.utils.math import (
@@ -186,7 +184,7 @@ class Task(GroundManipulationEnv):
             excavation_max[2] - excavation_min[2],
         ]
 
-        cfg = CUBOID_CFG.copy().replace(  # type: ignore
+        cfg = ARROW_CFG.copy().replace(  # type: ignore
             prim_path="/Visuals/excavation_region"
         )
         cfg.markers["cuboid"].visual_material = PreviewSurfaceCfg(
@@ -210,7 +208,7 @@ class Task(GroundManipulationEnv):
             collection_max[2] - collection_min[2],
         ]
 
-        cfg = CUBOID_CFG.copy().replace(  # type: ignore
+        cfg = ARROW_CFG.copy().replace(  # type: ignore
             prim_path="/Visuals/collection_region"
         )
         cfg.markers["cuboid"].visual_material = PreviewSurfaceCfg(
