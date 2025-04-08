@@ -105,7 +105,6 @@ class Franka(SerialManipulator):
         ),
     )
 
-    # ## Actions - Operational Space Control
     # actions: ActionGroup = OperationalSpaceControlActionGroup(
     #     OperationalSpaceControllerActionCfg(
     #         asset_name="robot",
@@ -126,7 +125,6 @@ class Franka(SerialManipulator):
     #     )
     # )
 
-    # ## Actions - Operational Space Control
     # actions: ActionGroup = OperationalSpaceControlActionGroup(
     #     OperationalSpaceControllerActionCfg(
     #         asset_name="robot",
@@ -148,7 +146,6 @@ class Franka(SerialManipulator):
     #     )
     # )
 
-    # ## Actions - Operational Space Control
     # actions: ActionGroup = OperationalSpaceControlActionGroup(
     #     OperationalSpaceControllerActionCfg(
     #         asset_name="robot",
@@ -168,18 +165,6 @@ class Franka(SerialManipulator):
     #         stiffness_scale=120.0,
     #         damping_ratio_scale=1.0,
     #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-
-    # ## Actions - Joint effort
-    # actions: ActionGroup = JointEffortActionGroup(
-    #     JointEffortActionCfg(asset_name="robot", joint_names=[".*"], scale=0.1)
-    # )
-
-    # ## Actions - Joint position
-    # actions: ActionGroup = JointPositionRelativeActionGroup(
-    #     RelativeJointPositionActionCfg(
-    #         asset_name="robot", joint_names=[".*"], scale=0.1
     #     )
     # )
 
