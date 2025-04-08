@@ -26,7 +26,7 @@ class EventCfg(GroundEventCfg):
     target_pos_random_jump: EventTermCfg = EventTermCfg(
         func=randomize_pos,
         mode="interval",
-        interval_range_s=(60.0, 120.0),
+        interval_range_s=(150.0, 300.0),
         is_global_time=True,
         params={
             "env_attr_name": "_tf_pos_target",
@@ -64,7 +64,7 @@ class TaskCfg(GroundEnvCfg):
     events: EventCfg = EventCfg()
 
     ## Time
-    episode_length_s: float = 120.0
+    episode_length_s: float = 300.0
     is_finite_horizon: bool = False
 
     ## Target
@@ -192,7 +192,7 @@ def _compute_step_return(
     )
 
     # Penalty: Angular velocity
-    WEIGHT_ANGULAR_VELOCITY = -0.1
+    WEIGHT_ANGULAR_VELOCITY = -0.025
     penalty_angular_velocity = WEIGHT_ANGULAR_VELOCITY * torch.norm(
         vel_ang_robot, dim=-1
     )
@@ -203,8 +203,14 @@ def _compute_step_return(
         WEIGHT_DISTANCE_ROBOT_TO_TARGET * dist_robot_to_target
     )
 
+    # Penalty: Backward motion
+    WEIGHT_BACKWARD_MOTION = -0.5
+    penalty_backward_motion = WEIGHT_BACKWARD_MOTION * torch.clamp_min(
+        vel_lin_robot[:, 0], 0.0
+    )
+
     # Reward: Distance | Robot <--> Target (precision)
-    WEIGHT_DISTANCE_ROBOT_TO_TARGET_PRECISION = 32.0
+    WEIGHT_DISTANCE_ROBOT_TO_TARGET_PRECISION = 64.0
     TANH_STD_DISTANCE_ROBOT_TO_TARGET_PRECISION = 0.05
     reward_distance_robot_to_target_precision = (
         WEIGHT_DISTANCE_ROBOT_TO_TARGET_PRECISION
@@ -246,6 +252,7 @@ def _compute_step_return(
             "penalty_action_rate": penalty_action_rate,
             "penalty_angular_velocity": penalty_angular_velocity,
             "penalty_distance_robot_to_target": penalty_distance_robot_to_target,
+            "penalty_backward_motion": penalty_backward_motion,
             "reward_distance_robot_to_target_precision": reward_distance_robot_to_target_precision,
         },
         termination,
