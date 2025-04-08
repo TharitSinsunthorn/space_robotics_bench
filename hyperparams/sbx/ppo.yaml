@@ -1,7 +1,7 @@
 # Reference: https://github.com/DLR-RM/rl-baselines3-zoo/blob/27e081eb24419ee843ae1c329b0482db823c9fc1/hyperparams/ppo.yml
 policy: "MlpPolicy"
 normalize: true
-n_timesteps: 50000000
+n_timesteps: 100000000
 batch_size: 256
 n_steps: 512
 gamma: 0.95

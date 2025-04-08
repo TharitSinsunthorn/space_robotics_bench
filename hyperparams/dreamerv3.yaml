@@ -1,7 +1,7 @@
 ### Training ###
 seed: 0
 run:
-  steps: 50000000
+  steps: 100000000
   train_ratio: 32.0
 replay:
   size: 1000000
