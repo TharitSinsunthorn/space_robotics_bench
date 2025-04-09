@@ -439,9 +439,8 @@ def _compute_step_return(
             "proprio_dyn": {
                 "joint_pos_robot_normalized": joint_pos_robot_normalized,
                 "joint_pos_end_effector_normalized": joint_pos_end_effector_normalized,
-                # TODO[low]: Add joint acceleration and torque to sample_collection task observations
-                # "joint_acc_robot": joint_acc_robot,
-                # "joint_applied_torque_robot": joint_applied_torque_robot,
+                "joint_acc_robot": joint_acc_robot,
+                "joint_applied_torque_robot": joint_applied_torque_robot,
             },
         },
         {
