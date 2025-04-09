@@ -163,8 +163,8 @@ class Task(ManipulationEnv):
             # Transforms (world frame)
             tf_pos_end_effector=self._tf_end_effector.data.target_pos_w[:, 0, :],
             tf_quat_end_effector=self._tf_end_effector.data.target_quat_w[:, 0, :],
-            tf_pos_obj=self._obj.data.root_pos_w,
-            tf_quat_obj=self._obj.data.root_quat_w,
+            tf_pos_obj=self._obj.data.root_com_pos_w,
+            tf_quat_obj=self._obj.data.root_com_quat_w,
             # Contacts
             contact_forces_robot=self._contacts_robot.data.net_forces_w,  # type: ignore
             contact_forces_end_effector=self._contacts_end_effector.data.net_forces_w
