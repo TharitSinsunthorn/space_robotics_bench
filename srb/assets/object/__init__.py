@@ -18,3 +18,4 @@ from .rock import LunarRock, MarsRock  # noqa: F401
 from .sample import SampleTube  # noqa: F401
 from .shape import RandomShape  # noqa: F401
 from .solar_panel import SolarPanel  # noqa: F401
+from .juggling_ball import JugglingBall  # noqa: F401
