@@ -3,6 +3,7 @@ from typing import Sequence
 
 import torch
 
+from srb import assets
 from srb._typing import StepReturn
 from srb.core.asset import (
     Articulation,
@@ -75,7 +76,7 @@ class TaskCfg(ManipulationEnvCfg):
     domain: Domain = Domain.ORBIT
 
     ## Assets
-    scenery: ExtravehicularScenery | AssetVariant | None = None
+    scenery: ExtravehicularScenery | AssetVariant | None = assets.StaticVenusExpress()
     _scenery: ExtravehicularScenery = MISSING  # type: ignore
     debris: Object | AssetVariant | None = AssetVariant.PROCEDURAL
 

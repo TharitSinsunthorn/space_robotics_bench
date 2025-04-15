@@ -1,23 +1,5 @@
-import simforge_foundry
-
-from srb.core.asset import Object, DeformableObjectCfg
-from srb.core.sim import (
-    CollisionPropertiesCfg,
-    MassPropertiesCfg,
-    MeshCollisionPropertiesCfg,
-    RigidBodyPropertiesCfg,
-    SimforgeAssetCfg,
-    DeformableBodyPropertiesCfg,
-    DeformableBodyMaterialCfg,
-)
-from srb.core.asset import Object, RigidObjectCfg
-from srb.core.sim import (
-    CollisionPropertiesCfg,
-    MassPropertiesCfg,
-    MeshCollisionPropertiesCfg,
-    RigidBodyPropertiesCfg,
-    UsdFileCfg,
-)
+from srb.core.asset import DeformableObjectCfg, Object
+from srb.core.sim import DeformableBodyPropertiesCfg, MassPropertiesCfg, UsdFileCfg
 from srb.utils.path import SRB_ASSETS_DIR_SRB_OBJECT
 
 
