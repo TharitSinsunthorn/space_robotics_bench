@@ -31,16 +31,16 @@ class VisualTask(VisualExt, Task):
 
 
 @configclass
-class MultiVisualTaskCfg(ManipulatorEnvVisualExtCfg, MultiTaskCfg):
+class VisualMultiTaskCfg(ManipulatorEnvVisualExtCfg, MultiTaskCfg):
     def __post_init__(self):
         MultiTaskCfg.__post_init__(self)
         ManipulatorEnvVisualExtCfg.wrap(self, env_cfg=self)
 
 
-class MultiVisualTask(VisualExt, MultiTask):
-    cfg: MultiVisualTaskCfg
+class VisualMultiTask(VisualExt, MultiTask):
+    cfg: VisualMultiTaskCfg
 
-    def __init__(self, cfg: MultiVisualTaskCfg, **kwargs):
+    def __init__(self, cfg: VisualMultiTaskCfg, **kwargs):
         MultiTask.__init__(self, cfg, **kwargs)
         VisualExt.__init__(self, cfg, **kwargs)
 

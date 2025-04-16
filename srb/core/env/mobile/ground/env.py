@@ -3,6 +3,7 @@ from dataclasses import MISSING
 import torch
 
 from srb import assets
+from srb.core.action import WheeledDriveAction
 from srb.core.asset import AssetVariant, GroundRobot
 from srb.core.env import ViewerCfg
 from srb.core.env.mobile.env import (
@@ -76,3 +77,17 @@ class GroundEnv(MobileEnv):
 
     def __init__(self, cfg: GroundEnvCfg, **kwargs):
         super().__init__(cfg, **kwargs)
+
+        ## Check if the robot uses a wheeled drive action term
+        self._wheeled_drive_action_term_key = next(
+            filter(
+                lambda term_key: isinstance(
+                    self.action_manager._terms[term_key], WheeledDriveAction
+                ),
+                self.action_manager._terms.keys(),
+            ),
+            None,
+        )
+        self._forward_drive_indices = (
+            [0] if self._wheeled_drive_action_term_key is not None else []
+        )

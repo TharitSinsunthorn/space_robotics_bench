@@ -144,17 +144,6 @@ class Task(OrbitalEnv):
         ## Visualize target
         self._target_marker.visualize(self._tf_pos_target, self._tf_quat_target)
 
-        ## Check if thrust action is used (fuel tracking)
-        self._thrust_action_term_key = next(
-            filter(
-                lambda term_key: isinstance(
-                    self.action_manager._terms[term_key], ThrustAction
-                ),
-                self.action_manager._terms.keys(),
-            ),
-            None,
-        )
-
     def _reset_idx(self, env_ids: Sequence[int]):
         super()._reset_idx(env_ids)
 

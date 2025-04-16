@@ -1,5 +1,5 @@
 from dataclasses import MISSING
-from typing import Sequence, Tuple
+from typing import List, Sequence, Tuple
 
 import torch
 
@@ -146,6 +146,8 @@ class Task(GroundEnv):
             # IMU
             imu_lin_acc=self._imu_robot.data.lin_acc_b,
             imu_ang_vel=self._imu_robot.data.ang_vel_b,
+            ## Robot descriptors
+            forward_drive_indices=self._forward_drive_indices,
         )
 
 
@@ -169,6 +171,8 @@ def _compute_step_return(
     # IMU
     imu_lin_acc: torch.Tensor,
     imu_ang_vel: torch.Tensor,
+    ## Robot descriptors
+    forward_drive_indices: List[int],
 ) -> StepReturn:
     num_envs = episode_length.size(0)
     # dtype = episode_length.dtype
@@ -194,7 +198,7 @@ def _compute_step_return(
     # Penalty: Angular velocity
     WEIGHT_ANGULAR_VELOCITY = -0.025
     penalty_angular_velocity = WEIGHT_ANGULAR_VELOCITY * torch.norm(
-        vel_ang_robot, dim=-1
+        vel_ang_robot[:, :2], dim=-1
     )
 
     # Penalty: Distance | Robot <--> Target
@@ -205,8 +209,8 @@ def _compute_step_return(
 
     # Penalty: Backward motion
     WEIGHT_BACKWARD_MOTION = -0.5
-    penalty_backward_motion = WEIGHT_BACKWARD_MOTION * torch.clamp_min(
-        vel_lin_robot[:, 0], 0.0
+    penalty_backward_motion = WEIGHT_BACKWARD_MOTION * torch.norm(
+        torch.clamp_max(act_current[:, forward_drive_indices], 0.0), dim=-1
     )
 
     # Reward: Distance | Robot <--> Target (precision)

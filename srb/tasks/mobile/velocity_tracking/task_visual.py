@@ -2,18 +2,21 @@ from typing import Dict
 
 import torch
 
-from srb.core.env import ManipulatorEnvVisualExtCfg, VisualExt
+from srb.core.env import OrbitalEnvVisualExtCfg, VisualExt
 from srb.utils.cfg import configclass
 
 from .task import Task, TaskCfg
-from .task_multi import MultiTask, MultiTaskCfg
+from .task_locomotion import LocomotionTask, LocomotionTaskCfg
 
 
 @configclass
-class VisualTaskCfg(ManipulatorEnvVisualExtCfg, TaskCfg):
+class VisualTaskCfg(OrbitalEnvVisualExtCfg, TaskCfg):
+    ## Visualization
+    command_vis: bool = False
+
     def __post_init__(self):
         TaskCfg.__post_init__(self)
-        ManipulatorEnvVisualExtCfg.wrap(self, env_cfg=self)
+        OrbitalEnvVisualExtCfg.wrap(self, env_cfg=self)  # type: ignore
 
 
 class VisualTask(VisualExt, Task):
@@ -31,21 +34,24 @@ class VisualTask(VisualExt, Task):
 
 
 @configclass
-class VisualMultiTaskCfg(ManipulatorEnvVisualExtCfg, MultiTaskCfg):
+class VisualLocomotionTaskCfg(OrbitalEnvVisualExtCfg, LocomotionTaskCfg):
+    ## Visualization
+    command_vis: bool = False
+
     def __post_init__(self):
-        MultiTaskCfg.__post_init__(self)
-        ManipulatorEnvVisualExtCfg.wrap(self, env_cfg=self)
+        LocomotionTaskCfg.__post_init__(self)
+        OrbitalEnvVisualExtCfg.wrap(self, env_cfg=self)  # type: ignore
 
 
-class VisualMultiTask(VisualExt, MultiTask):
-    cfg: VisualMultiTaskCfg
+class VisualLocomotionTask(VisualExt, LocomotionTask):
+    cfg: VisualLocomotionTaskCfg
 
-    def __init__(self, cfg: VisualMultiTaskCfg, **kwargs):
-        MultiTask.__init__(self, cfg, **kwargs)
+    def __init__(self, cfg: VisualLocomotionTaskCfg, **kwargs):
+        LocomotionTask.__init__(self, cfg, **kwargs)
         VisualExt.__init__(self, cfg, **kwargs)
 
     def _get_observations(self) -> Dict[str, torch.Tensor]:
         return {
-            **MultiTask._get_observations(self),
+            **LocomotionTask._get_observations(self),
             **VisualExt._get_observations(self),
         }

@@ -6,13 +6,14 @@ from srb.core.env import OrbitalEnvVisualExtCfg, VisualExt
 from srb.utils.cfg import configclass
 
 from .task import Task, TaskCfg
+from .task_locomotion import LocomotionTask, LocomotionTaskCfg
 
 
 @configclass
 class VisualTaskCfg(OrbitalEnvVisualExtCfg, TaskCfg):
     def __post_init__(self):
         TaskCfg.__post_init__(self)
-        OrbitalEnvVisualExtCfg.wrap(self, env_cfg=self)
+        OrbitalEnvVisualExtCfg.wrap(self, env_cfg=self)  # type: ignore
 
 
 class VisualTask(VisualExt, Task):
@@ -25,5 +26,26 @@ class VisualTask(VisualExt, Task):
     def _get_observations(self) -> Dict[str, torch.Tensor]:
         return {
             **Task._get_observations(self),
+            **VisualExt._get_observations(self),
+        }
+
+
+@configclass
+class VisualLocomotionTaskCfg(OrbitalEnvVisualExtCfg, LocomotionTaskCfg):
+    def __post_init__(self):
+        LocomotionTaskCfg.__post_init__(self)
+        OrbitalEnvVisualExtCfg.wrap(self, env_cfg=self)  # type: ignore
+
+
+class VisualLocomotionTask(VisualExt, LocomotionTask):
+    cfg: VisualLocomotionTaskCfg
+
+    def __init__(self, cfg: VisualLocomotionTaskCfg, **kwargs):
+        LocomotionTask.__init__(self, cfg, **kwargs)
+        VisualExt.__init__(self, cfg, **kwargs)
+
+    def _get_observations(self) -> Dict[str, torch.Tensor]:
+        return {
+            **LocomotionTask._get_observations(self),
             **VisualExt._get_observations(self),
         }
