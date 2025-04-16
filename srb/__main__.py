@@ -306,7 +306,6 @@ def teleop_agent(
     recognized_cmd_keys: Sequence[str] = ("cmd", "command", "goal", "target"),
     **kwargs,
 ):
-    import gymnasium
     import torch
 
     from srb.core.action import ActionGroup, ActionTermCfg
@@ -380,29 +379,41 @@ def teleop_agent(
         env_supports_direct_teleop = False
 
     ## Dispatch the appropriate implementation
-    if env_supports_direct_teleop:
+    env_supports_teleop_via_policy = (
+        next(
+            (
+                key
+                for key in (
+                    *recognized_cmd_keys,
+                    *map(lambda x: "_" + x, recognized_cmd_keys),
+                    *map(lambda x: "__" + x, recognized_cmd_keys),
+                )
+                if hasattr(env.unwrapped, key)
+            ),
+            None,
+        )
+        is not None
+    )
+    if algo and env_supports_teleop_via_policy:
+        _teleop_agent_via_policy(
+            env=env,
+            sim_app=sim_app,
+            teleop_interface=teleop_interface,
+            algo=algo,
+            recognized_cmd_keys=recognized_cmd_keys,
+            **kwargs,
+        )
+    elif env_supports_direct_teleop:
         _teleop_agent_direct(
             env=env,
             sim_app=sim_app,
             teleop_interface=teleop_interface,
             **kwargs,
         )
-    elif isinstance(env.observation_space, gymnasium.spaces.Dict) and any(
-        key in env.observation_space.spaces.keys() for key in recognized_cmd_keys
-    ):
-        if algo:
-            _teleop_agent_via_policy(
-                env=env,
-                sim_app=sim_app,
-                teleop_interface=teleop_interface,
-                algo=algo,
-                recognized_cmd_keys=recognized_cmd_keys,
-                **kwargs,
-            )
-        else:
-            raise ValueError(
-                f'Environment "{env}" can only be teleoperated via policy. Please provide a policy via "--algo" and an optional "--model" argument.'
-            )
+    elif env_supports_teleop_via_policy:
+        raise ValueError(
+            f'Environment "{env}" can only be teleoperated via policy. Please provide a policy via "--algo" and an optional "--model" argument.'
+        )
     else:
         action_terms = {
             action_key: action_term.__class__.__name__
@@ -471,50 +482,40 @@ def _teleop_agent_via_policy(
     **kwargs,
 ):
     import torch
-    from gymnasium.core import (
-        ActType,
-        ObservationWrapper,
-        ObsType,
-        SupportsFloat,
-        WrapperObsType,
-    )
+    from gymnasium.core import ActType, SupportsFloat, Wrapper, WrapperObsType
 
     from srb.utils import logging
 
     ## Try disabling event for the command
     if hasattr(env.unwrapped, "event_manager"):
+        events_to_remove: Sequence[Tuple[str, str]] = []
         for (
             category,
             event_names,
         ) in env.unwrapped.event_manager._mode_term_names.items():  # type: ignore
             for event_name in event_names:
-                if any(key in event_name for key in recognized_cmd_keys):
-                    env.unwrapped.event_manager._mode_term_names[category].remove(  # type: ignore
-                        event_name
-                    )
-                    env.unwrapped.event_manager._mode_term_cfgs[category].remove(  # type: ignore
-                        event_name
-                    )
+                for recognized_cmd_key in recognized_cmd_keys:
+                    if recognized_cmd_key in event_name:
+                        events_to_remove.append(
+                            (
+                                category,
+                                event_names.index(event_name),
+                            )
+                        )
+                        break
+        for category, event_id in reversed(events_to_remove):
+            env.unwrapped.event_manager._mode_term_names[category].pop(  # type: ignore
+                event_id
+            )
+            env.unwrapped.event_manager._mode_term_cfgs[category].pop(  # type: ignore
+                event_id
+            )
 
-    class InjectTeleopWrapper(ObservationWrapper):
+    class InjectTeleopWrapper(Wrapper):
         def __init__(self, env, *args, **kwargs):
             super().__init__(env, *args, **kwargs)
-            self._obs_cmd_key = next(
-                (
-                    key
-                    for key in recognized_cmd_keys
-                    if any(
-                        key in obs_key
-                        for obs_key in self.observation_space.spaces.keys()  # type: ignore
-                    )
-                ),
-                None,
-            )
-            if not self._obs_cmd_key:
-                raise ValueError(
-                    f"Unable to find the command key in the observation space: {recognized_cmd_keys}"
-                )
 
+            ## Find the internal command attribute of the environment
             self._internal_cmd_attr_name = next(
                 (
                     key
@@ -538,22 +539,27 @@ def _teleop_agent_via_policy(
                 internal_cmd_attr_shape[0] == self.env.unwrapped.cfg.scene.num_envs  # type: ignore
             )
 
-        def observation(self, observation: ObsType) -> WrapperObsType:  # type: ignore
+        def step(
+            self,
+            action: ActType,  # type: ignore
+        ) -> Tuple[WrapperObsType, SupportsFloat, bool, bool, Mapping[str, Any]]:  # type: ignore
+            ## Exit if the simulation is not running
+            if not sim_app.is_running():
+                exit()
+
             ## Get actions from the teleoperation interface and process them
             twist, event = teleop_interface.advance()
             if invert_controls:
                 twist[:2] *= -1.0
 
-            cmd_len = observation[self._obs_cmd_key].shape[-1]  # type: ignore
-
-            ## Map teleoperation actions to commands
+            ## Update internal command
+            cmd_len = getattr(env.unwrapped, self._internal_cmd_attr_name).shape[-1]  # type: ignore
             match cmd_len:
                 case _ if cmd_len < 7:
                     cmd = torch.from_numpy(twist[:cmd_len]).to(
                         device=env.unwrapped.device,  # type: ignore
                         dtype=torch.float32,
                     )
-                    observation[self._obs_cmd_key][:] = cmd  # type: ignore
                     setattr(
                         env.unwrapped,
                         self._internal_cmd_attr_name,  # type: ignore
@@ -578,7 +584,6 @@ def _teleop_agent_via_policy(
                             ),
                         )
                     )
-                    observation[self._obs_cmd_key][:] = cmd  # type: ignore
                     setattr(
                         env.unwrapped,
                         self._internal_cmd_attr_name,  # type: ignore
@@ -596,16 +601,7 @@ def _teleop_agent_via_policy(
                         f"Unsupported command length for teleoperation: {cmd_len}"
                     )
 
-            return observation  # type: ignore
-
-        def step(
-            self,
-            action: ActType,  # type: ignore
-        ) -> Tuple[WrapperObsType, SupportsFloat, bool, bool, Mapping[str, Any]]:  # type: ignore
-            # Exit if the simulation is not running
-            if not sim_app.is_running():
-                exit()
-
+            ## Step the environment
             observation, reward, terminated, truncated, info = super().step(action)
             logging.trace(
                 f"action: {action}\n"
