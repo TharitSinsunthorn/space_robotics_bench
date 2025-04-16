@@ -1,5 +1,5 @@
 from dataclasses import MISSING
-from typing import List, Sequence, Tuple
+from typing import List, Sequence
 
 import torch
 
@@ -29,7 +29,7 @@ class EventCfg(GroundEventCfg):
         interval_range_s=(150.0, 300.0),
         is_global_time=True,
         params={
-            "env_attr_name": "_tf_pos_target",
+            "env_attr_name": "_goal",
             "pos_range": {
                 "x": MISSING,
                 "y": MISSING,
@@ -42,7 +42,7 @@ class EventCfg(GroundEventCfg):
         interval_range_s=(0.25, 0.75),
         is_global_time=True,
         params={
-            "env_attr_name": "_tf_pos_target",
+            "env_attr_name": "_goal",
             "axes": ("x", "y"),
             "step_range": (0.05, 0.5),
             "smoothness": 0.8,
@@ -69,7 +69,6 @@ class TaskCfg(GroundEnvCfg):
 
     ## Target
     target_pos_range_ratio: float = 0.9
-    tf_quat_target: Tuple[float, float, float, float] = (1.0, 0.0, 0.0, 0.0)
     target_marker_cfg: VisualizationMarkersCfg = VisualizationMarkersCfg(
         prim_path="/Visuals/target",
         markers={
@@ -114,19 +113,16 @@ class Task(GroundEnv):
         )
 
         ## Initialize buffers
-        self._tf_pos_target = self.scene.env_origins + torch.zeros(
+        self._goal = self.scene.env_origins + torch.zeros(
             self.num_envs, 3, device=self.device
         )
-        self._tf_quat_target = torch.tensor(
-            self.cfg.tf_quat_target, dtype=torch.float32, device=self.device
-        ).repeat(self.num_envs, 1)
 
     def _reset_idx(self, env_ids: Sequence[int]):
         super()._reset_idx(env_ids)
 
     def extract_step_return(self) -> StepReturn:
         ## Visualize target
-        self._target_marker.visualize(self._tf_pos_target, self._tf_quat_target)
+        self._target_marker.visualize(self._goal)
 
         return _compute_step_return(
             ## Time
@@ -142,7 +138,7 @@ class Task(GroundEnv):
             vel_lin_robot=self._robot.data.root_lin_vel_b,
             vel_ang_robot=self._robot.data.root_ang_vel_b,
             # Transforms (world frame)
-            tf_pos_target=self._tf_pos_target,
+            tf_pos_target=self._goal,
             # IMU
             imu_lin_acc=self._imu_robot.data.lin_acc_b,
             imu_ang_vel=self._imu_robot.data.ang_vel_b,
@@ -183,7 +179,7 @@ def _compute_step_return(
     ############
     ## Transforms (world frame)
     # Robot -> Target
-    tf_pos_robot_to_target = tf_pos_robot - tf_pos_target
+    tf_pos_robot_to_target = tf_pos_robot[:, :2] - tf_pos_target[:, :2]
     dist_robot_to_target = torch.norm(tf_pos_robot_to_target, dim=-1)
 
     #############
@@ -245,12 +241,10 @@ def _compute_step_return(
                 "vel_ang_robot": vel_ang_robot,
                 "tf_pos_robot_to_target": tf_pos_robot_to_target,
             },
-            # "state_dyn": {},
             "proprio": {
                 "imu_lin_acc": imu_lin_acc,
                 "imu_ang_vel": imu_ang_vel,
             },
-            # "proprio_dyn": {},
         },
         {
             "penalty_action_rate": penalty_action_rate,

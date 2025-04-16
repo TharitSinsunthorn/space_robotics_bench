@@ -304,6 +304,7 @@ def teleop_agent(
     rot_sensitivity: float,
     algo: str,
     recognized_cmd_keys: Sequence[str] = ("cmd", "command", "goal", "target"),
+    addititive_cmd_keys: Sequence[str] = ("goal", "target"),
     **kwargs,
 ):
     import torch
@@ -401,6 +402,7 @@ def teleop_agent(
             teleop_interface=teleop_interface,
             algo=algo,
             recognized_cmd_keys=recognized_cmd_keys,
+            addititive_cmd_keys=addititive_cmd_keys,
             **kwargs,
         )
     elif env_supports_direct_teleop:
@@ -479,6 +481,7 @@ def _teleop_agent_via_policy(
     teleop_interface: "CombinedTeleopInterface",
     invert_controls: bool,
     recognized_cmd_keys: Sequence[str],
+    addititive_cmd_keys: Sequence[str],
     **kwargs,
 ):
     import torch
@@ -538,6 +541,9 @@ def _teleop_agent_via_policy(
             self._is_internal_cmd_attr_per_env = len(internal_cmd_attr_shape) == 2 and (
                 internal_cmd_attr_shape[0] == self.env.unwrapped.cfg.scene.num_envs  # type: ignore
             )
+            self._is_cmd_additive = any(
+                key in self._internal_cmd_attr_name for key in addititive_cmd_keys
+            )
 
         def step(
             self,
@@ -570,6 +576,11 @@ def _teleop_agent_via_policy(
                             )
                             if self._is_internal_cmd_attr_per_env
                             else cmd
+                        )
+                        if not self._is_cmd_additive
+                        else (
+                            getattr(env.unwrapped, self._internal_cmd_attr_name)  # type: ignore
+                            + cmd
                         ),
                     )
                 case 7:
@@ -594,6 +605,11 @@ def _teleop_agent_via_policy(
                             )
                             if self._is_internal_cmd_attr_per_env
                             else cmd
+                        )
+                        if not self._is_cmd_additive
+                        else (
+                            getattr(env.unwrapped, self._internal_cmd_attr_name)  # type: ignore
+                            + cmd
                         ),
                     )
                 case _:

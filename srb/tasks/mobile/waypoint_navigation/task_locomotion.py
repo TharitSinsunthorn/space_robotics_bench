@@ -98,7 +98,7 @@ class LocomotionTask(Task):
 
     def extract_step_return(self) -> StepReturn:
         ## Visualize target
-        self._target_marker.visualize(self._tf_pos_target, self._tf_quat_target)
+        self._target_marker.visualize(self._goal)
 
         return _compute_step_return(
             ## Time
@@ -116,7 +116,7 @@ class LocomotionTask(Task):
             vel_ang_robot=self._robot.data.root_ang_vel_b,
             projected_gravity_robot=self._robot.data.projected_gravity_b,
             # Transforms (world frame)
-            tf_pos_target=self._tf_pos_target,
+            tf_pos_target=self._goal,
             # Joints
             joint_pos_robot=self._robot.data.joint_pos,
             joint_pos_limits_robot=(
@@ -187,7 +187,7 @@ def _compute_step_return(
 
     ## Transforms (world frame)
     # Robot -> Target
-    tf_pos_robot_to_target = tf_pos_robot - tf_pos_target
+    tf_pos_robot_to_target = tf_pos_robot[:, :2] - tf_pos_target[:, :2]
     dist_robot_to_target = torch.norm(tf_pos_robot_to_target, dim=-1)
 
     ## Joints
@@ -323,7 +323,6 @@ def _compute_step_return(
                 "joint_acc_robot": joint_acc_robot,
                 "joint_applied_torque_robot": joint_applied_torque_robot,
             },
-            # "proprio_dyn": {},
         },
         {
             "penalty_action_rate": penalty_action_rate,
