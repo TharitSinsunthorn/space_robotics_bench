@@ -303,6 +303,7 @@ def teleop_agent(
     pos_sensitivity: float,
     rot_sensitivity: float,
     algo: str,
+    recognized_cmd_keys: Sequence[str] = ("cmd", "command", "goal", "target"),
     **kwargs,
 ):
     import gymnasium
@@ -386,9 +387,8 @@ def teleop_agent(
             teleop_interface=teleop_interface,
             **kwargs,
         )
-    elif (
-        isinstance(env.observation_space, gymnasium.spaces.Dict)
-        and "command" in env.observation_space.spaces.keys()
+    elif isinstance(env.observation_space, gymnasium.spaces.Dict) and any(
+        key in env.observation_space.spaces.keys() for key in recognized_cmd_keys
     ):
         if algo:
             _teleop_agent_via_policy(
@@ -396,6 +396,7 @@ def teleop_agent(
                 sim_app=sim_app,
                 teleop_interface=teleop_interface,
                 algo=algo,
+                recognized_cmd_keys=recognized_cmd_keys,
                 **kwargs,
             )
         else:
@@ -466,7 +467,7 @@ def _teleop_agent_via_policy(
     sim_app: "SimulationApp",
     teleop_interface: "CombinedTeleopInterface",
     invert_controls: bool,
-    recognized_cmd_keys: Sequence[str] = ("command", "_command", "cmd", "_cmd"),
+    recognized_cmd_keys: Sequence[str],
     **kwargs,
 ):
     import torch
@@ -482,21 +483,18 @@ def _teleop_agent_via_policy(
 
     ## Try disabling event for the command
     if hasattr(env.unwrapped, "event_manager"):
-        event_cmd: Tuple[str, int] | None = None
         for (
             category,
             event_names,
         ) in env.unwrapped.event_manager._mode_term_names.items():  # type: ignore
-            for recognized_cmd_key in recognized_cmd_keys:
-                if recognized_cmd_key in event_names:
-                    event_cmd = (category, event_names.index(recognized_cmd_key))
-                    break
-            else:
-                continue
-            break
-        if event_cmd:
-            env.unwrapped.event_manager._mode_term_names[event_cmd[0]].pop(event_cmd[1])  # type: ignore
-            env.unwrapped.event_manager._mode_term_cfgs[event_cmd[0]].pop(event_cmd[1])  # type: ignore
+            for event_name in event_names:
+                if any(key in event_name for key in recognized_cmd_keys):
+                    env.unwrapped.event_manager._mode_term_names[category].remove(  # type: ignore
+                        event_name
+                    )
+                    env.unwrapped.event_manager._mode_term_cfgs[category].remove(  # type: ignore
+                        event_name
+                    )
 
     class InjectTeleopWrapper(ObservationWrapper):
         def __init__(self, env, *args, **kwargs):
@@ -505,7 +503,10 @@ def _teleop_agent_via_policy(
                 (
                     key
                     for key in recognized_cmd_keys
-                    if key in self.observation_space.spaces.keys()  # type: ignore
+                    if any(
+                        key in obs_key
+                        for obs_key in self.observation_space.spaces.keys()  # type: ignore
+                    )
                 ),
                 None,
             )
@@ -517,7 +518,11 @@ def _teleop_agent_via_policy(
             self._internal_cmd_attr_name = next(
                 (
                     key
-                    for key in recognized_cmd_keys
+                    for key in (
+                        *recognized_cmd_keys,
+                        *map(lambda x: "_" + x, recognized_cmd_keys),
+                        *map(lambda x: "__" + x, recognized_cmd_keys),
+                    )
                     if hasattr(self.env.unwrapped, key)
                 ),
                 None,
