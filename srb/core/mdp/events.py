@@ -266,7 +266,7 @@ def randomize_command(
     cmd_attr[env_ids] = sample_uniform(
         -magnitude,
         magnitude,
-        cmd_attr.shape,
+        (len(env_ids), *cmd_attr.shape[1:]),
         device=_env.device,
     )
 
