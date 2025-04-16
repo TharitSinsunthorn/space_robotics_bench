@@ -41,8 +41,54 @@ class Cubesat(OrbitalRobot):
     )
 
     ## Actions
-    actions: ActionGroup = BodyAccelerationActionGroup(
-        BodyAccelerationActionCfg(asset_name="robot", scale=0.05)
+    actions: ActionGroup = ThrustActionGroup(
+        ThrustActionCfg(
+            asset_name="robot",
+            thrusters=(
+                ThrusterCfg(
+                    offset=(0.05, 0.05, 0.05),
+                    direction=(0.0, 0.0, 1.0),
+                    power=5.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.05, 0.05, 0.05),
+                    direction=(0.0, 0.0, 1.0),
+                    power=5.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.05, -0.05, 0.05),
+                    direction=(0.0, 0.0, 1.0),
+                    power=5.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.05, -0.05, 0.05),
+                    direction=(0.0, 0.0, 1.0),
+                    power=5.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.05, 0.05, -0.05),
+                    direction=(0.0, 0.0, -1.0),
+                    power=5.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.05, 0.05, -0.05),
+                    direction=(0.0, 0.0, -1.0),
+                    power=5.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.05, -0.05, -0.05),
+                    direction=(0.0, 0.0, -1.0),
+                    power=5.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.05, -0.05, -0.05),
+                    direction=(0.0, 0.0, -1.0),
+                    power=5.0,
+                ),
+            ),
+            fuel_capacity=0.5 * 10.0,
+            fuel_consumption_rate=(0.5 * 10.0 / (8 * 5.0)) / 20.0,
+        )
     )
 
     ## Frames
@@ -79,6 +125,7 @@ class Gateway(OrbitalRobot):
             rigid_props=RigidBodyPropertiesCfg(
                 max_depenetration_velocity=5.0,
             ),
+            mass_props=MassPropertiesCfg(density=1500.0),
         ),
         init_state=RigidObjectCfg.InitialStateCfg(),
     )
@@ -122,13 +169,60 @@ class VenusExpress(OrbitalRobot):
             rigid_props=RigidBodyPropertiesCfg(
                 max_depenetration_velocity=5.0,
             ),
+            mass_props=MassPropertiesCfg(density=1500.0),
         ),
         init_state=RigidObjectCfg.InitialStateCfg(),
     )
 
     ## Actions
-    actions: ActionGroup = BodyAccelerationActionGroup(
-        BodyAccelerationActionCfg(asset_name="robot", scale=0.05)
+    actions: ActionGroup = ThrustActionGroup(
+        ThrustActionCfg(
+            asset_name="robot",
+            thrusters=(
+                ThrusterCfg(
+                    offset=(0.5, 0.5, 0.5),
+                    direction=(0.0, 0.0, 1.0),
+                    power=100.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.5, 0.5, 0.5),
+                    direction=(0.0, 0.0, 1.0),
+                    power=100.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.5, -0.5, 0.5),
+                    direction=(0.0, 0.0, 1.0),
+                    power=100.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.5, -0.5, 0.5),
+                    direction=(0.0, 0.0, 1.0),
+                    power=100.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.5, 0.5, -0.5),
+                    direction=(0.0, 0.0, -1.0),
+                    power=100.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.5, 0.5, -0.5),
+                    direction=(0.0, 0.0, -1.0),
+                    power=100.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.5, -0.5, -0.5),
+                    direction=(0.0, 0.0, -1.0),
+                    power=100.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.5, -0.5, -0.5),
+                    direction=(0.0, 0.0, -1.0),
+                    power=100.0,
+                ),
+            ),
+            fuel_capacity=0.5 * 1000.0,
+            fuel_consumption_rate=(0.5 * 1000.0 / (8 * 100.0)) / 20.0,
+        )
     )
 
     ## Frames

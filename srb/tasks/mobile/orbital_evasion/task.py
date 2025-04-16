@@ -10,7 +10,6 @@ from srb.core.env import OrbitalEnv, OrbitalEnvCfg, OrbitalEventCfg, OrbitalScen
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers, VisualizationMarkersCfg
 from srb.core.mdp import reset_collection_root_state_uniform_poisson_disk_3d
-from srb.core.sensor import ContactSensor, ContactSensorCfg
 from srb.core.sim import PreviewSurfaceCfg, SphereCfg
 from srb.utils.cfg import configclass
 from srb.utils.math import matrix_from_quat, rotmat_to_rot6d
@@ -25,12 +24,6 @@ from .asset import select_obstacle
 @configclass
 class SceneCfg(OrbitalSceneCfg):
     env_spacing = 12.0
-
-    ## Sensors
-    contacts_robot: ContactSensorCfg = ContactSensorCfg(
-        prim_path=MISSING,  # type: ignore
-        track_air_time=True,
-    )
 
     ## Assets
     objs: RigidObjectCollectionCfg = RigidObjectCollectionCfg(
@@ -106,9 +99,6 @@ class TaskCfg(OrbitalEnvCfg):
             for i in range(self.num_obstacles)
         }
 
-        # Sensor: Robot contacts
-        self.scene.contacts_robot.prim_path = f"{self.scene.robot.prim_path}/.*"
-
         # Update seed & number of variants for procedural assets
         self._update_procedural_assets()
 
@@ -125,7 +115,6 @@ class Task(OrbitalEnv):
         super().__init__(cfg, **kwargs)
 
         ## Get scene assets
-        self._contacts_robot: ContactSensor = self.scene["contacts_robot"]
         self._objs: RigidObjectCollection = self.scene["objs"]
         self._target_marker: VisualizationMarkers = VisualizationMarkers(
             self.cfg.target_marker_cfg
@@ -175,8 +164,6 @@ class Task(OrbitalEnv):
             # Transforms (world frame)
             tf_pos_objs=self._objs.data.object_com_pos_w,
             tf_pos_target=self._tf_pos_target,
-            # Contacts
-            contact_robot=self._contacts_robot.compute_first_contact(self.step_dt),
             # IMU
             imu_lin_acc=self._imu_robot.data.lin_acc_b,
             imu_ang_vel=self._imu_robot.data.ang_vel_b,
@@ -205,8 +192,6 @@ def _compute_step_return(
     # Transforms (world frame)
     tf_pos_objs: torch.Tensor,
     tf_pos_target: torch.Tensor,
-    # Contacts
-    contact_robot: torch.Tensor,
     # IMU
     imu_lin_acc: torch.Tensor,
     imu_ang_vel: torch.Tensor,
@@ -235,9 +220,6 @@ def _compute_step_return(
 
     # Robot -> Target
     tf_pos_robot_to_target = tf_pos_target - tf_pos_robot
-
-    ## Contacts
-    crash = contact_robot.any(dim=1)
 
     ## Fuel
     remaining_fuel = (
@@ -279,10 +261,6 @@ def _compute_step_return(
         tf_pos_robot_to_target, dim=-1
     )
 
-    # Penalty: Crash
-    WEIGHT_CRASH = -16.0
-    penalty_crash = WEIGHT_CRASH * crash.float()
-
     ##################
     ## Terminations ##
     ##################
@@ -317,7 +295,6 @@ def _compute_step_return(
             "penalty_angular_velocity": penalty_angular_velocity,
             "reward_distance_robot_to_nearest_obj": reward_distance_robot_to_nearest_obj,
             "penalty_distance_robot_to_target": penalty_distance_robot_to_target,
-            "penalty_crash": penalty_crash,
         },
         termination,
         truncation,
