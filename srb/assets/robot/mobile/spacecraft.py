@@ -182,46 +182,46 @@ class VenusExpress(OrbitalRobot):
                 ThrusterCfg(
                     offset=(0.5, 0.5, 0.5),
                     direction=(0.0, 0.0, 1.0),
-                    power=100.0,
+                    power=2000.0,
                 ),
                 ThrusterCfg(
                     offset=(-0.5, 0.5, 0.5),
                     direction=(0.0, 0.0, 1.0),
-                    power=100.0,
+                    power=2000.0,
                 ),
                 ThrusterCfg(
                     offset=(0.5, -0.5, 0.5),
                     direction=(0.0, 0.0, 1.0),
-                    power=100.0,
+                    power=2000.0,
                 ),
                 ThrusterCfg(
                     offset=(-0.5, -0.5, 0.5),
                     direction=(0.0, 0.0, 1.0),
-                    power=100.0,
+                    power=2000.0,
                 ),
                 ThrusterCfg(
                     offset=(0.5, 0.5, -0.5),
                     direction=(0.0, 0.0, -1.0),
-                    power=100.0,
+                    power=2000.0,
                 ),
                 ThrusterCfg(
                     offset=(-0.5, 0.5, -0.5),
                     direction=(0.0, 0.0, -1.0),
-                    power=100.0,
+                    power=2000.0,
                 ),
                 ThrusterCfg(
                     offset=(0.5, -0.5, -0.5),
                     direction=(0.0, 0.0, -1.0),
-                    power=100.0,
+                    power=2000.0,
                 ),
                 ThrusterCfg(
                     offset=(-0.5, -0.5, -0.5),
                     direction=(0.0, 0.0, -1.0),
-                    power=100.0,
+                    power=2000.0,
                 ),
             ),
-            fuel_capacity=0.5 * 1000.0,
-            fuel_consumption_rate=(0.5 * 1000.0 / (8 * 100.0)) / 20.0,
+            fuel_capacity=0.5 * 10000.0,
+            fuel_consumption_rate=(0.5 * 10000.0 / (8 * 2000.0)) / 20.0,
         )
     )
 
