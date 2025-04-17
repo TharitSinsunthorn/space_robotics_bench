@@ -167,8 +167,8 @@ class Task(ManipulationEnv):
             tf_pos_obj=self._obj.data.root_com_pos_w,
             tf_quat_obj=self._obj.data.root_com_quat_w,
             # Object velocity
-            vel_lin_obj=self._obj.data.root_lin_vel_w,
-            vel_ang_obj=self._obj.data.root_ang_vel_w,
+            vel_lin_obj=self._obj.data.root_com_lin_vel_w,
+            vel_ang_obj=self._obj.data.root_com_ang_vel_w,
             # Contacts
             contact_forces_robot=self._contacts_robot.data.net_forces_w,  # type: ignore
             contact_forces_end_effector=self._contacts_end_effector.data.net_forces_w
