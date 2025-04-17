@@ -166,6 +166,9 @@ class Task(ManipulationEnv):
             tf_quat_end_effector=self._tf_end_effector.data.target_quat_w[:, 0, :],
             tf_pos_obj=self._obj.data.root_com_pos_w,
             tf_quat_obj=self._obj.data.root_com_quat_w,
+            # Object velocity
+            vel_lin_obj=self._obj.data.root_lin_vel_w,
+            vel_ang_obj=self._obj.data.root_ang_vel_w,
             # Contacts
             contact_forces_robot=self._contacts_robot.data.net_forces_w,  # type: ignore
             contact_forces_end_effector=self._contacts_end_effector.data.net_forces_w
@@ -203,6 +206,9 @@ def _compute_step_return(
     tf_quat_end_effector: torch.Tensor,
     tf_pos_obj: torch.Tensor,
     tf_quat_obj: torch.Tensor,
+    # Object velocity
+    vel_lin_obj: torch.Tensor,
+    vel_ang_obj: torch.Tensor,
     # Contacts
     contact_forces_robot: torch.Tensor,
     contact_forces_end_effector: torch.Tensor | None,
@@ -339,6 +345,13 @@ def _compute_step_return(
         else torch.zeros(num_envs, dtype=dtype, device=device)
     )
 
+    # Penalty: Debris velocity
+    WEIGHT_DEBRIS_VELOCITY_LIN = -1.0
+    WEIGHT_DEBRIS_VELOCITY_ANG = -0.3
+    penalty_debris_velocity = WEIGHT_DEBRIS_VELOCITY_LIN * torch.norm(
+        vel_lin_obj, dim=-1
+    ) + WEIGHT_DEBRIS_VELOCITY_ANG * torch.norm(vel_ang_obj, dim=-1)
+
     ##################
     ## Terminations ##
     ##################
@@ -360,6 +373,8 @@ def _compute_step_return(
                 "contact_forces_mean_end_effector": contact_forces_mean_end_effector,
                 "tf_pos_end_effector_to_obj": tf_pos_end_effector_to_obj,
                 "tf_rot6d_end_effector_to_obj": tf_rot6d_end_effector_to_obj,
+                "vel_lin_obj": vel_lin_obj,
+                "vel_ang_obj": vel_ang_obj,
             },
             "state_dyn": {
                 "contact_forces_robot": contact_forces_robot,
@@ -383,6 +398,7 @@ def _compute_step_return(
             "reward_top_down_orientation": reward_top_down_orientation,
             "reward_distance_end_effector_to_obj": reward_distance_end_effector_to_obj,
             "reward_grasp": reward_grasp,
+            "penalty_debris_velocity": penalty_debris_velocity,
         },
         termination,
         truncation,
