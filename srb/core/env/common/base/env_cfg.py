@@ -716,9 +716,9 @@ class BaseEnvCfg:
                 spawn=PyramidParticlesSpawnerCfg(
                     ratio=self._particles_ratio,
                     particle_size=self._particles_size,
-                    dim_x=int(self.spacing / self._particles_size),
-                    dim_y=int(self.spacing / self._particles_size),
-                    dim_z=int(0.5 * self.spacing / self._particles_size),
+                    dim_x=round(self.spacing / self._particles_size),
+                    dim_y=round(self.spacing / self._particles_size),
+                    dim_z=round(0.5 * self.spacing / self._particles_size),
                     velocity=((-0.5, 0.5), (-0.5, 0.5), (-0.5, 0.0)),
                     fluid=False,
                     friction=1.0,
