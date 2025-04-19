@@ -39,9 +39,9 @@ class GroundEventCfg(MobileEventCfg):
                 "x": (-0.5, 0.5),
                 "y": (-0.5, 0.5),
                 "z": (0.0, 0.5),
-                "roll": (-0.5 * torch.pi, 0.5 * torch.pi),
-                "pitch": (-0.5 * torch.pi, 0.5 * torch.pi),
-                "yaw": (-0.5 * torch.pi, 0.5 * torch.pi),
+                "roll": (-0.1 * torch.pi, 0.1 * torch.pi),
+                "pitch": (-0.1 * torch.pi, 0.1 * torch.pi),
+                "yaw": (-0.3 * torch.pi, 0.3 * torch.pi),
             },
         },
     )

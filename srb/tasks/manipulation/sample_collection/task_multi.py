@@ -57,7 +57,7 @@ class MultiEventCfg(EventCfg):
 class MultiTaskCfg(TaskCfg):
     ## Scene
     scene: MultiSceneCfg = MultiSceneCfg()
-    num_samples: int = 8
+    num_samples: int = 3
 
     ## Events
     events: MultiEventCfg = MultiEventCfg()

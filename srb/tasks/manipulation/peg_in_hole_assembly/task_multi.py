@@ -68,7 +68,7 @@ class MultiEventCfg(EventCfg):
 class MultiTaskCfg(TaskCfg):
     ## Scene
     scene: MultiSceneCfg = MultiSceneCfg()
-    num_pegs: int = 6
+    num_pegs: int = 2
     hole_spacing: float = 0.15
 
     ## Events

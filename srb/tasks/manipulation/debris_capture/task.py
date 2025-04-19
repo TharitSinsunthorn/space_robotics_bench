@@ -78,7 +78,7 @@ class TaskCfg(ManipulationEnvCfg):
     ## Assets
     scenery: ExtravehicularScenery | AssetVariant | None = assets.StaticVenusExpress()
     _scenery: ExtravehicularScenery = MISSING  # type: ignore
-    debris: Object | AssetVariant | None = AssetVariant.PROCEDURAL
+    debris: Object | AssetVariant | None = AssetVariant.DATASET
 
     ## Scene
     scene: SceneCfg = SceneCfg()

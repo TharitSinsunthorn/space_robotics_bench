@@ -152,10 +152,10 @@ class TaskCfg(ManipulationEnvCfg):
             )
             for i, (init_pos, short_peg) in enumerate(
                 [
-                    ((0.55 + 0.1, 0.2, 0.015), True),
-                    ((0.55 + 0.1, -0.2, 0.015), True),
-                    ((0.55 - 0.1, 0.2, 0.015), False),
-                    ((0.55 - 0.1, -0.2, 0.015), False),
+                    ((0.55 + 0.1, 0.2, 0.04), True),
+                    ((0.55 + 0.1, -0.2, 0.04), True),
+                    ((0.55 - 0.1, 0.2, 0.04), False),
+                    ((0.55 - 0.1, -0.2, 0.04), False),
                 ]
             )
         ]
@@ -176,13 +176,13 @@ class TaskCfg(ManipulationEnvCfg):
         # Scene: Panel
         self.panel_cfg = select_solar_panel(
             self,
-            init_state=RigidObjectCfg.InitialStateCfg(pos=(0.55, 0.0, 0.015)),
+            init_state=RigidObjectCfg.InitialStateCfg(pos=(0.55, 0.0, 0.04)),
         )
         self.scene.panel = self.panel_cfg.asset_cfg
         self.panel_tf_pos_target = (
             self.panel_tf_pos_target[0] + self.panel_cfg.offset_pos[0],
             self.panel_tf_pos_target[1] + self.panel_cfg.offset_pos[1],
-            self.panel_tf_pos_target[2] + self.panel_cfg.offset_pos[2] + 0.015,
+            self.panel_tf_pos_target[2] + self.panel_cfg.offset_pos[2] + 0.04,
         )
 
         # Sensor: End-effector contacts
@@ -250,12 +250,9 @@ class Task(ManipulationEnv):
         self._tf_pos_panel_initial = torch.zeros(
             (self.num_envs, 3), dtype=torch.float32, device=self.device
         )
-        self._tf_pos_panel_target = (
-            torch.tensor(
-                self.cfg.panel_tf_pos_target, dtype=torch.float32, device=self.device
-            ).repeat(self.num_envs, 1)
-            + self.scene.env_origins
-        )
+        self._tf_pos_panel_target = self.scene.env_origins + torch.tensor(
+            self.cfg.panel_tf_pos_target, dtype=torch.float32, device=self.device
+        ).repeat(self.num_envs, 1)
         self._tf_quat_panel_target = torch.tensor(
             self.cfg.panel_tf_quat_target, dtype=torch.float32, device=self.device
         ).repeat(self.num_envs, 1)

@@ -7,7 +7,7 @@ from srb._typing import StepReturn
 from srb.core.env import GroundEnv, GroundEnvCfg, GroundEventCfg, GroundSceneCfg
 from srb.core.manager import EventTermCfg
 from srb.core.marker import VisualizationMarkers, VisualizationMarkersCfg
-from srb.core.mdp import offset_pos_natural, randomize_pos
+from srb.core.mdp import offset_pos_natural
 from srb.core.sim import CylinderCfg, PreviewSurfaceCfg
 from srb.utils.cfg import configclass
 
@@ -23,23 +23,10 @@ class SceneCfg(GroundSceneCfg):
 
 @configclass
 class EventCfg(GroundEventCfg):
-    target_pos_random_jump: EventTermCfg = EventTermCfg(
-        func=randomize_pos,
-        mode="interval",
-        interval_range_s=(150.0, 300.0),
-        is_global_time=True,
-        params={
-            "env_attr_name": "_goal",
-            "pos_range": {
-                "x": MISSING,
-                "y": MISSING,
-            },
-        },
-    )
     target_pos_evolution: EventTermCfg = EventTermCfg(
         func=offset_pos_natural,
         mode="interval",
-        interval_range_s=(0.25, 0.75),
+        interval_range_s=(0.2, 0.8),
         is_global_time=True,
         params={
             "env_attr_name": "_goal",
@@ -64,7 +51,7 @@ class TaskCfg(GroundEnvCfg):
     events: EventCfg = EventCfg()
 
     ## Time
-    episode_length_s: float = 300.0
+    episode_length_s: float = 60.0
     is_finite_horizon: bool = False
 
     ## Target
@@ -73,8 +60,8 @@ class TaskCfg(GroundEnvCfg):
         prim_path="/Visuals/target",
         markers={
             "target": CylinderCfg(
-                radius=0.01,
-                height=20.0,
+                radius=0.02,
+                height=50.0,
                 visual_material=PreviewSurfaceCfg(emissive_color=(0.2, 0.2, 0.8)),
             )
         },
@@ -86,10 +73,6 @@ class TaskCfg(GroundEnvCfg):
         # Event: Waypoint target
         assert self.spacing is not None
         for dim in ("x", "y"):
-            self.events.target_pos_random_jump.params["pos_range"][dim] = (  # type: ignore
-                -0.5 * self.target_pos_range_ratio * self.spacing,
-                0.5 * self.target_pos_range_ratio * self.spacing,
-            )
             self.events.target_pos_evolution.params["pos_bounds"][dim] = (  # type: ignore
                 -0.5 * self.target_pos_range_ratio * self.spacing,
                 0.5 * self.target_pos_range_ratio * self.spacing,
@@ -119,6 +102,11 @@ class Task(GroundEnv):
 
     def _reset_idx(self, env_ids: Sequence[int]):
         super()._reset_idx(env_ids)
+
+        ## Reset goal position
+        self._goal[env_ids] = self.scene.env_origins[env_ids] + torch.zeros(
+            len(env_ids), 3, device=self.device
+        )
 
     def extract_step_return(self) -> StepReturn:
         ## Visualize target

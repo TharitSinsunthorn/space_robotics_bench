@@ -20,7 +20,7 @@ def select_debris(
             debris_cfg = assets.RandomShape(scale=scale).asset_cfg
 
         case AssetVariant.DATASET:
-            debris_cfg = assets.ShortProfilePeg().asset_cfg
+            debris_cfg = assets.ProfilePeg().asset_cfg
 
         case AssetVariant.PROCEDURAL:
             debris_cfg = assets.CubesatDebris(scale=scale).asset_cfg

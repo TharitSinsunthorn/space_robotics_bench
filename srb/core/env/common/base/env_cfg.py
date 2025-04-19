@@ -322,7 +322,7 @@ class BaseEnvCfg:
                 BakeType.ROUGHNESS: _dyn_res * 512,
             }
             density = 0.01 * (_dyn_res**2)
-            flat_area_size = 0.5 * (_dyn_res**1.5)
+            flat_area_size = 0.8 * (_dyn_res**1.2)
 
             if isinstance(type_hints, types.UnionType):
                 for typ in type_hints.__args__:

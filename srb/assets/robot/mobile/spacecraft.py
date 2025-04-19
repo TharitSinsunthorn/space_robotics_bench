@@ -21,94 +21,6 @@ from srb.utils.math import deg_to_rad, rpy_to_quat
 from srb.utils.path import SRB_ASSETS_DIR_SRB_ROBOT
 
 
-class Cubesat(OrbitalRobot):
-    ## Model
-    asset_cfg: RigidObjectCfg = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/cubesat",
-        spawn=SimforgeAssetCfg(
-            assets=[simforge_foundry.Cubesat()],
-            activate_contact_sensors=True,
-            collision_props=CollisionPropertiesCfg(),
-            mesh_collision_props=MeshCollisionPropertiesCfg(
-                mesh_approximation="convexDecomposition"
-            ),
-            rigid_props=RigidBodyPropertiesCfg(
-                max_depenetration_velocity=5.0,
-            ),
-            mass_props=MassPropertiesCfg(density=1000.0),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(),
-    )
-
-    ## Actions
-    actions: ActionGroup = ThrustActionGroup(
-        ThrustActionCfg(
-            asset_name="robot",
-            thrusters=(
-                ThrusterCfg(
-                    offset=(0.05, 0.05, 0.05),
-                    direction=(0.0, 0.0, 1.0),
-                    power=5.0,
-                ),
-                ThrusterCfg(
-                    offset=(-0.05, 0.05, 0.05),
-                    direction=(0.0, 0.0, 1.0),
-                    power=5.0,
-                ),
-                ThrusterCfg(
-                    offset=(0.05, -0.05, 0.05),
-                    direction=(0.0, 0.0, 1.0),
-                    power=5.0,
-                ),
-                ThrusterCfg(
-                    offset=(-0.05, -0.05, 0.05),
-                    direction=(0.0, 0.0, 1.0),
-                    power=5.0,
-                ),
-                ThrusterCfg(
-                    offset=(0.05, 0.05, -0.05),
-                    direction=(0.0, 0.0, -1.0),
-                    power=5.0,
-                ),
-                ThrusterCfg(
-                    offset=(-0.05, 0.05, -0.05),
-                    direction=(0.0, 0.0, -1.0),
-                    power=5.0,
-                ),
-                ThrusterCfg(
-                    offset=(0.05, -0.05, -0.05),
-                    direction=(0.0, 0.0, -1.0),
-                    power=5.0,
-                ),
-                ThrusterCfg(
-                    offset=(-0.05, -0.05, -0.05),
-                    direction=(0.0, 0.0, -1.0),
-                    power=5.0,
-                ),
-            ),
-            fuel_capacity=0.5 * 10.0,
-            fuel_consumption_rate=(0.5 * 10.0 / (8 * 5.0)) / 20.0,
-        )
-    )
-
-    ## Frames
-    frame_base: Frame = Frame(prim_relpath="cubesat")
-    frame_payload_mount: Frame = Frame(
-        prim_relpath="cubesat",
-        offset=Transform(
-            pos=(0.0, 0.0, 0.0),
-            rot=rpy_to_quat(0.0, 0.0, 0.0),
-        ),
-    )
-    frame_manipulator_mount: Frame = Frame(
-        prim_relpath="cubesat",
-        offset=Transform(
-            pos=(0.0, 0.0, 0.05),
-            rot=rpy_to_quat(0.0, 0.0, 0.0),
-        ),
-    )
-
-
 class Gateway(OrbitalRobot):
     ## Model
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
@@ -153,6 +65,94 @@ class Gateway(OrbitalRobot):
     )
 
 
+class Cubesat(OrbitalRobot):
+    ## Model
+    asset_cfg: RigidObjectCfg = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/cubesat",
+        spawn=SimforgeAssetCfg(
+            assets=[simforge_foundry.Cubesat()],
+            activate_contact_sensors=True,
+            collision_props=CollisionPropertiesCfg(),
+            mesh_collision_props=MeshCollisionPropertiesCfg(
+                mesh_approximation="convexDecomposition"
+            ),
+            rigid_props=RigidBodyPropertiesCfg(
+                max_depenetration_velocity=5.0,
+            ),
+            mass_props=MassPropertiesCfg(density=1000.0),
+        ),
+        init_state=RigidObjectCfg.InitialStateCfg(),
+    )
+
+    ## Actions
+    actions: ActionGroup = ThrustActionGroup(
+        ThrustActionCfg(
+            asset_name="robot",
+            thrusters=(
+                ThrusterCfg(
+                    offset=(-0.05, -0.05, 0.05),
+                    direction=(0.0, 0.0, 1.0),
+                    power=25.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.05, 0.05, 0.05),
+                    direction=(0.0, 0.0, 1.0),
+                    power=25.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.05, -0.05, 0.05),
+                    direction=(0.0, 0.0, 1.0),
+                    power=25.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.05, 0.05, 0.05),
+                    direction=(0.0, 0.0, 1.0),
+                    power=25.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.05, -0.05, -0.05),
+                    direction=(0.0, 0.0, -1.0),
+                    power=25.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.05, 0.05, -0.05),
+                    direction=(0.0, 0.0, -1.0),
+                    power=25.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.05, -0.05, -0.05),
+                    direction=(0.0, 0.0, -1.0),
+                    power=25.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.05, 0.05, -0.05),
+                    direction=(0.0, 0.0, -1.0),
+                    power=25.0,
+                ),
+            ),
+            fuel_capacity=10.0,
+            fuel_consumption_rate=(10.0 / (8 * 25.0)) / 20.0,
+        )
+    )
+
+    ## Frames
+    frame_base: Frame = Frame(prim_relpath="cubesat")
+    frame_payload_mount: Frame = Frame(
+        prim_relpath="cubesat",
+        offset=Transform(
+            pos=(0.0, 0.0, 0.0),
+            rot=rpy_to_quat(0.0, 0.0, 0.0),
+        ),
+    )
+    frame_manipulator_mount: Frame = Frame(
+        prim_relpath="cubesat",
+        offset=Transform(
+            pos=(0.0, 0.0, 0.05),
+            rot=rpy_to_quat(0.0, 0.0, 0.0),
+        ),
+    )
+
+
 class VenusExpress(OrbitalRobot):
     ## Model
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
@@ -179,49 +179,97 @@ class VenusExpress(OrbitalRobot):
         ThrustActionCfg(
             asset_name="robot",
             thrusters=(
+                # Gimbaled (1)
                 ThrusterCfg(
-                    offset=(0.5, 0.5, 0.5),
-                    direction=(0.0, 0.0, 1.0),
-                    power=2000.0,
+                    offset=(0.0, 0.0, -1.15),
+                    direction=(0.0, 0.0, -1.0),
+                    power=20000.0,
+                    gimbal_limits=(deg_to_rad(20.0), deg_to_rad(20.0)),
                 ),
+                # Fixed (16, although the real spacecraft has 8)
                 ThrusterCfg(
-                    offset=(-0.5, 0.5, 0.5),
-                    direction=(0.0, 0.0, 1.0),
-                    power=2000.0,
-                ),
-                ThrusterCfg(
-                    offset=(0.5, -0.5, 0.5),
-                    direction=(0.0, 0.0, 1.0),
-                    power=2000.0,
-                ),
-                ThrusterCfg(
-                    offset=(-0.5, -0.5, 0.5),
-                    direction=(0.0, 0.0, 1.0),
-                    power=2000.0,
-                ),
-                ThrusterCfg(
-                    offset=(0.5, 0.5, -0.5),
+                    offset=(-0.8085, -0.693, -1.45),
                     direction=(0.0, 0.0, -1.0),
                     power=2000.0,
                 ),
                 ThrusterCfg(
-                    offset=(-0.5, 0.5, -0.5),
+                    offset=(-0.86, -0.746, -1.45),
                     direction=(0.0, 0.0, -1.0),
                     power=2000.0,
                 ),
                 ThrusterCfg(
-                    offset=(0.5, -0.5, -0.5),
+                    offset=(-0.8085, 0.693, -1.45),
                     direction=(0.0, 0.0, -1.0),
                     power=2000.0,
                 ),
                 ThrusterCfg(
-                    offset=(-0.5, -0.5, -0.5),
+                    offset=(-0.86, 0.746, -1.45),
                     direction=(0.0, 0.0, -1.0),
+                    power=2000.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.8085, -0.693, -1.45),
+                    direction=(0.0, 0.0, -1.0),
+                    power=2000.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.86, -0.746, -1.45),
+                    direction=(0.0, 0.0, -1.0),
+                    power=2000.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.8085, 0.693, -1.45),
+                    direction=(0.0, 0.0, -1.0),
+                    power=2000.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.86, 0.746, -1.45),
+                    direction=(0.0, 0.0, -1.0),
+                    power=2000.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.8085, -0.693, 0.425),
+                    direction=(0.0, 0.0, 1.0),
+                    power=2000.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.86, -0.746, 0.425),
+                    direction=(0.0, 0.0, 1.0),
+                    power=2000.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.8085, 0.693, 0.425),
+                    direction=(0.0, 0.0, 1.0),
+                    power=2000.0,
+                ),
+                ThrusterCfg(
+                    offset=(-0.86, 0.746, 0.425),
+                    direction=(0.0, 0.0, 1.0),
+                    power=2000.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.8085, -0.693, 0.425),
+                    direction=(0.0, 0.0, 1.0),
+                    power=2000.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.86, -0.746, 0.425),
+                    direction=(0.0, 0.0, 1.0),
+                    power=2000.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.8085, 0.693, 0.425),
+                    direction=(0.0, 0.0, 1.0),
+                    power=2000.0,
+                ),
+                ThrusterCfg(
+                    offset=(0.86, 0.746, 0.425),
+                    direction=(0.0, 0.0, 1.0),
                     power=2000.0,
                 ),
             ),
-            fuel_capacity=0.5 * 10000.0,
-            fuel_consumption_rate=(0.5 * 10000.0 / (8 * 2000.0)) / 20.0,
+            fuel_capacity=2500.0,
+            fuel_consumption_rate=(2500.0 / (1 * 20000.0 + (16 * 2000.0))) / 20.0,
         )
     )
 
