@@ -60,7 +60,7 @@ dreamer = [
   #
   # Note: Only editable install of dreamer works for now (circular import of  partially initialized module included with sys.path)
   # TODO[mid]: Fix Dreamer install (fork and fix recursive import)
-  # "dreamer@git+https://github.com/danijar/dreamerv3.git@55c8c67c956fbdace4bf8b594ea12e934a3ae4ba",
+  # "dreamer@git+https://github.com/danijar/dreamerv3.git@cdf570902b1eaba193cc8ef69426cd4edde1b0bc",
   # Note: jax==0.5.1 causes issues
   "jax~=0.4,<0.5.1",
 ]
