@@ -17,17 +17,16 @@ class LunaLab(Subterrane):
     _regolith: AssetBaseCfg = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/regolith",
         spawn=GridParticlesSpawnerCfg(
-            ratio=0.4,
+            ratio=0.5,
             particle_size=PARTICLE_SIZE,
             dim_x=round(6.5 / PARTICLE_SIZE),
             dim_y=round(11.0 / PARTICLE_SIZE),
             dim_z=round(0.5 / PARTICLE_SIZE),
-            velocity=((-0.2, 0.2), (-0.2, 0.2), (-0.2, 0.0)),
+            velocity=((-0.5, 0.5), (-0.5, 0.5), (-0.5, 0.0)),
             fluid=False,
-            friction=0.4,
-            cohesion=0.02,
-            density=300.0,
-            cast_shadows=False,
+            density=1500.0,
+            friction=0.85,
+            cohesion=0.65,
         ),
         init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, -0.3)),
     )

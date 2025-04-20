@@ -7,7 +7,7 @@ from .env import ManipulationEnvCfg
 
 
 @configclass
-class ManipulatorEnvVisualExtCfg(VisualExtCfg):
+class ManipulationEnvVisualExtCfg(VisualExtCfg):
     def wrap(self, env_cfg: ManipulationEnvCfg):
         self.cameras_cfg = {
             "cam_scene": CameraCfg(

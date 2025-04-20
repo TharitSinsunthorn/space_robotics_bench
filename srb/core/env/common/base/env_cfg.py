@@ -125,9 +125,9 @@ class BaseEnvCfg:
 
     ## Particles
     # Note: This option is likely to be removed in the future
-    _particles: bool = False
-    _particles_size: float = 0.025
-    _particles_ratio: float = 0.001
+    scatter_particles: bool = False
+    particles_size: float = 0.025
+    particles_ratio: float = 0.001
 
     def __post_init__(self):
         ## Scene
@@ -710,20 +710,20 @@ class BaseEnvCfg:
 
     def _maybe_add_particles(self):
         assert self.spacing is not None
-        if self._particles and self.spacing > 0.0:
+        if self.scatter_particles and self.spacing > 0.0:
             self.scene.particles = AssetBaseCfg(  # type: ignore
                 prim_path="{ENV_REGEX_NS}/particles",
                 spawn=PyramidParticlesSpawnerCfg(
-                    ratio=self._particles_ratio,
-                    particle_size=self._particles_size,
-                    dim_x=round(self.spacing / self._particles_size),
-                    dim_y=round(self.spacing / self._particles_size),
-                    dim_z=round(0.5 * self.spacing / self._particles_size),
+                    ratio=self.particles_ratio,
+                    particle_size=self.particles_size,
+                    dim_x=round(self.spacing / self.particles_size),
+                    dim_y=round(self.spacing / self.particles_size),
+                    dim_z=round(0.5 * self.spacing / self.particles_size),
                     velocity=((-0.5, 0.5), (-0.5, 0.5), (-0.5, 0.0)),
                     fluid=False,
-                    friction=1.0,
-                    cohesion=0.5,
-                    cast_shadows=False,
+                    density=1500.0,
+                    friction=0.85,
+                    cohesion=0.65,
                 ),
                 init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, 0.5)),
             )
