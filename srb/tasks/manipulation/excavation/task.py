@@ -72,10 +72,10 @@ class TaskCfg(ManipulationEnvCfg):
 
     ## Particles
     scatter_particles: bool = False
-    particles_ratio: float = 0.5
-    particles_size: float = 0.01
+    particles_ratio: float = 0.36
+    particles_size: float = 0.012
     particles_settle_max_steps: int = 50
-    particles_settle_step_time: float = 1.0
+    particles_settle_step_time: float = 2.0
     particles_settle_extra_time: float = 10.0
     particles_settle_vel_threshold: float = 0.01
 
