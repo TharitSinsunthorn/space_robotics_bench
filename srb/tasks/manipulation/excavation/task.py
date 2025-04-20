@@ -65,6 +65,8 @@ class TaskCfg(ManipulationEnvCfg):
     events: EventCfg = EventCfg()
 
     ## Time
+    env_rate: float = 1.0 / 100.0
+    agent_rate: float = 1.0 / 20.0
     episode_length_s: float = 20.0
     is_finite_horizon: bool = True
 
@@ -116,8 +118,6 @@ class Task(ManipulationEnv):
         )
 
     def _reset_idx(self, env_ids: Sequence[int]):
-        super()._reset_idx(env_ids)
-
         ## Let the particles settle on the first reset, then remember their positions for future resets
         if self._initial_particle_positions is None:
             for _ in range(self.cfg.particles_settle_max_steps):
@@ -158,6 +158,8 @@ class Task(ManipulationEnv):
             particle_utils.set_particles_vel_w(
                 self, self._regolith, self._initial_particle_velocities, env_ids=env_ids
             )
+
+        super()._reset_idx(env_ids)
 
     def extract_step_return(self) -> StepReturn:
         return _compute_step_return(
