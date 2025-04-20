@@ -1,5 +1,6 @@
 from .light import *  # noqa: F403
 from .payload import *  # noqa: F403
+from .pedestal import *  # noqa: F403
 from .tool import *  # noqa: F403
 
 # isort: split
