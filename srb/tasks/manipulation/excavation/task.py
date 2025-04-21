@@ -66,14 +66,14 @@ class TaskCfg(ManipulationEnvCfg):
 
     ## Time
     env_rate: float = 1.0 / 100.0
-    agent_rate: float = 1.0 / 20.0
+    agent_rate: float = 1.0 / 25.0
     episode_length_s: float = 20.0
     is_finite_horizon: bool = True
 
     ## Particles
     scatter_particles: bool = False
-    particles_ratio: float = 0.36
-    particles_size: float = 0.012
+    particles_ratio: float = 0.25
+    particles_size: float = 0.02
     particles_settle_max_steps: int = 50
     particles_settle_step_time: float = 2.0
     particles_settle_extra_time: float = 10.0

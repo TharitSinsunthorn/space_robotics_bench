@@ -95,7 +95,7 @@ class BaseEnvCfg:
             min_position_iteration_count=2,
             min_velocity_iteration_count=1,
             enable_ccd=True,
-            enable_stabilization=True,
+            enable_stabilization=False,
             bounce_threshold_velocity=0.0,
             friction_offset_threshold=0.01,
             friction_correlation_distance=0.005,

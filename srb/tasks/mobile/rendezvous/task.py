@@ -1,20 +1,25 @@
-from dataclasses import MISSING
 from typing import Sequence, Tuple
 
 import torch
 
+from srb import assets
 from srb._typing import StepReturn
 from srb.core.action import ThrustAction
-from srb.core.asset import RigidObjectCollection, RigidObjectCollectionCfg
+from srb.core.asset import RigidObject, RigidObjectCfg
 from srb.core.env import OrbitalEnv, OrbitalEnvCfg, OrbitalEventCfg, OrbitalSceneCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers, VisualizationMarkersCfg
-from srb.core.mdp import reset_collection_root_state_uniform_poisson_disk_3d
-from srb.core.sim import PreviewSurfaceCfg, SphereCfg
+from srb.core.mdp import reset_root_state_uniform
+from srb.core.sim import ArrowCfg, PreviewSurfaceCfg
 from srb.utils.cfg import configclass
-from srb.utils.math import deg_to_rad, matrix_from_quat, rotmat_to_rot6d
-
-from .asset import select_obstacle
+from srb.utils.math import (
+    combine_frame_transforms,
+    deg_to_rad,
+    matrix_from_quat,
+    rotmat_to_rot6d,
+    rpy_to_quat,
+    subtract_frame_transforms,
+)
 
 ##############
 ### Config ###
@@ -23,38 +28,34 @@ from .asset import select_obstacle
 
 @configclass
 class SceneCfg(OrbitalSceneCfg):
-    env_spacing = 25.0
-
     ## Assets
-    objs: RigidObjectCollectionCfg = RigidObjectCollectionCfg(
-        rigid_objects=MISSING,  # type: ignore
-    )
+    target: RigidObjectCfg = assets.Cubesat().asset_cfg
+    target.prim_path = "{ENV_REGEX_NS}/target"
 
 
 @configclass
 class EventCfg(OrbitalEventCfg):
-    randomize_object_state: EventTermCfg = EventTermCfg(
-        func=reset_collection_root_state_uniform_poisson_disk_3d,
+    randomize_target_state: EventTermCfg = EventTermCfg(
+        func=reset_root_state_uniform,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("objs"),
+            "asset_cfg": SceneEntityCfg("target"),
             "pose_range": {
-                "x": (-10.0, 10.0),
-                "y": (-10.0, 10.0),
-                "z": (-50.0, 10.0),
+                "x": (0.5, 2.0),
+                "y": (-2.0, 2.0),
+                "z": (-2.0, 2.0),
                 "roll": (-torch.pi, torch.pi),
                 "pitch": (-torch.pi, torch.pi),
                 "yaw": (-torch.pi, torch.pi),
             },
             "velocity_range": {
-                "x": (-0.1, 0.1),
-                "y": (-0.1, 0.1),
-                "z": (-0.1, 0.1),
+                "x": (-0.05, 0.05),
+                "y": (-0.05, 0.05),
+                "z": (-0.05, 0.05),
                 "roll": (-deg_to_rad(10.0), deg_to_rad(10.0)),
                 "pitch": (-deg_to_rad(10.0), deg_to_rad(10.0)),
                 "yaw": (-deg_to_rad(10.0), deg_to_rad(10.0)),
             },
-            "radius": (5.0),
         },
     )
 
@@ -63,23 +64,25 @@ class EventCfg(OrbitalEventCfg):
 class TaskCfg(OrbitalEnvCfg):
     ## Scene
     scene: SceneCfg = SceneCfg()
-    num_obstacles: int = 16
 
     ## Events
     events: EventCfg = EventCfg()
 
     ## Time
-    episode_length_s: float = 30.0
-    is_finite_horizon: bool = False
+    episode_length_s: float = 25.0
+    is_finite_horizon: bool = True
 
-    ## Target
-    tf_pos_target: Tuple[float, float, float] = (0.0, 0.0, -50.0)
-    tf_quat_target: Tuple[float, float, float, float] = (1.0, 0.0, 0.0, 0.0)
+    ## Target offset
+    target_offset_pos: Tuple[float, float, float] = (0.0, 0.0, 0.5)
+    target_offset_quat: Tuple[float, float, float, float] = rpy_to_quat(0.0, 90.0, 0.0)
     target_marker_cfg: VisualizationMarkersCfg = VisualizationMarkersCfg(
         prim_path="/Visuals/target",
         markers={
-            "target": SphereCfg(
-                radius=0.25,
+            "target": ArrowCfg(
+                tail_radius=0.01,
+                tail_length=0.05,
+                head_radius=0.02,
+                head_length=0.025,
                 visual_material=PreviewSurfaceCfg(emissive_color=(0.2, 0.2, 0.8)),
             )
         },
@@ -88,19 +91,9 @@ class TaskCfg(OrbitalEnvCfg):
     def __post_init__(self):
         super().__post_init__()
 
-        # Scene: Asteroids
-        self.scene.objs.rigid_objects = {
-            f"obstacle{i}": select_obstacle(
-                self,
-                prim_path=f"{{ENV_REGEX_NS}}/obstacle{i}",
-                seed=self.seed + (i * self.scene.num_envs),
-                activate_contact_sensors=True,
-            )
-            for i in range(self.num_obstacles)
-        }
-
-        # Update seed & number of variants for procedural assets
-        self._update_procedural_assets()
+        # Scene: Target
+        if hasattr(self.scene.target.spawn, "seed"):
+            self.scene.target.spawn.seed = self.seed + self.scene.num_envs  # type: ignore
 
 
 ############
@@ -115,26 +108,34 @@ class Task(OrbitalEnv):
         super().__init__(cfg, **kwargs)
 
         ## Get scene assets
-        self._objs: RigidObjectCollection = self.scene["objs"]
+        self._target: RigidObject = self.scene["target"]
         self._target_marker: VisualizationMarkers = VisualizationMarkers(
             self.cfg.target_marker_cfg
         )
 
         ## Initialize buffers
-        self._tf_pos_target = self.scene.env_origins + torch.tensor(
-            self.cfg.tf_pos_target, dtype=torch.float32, device=self.device
+        self._target_offset_pos = torch.tensor(
+            self.cfg.target_offset_pos, dtype=torch.float32, device=self.device
         ).repeat(self.num_envs, 1)
-        self._tf_quat_target = torch.tensor(
-            self.cfg.tf_quat_target, dtype=torch.float32, device=self.device
+        self._target_offset_quat = torch.tensor(
+            self.cfg.target_offset_quat, dtype=torch.float32, device=self.device
         ).repeat(self.num_envs, 1)
-
-        ## Visualize target
-        self._target_marker.visualize(self._tf_pos_target, self._tf_quat_target)
 
     def _reset_idx(self, env_ids: Sequence[int]):
         super()._reset_idx(env_ids)
 
     def extract_step_return(self) -> StepReturn:
+        ## Compute the target pose with offset
+        tf_pos_target, tf_quat_target = combine_frame_transforms(
+            self._target.data.root_pos_w,
+            self._target.data.root_quat_w,
+            self._target_offset_pos,
+            self._target_offset_quat,
+        )
+
+        ## Visualize target
+        self._target_marker.visualize(tf_pos_target, tf_quat_target)
+
         ## Get remaining fuel (if applicable)
         if self._thrust_action_term_key:
             thrust_action_term: ThrustAction = self.action_manager._terms[  # type: ignore
@@ -160,9 +161,11 @@ class Task(OrbitalEnv):
             tf_quat_robot=self._robot.data.root_quat_w,
             vel_lin_robot=self._robot.data.root_lin_vel_b,
             vel_ang_robot=self._robot.data.root_ang_vel_b,
+            vel_lin_target=self._target.data.root_lin_vel_b,
+            vel_ang_target=self._target.data.root_ang_vel_b,
             # Transforms (world frame)
-            tf_pos_objs=self._objs.data.object_com_pos_w,
-            tf_pos_target=self._tf_pos_target,
+            tf_pos_target=tf_pos_target,
+            tf_quat_target=tf_quat_target,
             # IMU
             imu_lin_acc=self._imu_robot.data.lin_acc_b,
             imu_ang_vel=self._imu_robot.data.ang_vel_b,
@@ -187,9 +190,11 @@ def _compute_step_return(
     tf_quat_robot: torch.Tensor,
     vel_lin_robot: torch.Tensor,
     vel_ang_robot: torch.Tensor,
+    vel_lin_target: torch.Tensor,
+    vel_ang_target: torch.Tensor,
     # Transforms (world frame)
-    tf_pos_objs: torch.Tensor,
     tf_pos_target: torch.Tensor,
+    tf_quat_target: torch.Tensor,
     # IMU
     imu_lin_acc: torch.Tensor,
     imu_ang_vel: torch.Tensor,
@@ -197,7 +202,6 @@ def _compute_step_return(
     remaining_fuel: torch.Tensor | None,
 ) -> StepReturn:
     num_envs = episode_length.size(0)
-    num_objs = tf_pos_objs.size(1)
     dtype = episode_length.dtype
     device = episode_length.device
 
@@ -209,15 +213,17 @@ def _compute_step_return(
     tf_rot6d_robot = rotmat_to_rot6d(tf_rotmat_robot)
 
     ## Transforms (world frame)
-    # Robot -> Object
-    pos_robot_to_objs = tf_pos_robot.unsqueeze(1).repeat(1, num_objs, 1) - tf_pos_objs
-    tf_pos_robot_to_nearest_obj = pos_robot_to_objs[
-        torch.arange(pos_robot_to_objs.size(0)),
-        torch.argmin(torch.norm(pos_robot_to_objs, dim=-1), dim=1),
-    ]
-
     # Robot -> Target
-    tf_pos_robot_to_target = tf_pos_target - tf_pos_robot
+    tf_pos_robot_to_target, tf_quat_robot_to_target = subtract_frame_transforms(
+        t01=tf_pos_robot,
+        q01=tf_quat_robot,
+        t02=tf_pos_target,
+        q02=tf_quat_target,
+    )
+    tf_rotmat_robot_to_target = matrix_from_quat(tf_quat_robot_to_target)
+    tf_rot6d_robot_to_target = rotmat_to_rot6d(tf_rotmat_robot_to_target)
+
+    distance_robot_to_target = torch.norm(tf_pos_robot_to_target, dim=-1)
 
     ## Fuel
     remaining_fuel = (
@@ -242,21 +248,37 @@ def _compute_step_return(
     )
 
     # Penalty: Angular velocity
-    WEIGHT_ANGULAR_VELOCITY = -0.25
+    WEIGHT_ANGULAR_VELOCITY = -0.1
     penalty_angular_velocity = WEIGHT_ANGULAR_VELOCITY * torch.sum(
         torch.square(vel_ang_robot), dim=1
     )
 
-    # Reward: Distance | Robot <--> Object
-    WEIGHT_DISTANCE_ROBOT_TO_OBJ = 2.0
-    reward_distance_robot_to_nearest_obj = WEIGHT_DISTANCE_ROBOT_TO_OBJ * torch.norm(
-        tf_pos_robot_to_nearest_obj, dim=-1
+    # Penalty: Distance | Robot <--> Target
+    WEIGHT_DISTANCE_ROBOT_TO_TARGET = -16.0
+    penalty_distance_robot_to_target = WEIGHT_DISTANCE_ROBOT_TO_TARGET * torch.square(
+        distance_robot_to_target
     )
 
-    # Penalty: Distance | Robot <--> Target
-    WEIGHT_DISTANCE_ROBOT_TO_TARGET = -32.0
-    penalty_distance_robot_to_target = WEIGHT_DISTANCE_ROBOT_TO_TARGET * torch.norm(
-        tf_pos_robot_to_target, dim=-1
+    # Reward: Distance (linear and angular) | Robot <--> Target (precision rendezvous)
+    WEIGHT_PRECISION_RENDEZVOUS = 128.0
+    TANH_STD_PRECISION_RENDEZVOUS_POS = 0.05
+    TANH_STD_PRECISION_RENDEZVOUS_QUAT = 0.1
+    reward_precision_rendezvous = WEIGHT_PRECISION_RENDEZVOUS * (
+        1.0
+        - torch.tanh(
+            (distance_robot_to_target / TANH_STD_PRECISION_RENDEZVOUS_POS)
+            + (
+                torch.norm(
+                    torch.norm(
+                        tf_rotmat_robot_to_target
+                        - torch.eye(3, device=device).unsqueeze(0),
+                        dim=-1,
+                    ),
+                    dim=-1,
+                )
+                / TANH_STD_PRECISION_RENDEZVOUS_QUAT
+            )
+        )
     )
 
     ##################
@@ -277,8 +299,10 @@ def _compute_step_return(
                 "tf_rot6d_robot": tf_rot6d_robot,
                 "vel_lin_robot": vel_lin_robot,
                 "vel_ang_robot": vel_ang_robot,
+                "vel_lin_target": vel_lin_target,
+                "vel_ang_target": vel_ang_target,
                 "tf_pos_robot_to_target": tf_pos_robot_to_target,
-                "pos_robot_to_objs": pos_robot_to_objs,
+                "tf_rot6d_robot_to_target": tf_rot6d_robot_to_target,
             },
             "proprio": {
                 "imu_lin_acc": imu_lin_acc,
@@ -290,8 +314,8 @@ def _compute_step_return(
             "penalty_action_rate": penalty_action_rate,
             "penalty_fuel_consumption": penalty_fuel_consumption,
             "penalty_angular_velocity": penalty_angular_velocity,
-            "reward_distance_robot_to_nearest_obj": reward_distance_robot_to_nearest_obj,
             "penalty_distance_robot_to_target": penalty_distance_robot_to_target,
+            "reward_precision_rendezvous": reward_precision_rendezvous,
         },
         termination,
         truncation,

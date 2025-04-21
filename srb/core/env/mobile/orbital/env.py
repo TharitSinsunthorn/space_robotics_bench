@@ -16,6 +16,7 @@ from srb.core.env.mobile.env import (
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform
 from srb.utils.cfg import configclass
+from srb.utils.math import deg_to_rad
 
 
 @configclass
@@ -42,9 +43,9 @@ class OrbitalEventCfg(MobileEventCfg):
                 "x": (-0.2, 0.2),
                 "y": (-0.2, 0.2),
                 "z": (-0.2, 0.2),
-                "roll": (-0.1, 0.1),
-                "pitch": (-0.1, 0.1),
-                "yaw": (-0.1, 0.1),
+                "roll": (-deg_to_rad(10.0), deg_to_rad(10.0)),
+                "pitch": (-deg_to_rad(10.0), deg_to_rad(10.0)),
+                "yaw": (-deg_to_rad(10.0), deg_to_rad(10.0)),
             },
         },
     )

@@ -25,6 +25,7 @@ from srb.core.mdp import reset_root_state_uniform
 from srb.core.sensor import ContactSensor, ContactSensorCfg
 from srb.utils.cfg import configclass
 from srb.utils.math import (
+    deg_to_rad,
     matrix_from_quat,
     rotmat_to_rot6d,
     scale_transform,
@@ -62,9 +63,9 @@ class EventCfg(ManipulationEventCfg):
                 "x": (-0.2 - 0.05, -0.2 + 0.05),
                 "y": (-0.05, 0.05),
                 "z": (-0.05, 0.05),
-                "roll": (-torch.pi, torch.pi),
-                "pitch": (-torch.pi, torch.pi),
-                "yaw": (-torch.pi, torch.pi),
+                "roll": (-deg_to_rad(10.0), deg_to_rad(10.0)),
+                "pitch": (-deg_to_rad(10.0), deg_to_rad(10.0)),
+                "yaw": (-deg_to_rad(10.0), deg_to_rad(10.0)),
             },
         },
     )
@@ -82,6 +83,7 @@ class TaskCfg(ManipulationEnvCfg):
 
     ## Scene
     scene: SceneCfg = SceneCfg()
+    stack: bool = True
 
     ## Events
     events: EventCfg = EventCfg()

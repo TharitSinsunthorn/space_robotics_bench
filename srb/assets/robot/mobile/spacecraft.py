@@ -39,7 +39,6 @@ class Gateway(OrbitalRobot):
             ),
             mass_props=MassPropertiesCfg(density=1500.0),
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(),
     )
 
     ## Actions
@@ -81,7 +80,6 @@ class Cubesat(OrbitalRobot):
             ),
             mass_props=MassPropertiesCfg(density=1000.0),
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(),
     )
 
     ## Actions
@@ -171,7 +169,6 @@ class VenusExpress(OrbitalRobot):
             ),
             mass_props=MassPropertiesCfg(density=1500.0),
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(),
     )
 
     ## Actions
@@ -309,7 +306,6 @@ class Starship(OrbitalRobot):
             ),
             mass_props=MassPropertiesCfg(mass=100000.0),
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(),
     )
 
     ## Actions
@@ -389,7 +385,6 @@ class SuperHeavy(OrbitalRobot):
             ),
             mass_props=MassPropertiesCfg(mass=200000.0),
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(),
     )
 
     ## Actions

@@ -43,7 +43,6 @@ class Ingenuity(Multicopter):
                 max_depenetration_velocity=5.0,
             ),
         ),
-        init_state=ArticulationCfg.InitialStateCfg(),
         actuators={
             "rotors": ImplicitActuatorCfg(
                 joint_names_expr=["rotor_joint_[1-2]"],

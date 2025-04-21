@@ -15,6 +15,7 @@ from srb.core.env.mobile.env import (
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.mdp import reset_root_state_uniform
 from srb.utils.cfg import configclass
+from srb.utils.math import deg_to_rad
 
 
 @configclass
@@ -39,9 +40,9 @@ class GroundEventCfg(MobileEventCfg):
                 "x": (-0.5, 0.5),
                 "y": (-0.5, 0.5),
                 "z": (0.0, 0.5),
-                "roll": (-0.1 * torch.pi, 0.1 * torch.pi),
-                "pitch": (-0.1 * torch.pi, 0.1 * torch.pi),
-                "yaw": (-0.3 * torch.pi, 0.3 * torch.pi),
+                "roll": (-deg_to_rad(5.0), deg_to_rad(5.0)),
+                "pitch": (-deg_to_rad(5.0), deg_to_rad(5.0)),
+                "yaw": (-deg_to_rad(15.0), deg_to_rad(15.0)),
             },
         },
     )

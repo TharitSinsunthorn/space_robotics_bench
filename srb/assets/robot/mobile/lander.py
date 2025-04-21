@@ -30,7 +30,6 @@ class ApolloLander(Lander):
             ),
             mass_props=MassPropertiesCfg(mass=4280.0),  # Dry mass
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(),
     )
 
     ## Actions
@@ -167,7 +166,6 @@ class PeregrineLander(Lander):
             ),
             mass_props=MassPropertiesCfg(mass=825.0),
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(),
     )
 
     ## Actions
@@ -299,7 +297,6 @@ class VikramLander(Lander):
             ),
             mass_props=MassPropertiesCfg(mass=626.0),
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(),
     )
 
     ## Actions

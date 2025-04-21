@@ -27,6 +27,7 @@ from srb.core.sensor import ContactSensor
 from srb.tasks.manipulation.debris_capture.asset import select_debris
 from srb.utils.cfg import configclass
 from srb.utils.math import (
+    deg_to_rad,
     matrix_from_quat,
     rotmat_to_rot6d,
     scale_transform,
@@ -63,44 +64,12 @@ class EventCfg(OrbitalManipulationEventCfg):
                 "x": (-2.0, -0.5),
                 "y": (-0.5, 0.5),
                 "z": (-0.5, 0.5),
-                "roll": (-1.0, 1.0),
-                "pitch": (-1.0, 1.0),
-                "yaw": (-1.0, 1.0),
+                "roll": (-deg_to_rad(10.0), deg_to_rad(10.0)),
+                "pitch": (-deg_to_rad(10.0), deg_to_rad(10.0)),
+                "yaw": (-deg_to_rad(10.0), deg_to_rad(10.0)),
             },
         },
     )
-    # push_robot: EventTermCfg = EventTermCfg(
-    #     func=push_by_setting_velocity,
-    #     mode="interval",
-    #     interval_range_s=(5.0, 15.0),
-    #     params={
-    #         "asset_cfg": SceneEntityCfg("robot"),
-    #         "velocity_range": {
-    #             "x": (-0.3, 0.3),
-    #             "y": (-0.3, 0.3),
-    #             "z": (-0.3, 0.3),
-    #             "roll": (-0.2, 0.2),
-    #             "pitch": (-0.2, 0.2),
-    #             "yaw": (-0.2, 0.2),
-    #         },
-    #     },
-    # )
-    # push_debris: EventTermCfg = EventTermCfg(
-    #     func=push_by_setting_velocity,
-    #     mode="interval",
-    #     interval_range_s=(8.0, 20.0),
-    #     params={
-    #         "asset_cfg": SceneEntityCfg("debris"),
-    #         "velocity_range": {
-    #             "x": (-0.4, 0.4),
-    #             "y": (-0.4, 0.4),
-    #             "z": (-0.4, 0.4),
-    #             "roll": (-0.5, 0.5),
-    #             "pitch": (-0.5, 0.5),
-    #             "yaw": (-0.5, 0.5),
-    #         },
-    #     },
-    # )
 
 
 @configclass
@@ -136,7 +105,8 @@ class TaskCfg(OrbitalManipulationEnvCfg):
             init_state=RigidObjectCfg.InitialStateCfg(pos=(5.0, 0.0, 0.0)),
             activate_contact_sensors=True,
         )
-        self.scene.debris.spawn.seed = self.seed + self.scene.num_envs  # type: ignore
+        if hasattr(self.scene.debris.spawn, "seed"):
+            self.scene.debris.spawn.seed = self.seed + self.scene.num_envs  # type: ignore
 
         # Update seed & number of variants for procedural assets
         self._update_procedural_assets()

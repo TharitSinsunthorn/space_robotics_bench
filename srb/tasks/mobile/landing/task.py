@@ -11,7 +11,8 @@ from srb.core.domain import Domain
 from srb.core.env import OrbitalEnv, OrbitalEnvCfg, OrbitalEventCfg, OrbitalSceneCfg
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkers, VisualizationMarkersCfg
-from srb.core.mdp import push_by_setting_velocity, reset_root_state_uniform
+from srb.core.mdp import push_by_setting_velocity  # noqa: F401
+from srb.core.mdp import reset_root_state_uniform
 from srb.core.sensor import ContactSensor, ContactSensorCfg
 from srb.core.sim import PreviewSurfaceCfg, SphereCfg
 from srb.utils.cfg import configclass
@@ -58,22 +59,22 @@ class EventCfg(OrbitalEventCfg):
             },
         },
     )
-    push_robot: EventTermCfg = EventTermCfg(
-        func=push_by_setting_velocity,
-        mode="interval",
-        interval_range_s=(2.5, 10.0),
-        params={
-            "asset_cfg": SceneEntityCfg("robot"),
-            "velocity_range": {
-                "x": (-1.0, 1.0),
-                "y": (-1.0, 1.0),
-                "z": (-1.0, 1.0),
-                "roll": (-deg_to_rad(5.0), deg_to_rad(5.0)),
-                "pitch": (-deg_to_rad(5.0), deg_to_rad(5.0)),
-                "yaw": (-deg_to_rad(5.0), deg_to_rad(5.0)),
-            },
-        },
-    )
+    # push_robot: EventTermCfg = EventTermCfg(
+    #     func=push_by_setting_velocity,
+    #     mode="interval",
+    #     interval_range_s=(2.5, 10.0),
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot"),
+    #         "velocity_range": {
+    #             "x": (-1.0, 1.0),
+    #             "y": (-1.0, 1.0),
+    #             "z": (-1.0, 1.0),
+    #             "roll": (-deg_to_rad(10.0), deg_to_rad(10.0)),
+    #             "pitch": (-deg_to_rad(10.0), deg_to_rad(10.0)),
+    #             "yaw": (-deg_to_rad(10.0), deg_to_rad(10.0)),
+    #         },
+    #     },
+    # )
 
 
 @configclass

@@ -7,7 +7,8 @@ from srb import assets
 from srb._typing import StepReturn
 from srb.core.asset import AssetVariant, Humanoid, LeggedRobot
 from srb.core.manager import EventTermCfg, SceneEntityCfg
-from srb.core.mdp import push_by_setting_velocity, reset_joints_by_scale
+from srb.core.mdp import push_by_setting_velocity  # noqa: F401
+from srb.core.mdp import reset_joints_by_scale
 from srb.core.sensor import ContactSensor, ContactSensorCfg
 from srb.utils.cfg import configclass
 from srb.utils.math import matrix_from_quat, rotmat_to_rot6d, scale_transform
@@ -40,15 +41,18 @@ class LocomotionEventCfg(EventCfg):
             "velocity_range": (0.0, 0.0),
         },
     )
-    push_robot: EventTermCfg = EventTermCfg(
-        func=push_by_setting_velocity,
-        mode="interval",
-        interval_range_s=(10.0, 15.0),
-        params={
-            "asset_cfg": SceneEntityCfg("robot"),
-            "velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)},
-        },
-    )
+    # push_robot: EventTermCfg = EventTermCfg(
+    #     func=push_by_setting_velocity,
+    #     mode="interval",
+    #     interval_range_s=(10.0, 15.0),
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot"),
+    #         "velocity_range": {
+    #             "x": (-0.5, 0.5),
+    #             "y": (-0.5, 0.5),
+    #         },
+    #     },
+    # )
 
 
 @configclass
