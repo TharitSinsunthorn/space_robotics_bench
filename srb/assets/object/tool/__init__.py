@@ -5,6 +5,7 @@ from .robotiq import RobotiqHandE  # noqa: F401
 from .scoop import Scoop  # noqa: F401
 from .screwdriver import (  # noqa: F401
     ElectricScrewdriverM3,
+    ElectricScrewdriverM5,
     ManualScrewdriverM3,
     ManualScrewdriverM5,
 )

@@ -30,7 +30,7 @@ class ManualScrewdriverM3(Tool):
         prim_path="{ENV_REGEX_NS}/screwdriver",
         spawn=UsdFileCfg(
             usd_path=(
-                SRB_ASSETS_DIR_SRB_OBJECT.joinpath("screwdriver_m3.usdz").as_posix()
+                SRB_ASSETS_DIR_SRB_OBJECT.joinpath("screwdriver_hex_m3.usdz").as_posix()
             ),
             activate_contact_sensors=True,
             collision_props=CollisionPropertiesCfg(),
@@ -42,7 +42,7 @@ class ManualScrewdriverM3(Tool):
 
     ## Frames
     frame_mount: Frame = Frame(prim_relpath="screwdriver")
-    frame_tool_centre_point: Frame = Frame(offset=Transform(pos=(0.0, 0.0, 0.1)))
+    frame_tool_centre_point: Frame = Frame(offset=Transform(pos=(0.0, 0.0, 0.075)))
 
 
 class ManualScrewdriverM5(Tool):
@@ -50,7 +50,7 @@ class ManualScrewdriverM5(Tool):
         prim_path="{ENV_REGEX_NS}/screwdriver",
         spawn=UsdFileCfg(
             usd_path=(
-                SRB_ASSETS_DIR_SRB_OBJECT.joinpath("screwdriver_m5.usdz").as_posix()
+                SRB_ASSETS_DIR_SRB_OBJECT.joinpath("screwdriver_hex_m5.usdz").as_posix()
             ),
             activate_contact_sensors=True,
             collision_props=CollisionPropertiesCfg(),
@@ -62,7 +62,7 @@ class ManualScrewdriverM5(Tool):
 
     ## Frames
     frame_mount: Frame = Frame(prim_relpath="screwdriver")
-    frame_tool_centre_point: Frame = Frame(offset=Transform(pos=(0.0, 0.0, 0.1)))
+    frame_tool_centre_point: Frame = Frame(offset=Transform(pos=(0.0, 0.0, 0.075)))
 
 
 class ElectricScrewdriverM3(ActiveTool):
@@ -70,8 +70,8 @@ class ElectricScrewdriverM3(ActiveTool):
     asset_cfg: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/electric_screwdriver",
         spawn=UsdFileCfg(
-            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("tool")
-            .joinpath("electric_screwdriver_m3.usdz")
+            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("screwdriver")
+            .joinpath("electric_screwdriver_hex_m3.usdz")
             .as_posix(),
             activate_contact_sensors=True,
             collision_props=CollisionPropertiesCfg(
@@ -107,4 +107,49 @@ class ElectricScrewdriverM3(ActiveTool):
 
     ## Frames
     frame_mount: Frame = Frame(prim_relpath="base")
-    frame_tool_centre_point: Frame = Frame(offset=Transform(pos=(0.0, 0.0, 0.0776)))
+    frame_tool_centre_point: Frame = Frame(offset=Transform(pos=(0.0, 0.0, 0.075)))
+
+
+class ElectricScrewdriverM5(ActiveTool):
+    ## Model
+    asset_cfg: ArticulationCfg = ArticulationCfg(
+        prim_path="{ENV_REGEX_NS}/electric_screwdriver",
+        spawn=UsdFileCfg(
+            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("screwdriver")
+            .joinpath("electric_screwdriver_hex_m5.usdz")
+            .as_posix(),
+            activate_contact_sensors=True,
+            collision_props=CollisionPropertiesCfg(
+                contact_offset=0.005, rest_offset=0.0
+            ),
+            rigid_props=RigidBodyPropertiesCfg(
+                disable_gravity=True,
+                max_depenetration_velocity=5.0,
+            ),
+            articulation_props=ArticulationRootPropertiesCfg(
+                enabled_self_collisions=False,
+                solver_position_iteration_count=8,
+                solver_velocity_iteration_count=0,
+            ),
+        ),
+        actuators={
+            "driver": ImplicitActuatorCfg(
+                joint_names_expr=["driver_joint"],
+                velocity_limit=4.0 * pi,
+                effort_limit=100.0,
+                stiffness=0.0,
+                damping=5000.0,
+            ),
+        },
+    )
+
+    ## Actions
+    actions: ActionGroup = JointVelocityActionGroup(
+        JointVelocityActionCfg(
+            asset_name="robot", joint_names=["driver_joint"], scale=2.0
+        ),
+    )
+
+    ## Frames
+    frame_mount: Frame = Frame(prim_relpath="base")
+    frame_tool_centre_point: Frame = Frame(offset=Transform(pos=(0.0, 0.0, 0.075)))
