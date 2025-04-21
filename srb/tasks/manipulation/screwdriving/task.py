@@ -137,6 +137,10 @@ class TaskCfg(ManipulationEnvCfg):
                 self.scene.bolt.prim_path
             ]
 
+        self.scene.decor.prim_path = (
+            "/World/decor" if self.stack else "{ENV_REGEX_NS}/decor"
+        )
+
 
 ############
 ### Task ###

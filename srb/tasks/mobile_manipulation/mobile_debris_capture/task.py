@@ -341,9 +341,11 @@ def _compute_step_return(
     )
 
     # Penalty: Angular velocity (robot)
-    WEIGHT_ANGULAR_VELOCITY = -0.1
-    penalty_angular_velocity = WEIGHT_ANGULAR_VELOCITY * torch.norm(
-        vel_ang_robot, dim=-1
+    WEIGHT_ANGULAR_VELOCITY = -0.05
+    MAX_ANGULAR_VELOCITY_PENALTY = -5.0
+    penalty_angular_velocity = torch.clamp_min(
+        WEIGHT_ANGULAR_VELOCITY * torch.sum(torch.square(vel_ang_robot), dim=1),
+        min=MAX_ANGULAR_VELOCITY_PENALTY,
     )
 
     # Penalty: Joint torque

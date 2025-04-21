@@ -266,8 +266,10 @@ def _compute_step_return(
 
     # Penalty: Angular velocity
     WEIGHT_ANGULAR_VELOCITY = -0.25
-    penalty_angular_velocity = WEIGHT_ANGULAR_VELOCITY * torch.sum(
-        torch.square(vel_ang_robot), dim=1
+    MAX_ANGULAR_VELOCITY_PENALTY = -5.0
+    penalty_angular_velocity = torch.clamp_min(
+        WEIGHT_ANGULAR_VELOCITY * torch.sum(torch.square(vel_ang_robot), dim=1),
+        min=MAX_ANGULAR_VELOCITY_PENALTY,
     )
 
     # Penalty: Alignment with gravity

@@ -248,15 +248,19 @@ def _compute_step_return(
     )
 
     # Penalty: Angular velocity
-    WEIGHT_ANGULAR_VELOCITY = -0.1
-    penalty_angular_velocity = WEIGHT_ANGULAR_VELOCITY * torch.sum(
-        torch.square(vel_ang_robot), dim=1
+    WEIGHT_ANGULAR_VELOCITY = -0.05
+    MAX_ANGULAR_VELOCITY_PENALTY = -5.0
+    penalty_angular_velocity = torch.clamp_min(
+        WEIGHT_ANGULAR_VELOCITY * torch.sum(torch.square(vel_ang_robot), dim=1),
+        min=MAX_ANGULAR_VELOCITY_PENALTY,
     )
 
     # Penalty: Distance | Robot <--> Target
     WEIGHT_DISTANCE_ROBOT_TO_TARGET = -16.0
-    penalty_distance_robot_to_target = WEIGHT_DISTANCE_ROBOT_TO_TARGET * torch.square(
-        distance_robot_to_target
+    MAX_DISTANCE_ROBOT_TO_TARGET_PENALTY = -128.0
+    penalty_distance_robot_to_target = torch.clamp_min(
+        WEIGHT_DISTANCE_ROBOT_TO_TARGET * torch.square(distance_robot_to_target),
+        min=MAX_DISTANCE_ROBOT_TO_TARGET_PENALTY,
     )
 
     # Reward: Distance (linear and angular) | Robot <--> Target (precision rendezvous)
