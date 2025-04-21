@@ -236,13 +236,13 @@ def _compute_step_return(
     ## Rewards ##
     #############
     # Penalty: Action rate
-    WEIGHT_ACTION_RATE = -0.025
+    WEIGHT_ACTION_RATE = -0.05
     penalty_action_rate = WEIGHT_ACTION_RATE * torch.sum(
         torch.square(act_current - act_previous), dim=1
     )
 
     # Penalty: Fuel consumption
-    WEIGHT_FUEL_CONSUMPTION = -2.0
+    WEIGHT_FUEL_CONSUMPTION = -8.0
     penalty_fuel_consumption = WEIGHT_FUEL_CONSUMPTION * torch.square(
         1.0 - remaining_fuel.squeeze(-1)
     )
@@ -264,9 +264,9 @@ def _compute_step_return(
     )
 
     # Reward: Distance (linear and angular) | Robot <--> Target (precision rendezvous)
-    WEIGHT_PRECISION_RENDEZVOUS = 128.0
-    TANH_STD_PRECISION_RENDEZVOUS_POS = 0.05
-    TANH_STD_PRECISION_RENDEZVOUS_QUAT = 0.1
+    WEIGHT_PRECISION_RENDEZVOUS = 256.0
+    TANH_STD_PRECISION_RENDEZVOUS_POS = 0.025
+    TANH_STD_PRECISION_RENDEZVOUS_QUAT = 0.05
     reward_precision_rendezvous = WEIGHT_PRECISION_RENDEZVOUS * (
         1.0
         - torch.tanh(

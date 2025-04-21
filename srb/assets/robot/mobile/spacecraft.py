@@ -89,47 +89,47 @@ class Cubesat(OrbitalRobot):
             thrusters=(
                 ThrusterCfg(
                     offset=(-0.05, -0.05, 0.05),
-                    direction=(0.0, 0.0, 1.0),
-                    power=25.0,
+                    direction=(-0.5, -0.5, 1.0),
+                    power=10.0,
                 ),
                 ThrusterCfg(
                     offset=(-0.05, 0.05, 0.05),
-                    direction=(0.0, 0.0, 1.0),
-                    power=25.0,
+                    direction=(-0.5, 0.5, 1.0),
+                    power=10.0,
                 ),
                 ThrusterCfg(
                     offset=(0.05, -0.05, 0.05),
-                    direction=(0.0, 0.0, 1.0),
-                    power=25.0,
+                    direction=(0.5, -0.5, 1.0),
+                    power=10.0,
                 ),
                 ThrusterCfg(
                     offset=(0.05, 0.05, 0.05),
-                    direction=(0.0, 0.0, 1.0),
-                    power=25.0,
+                    direction=(0.5, 0.5, 1.0),
+                    power=10.0,
                 ),
                 ThrusterCfg(
                     offset=(-0.05, -0.05, -0.05),
-                    direction=(0.0, 0.0, -1.0),
-                    power=25.0,
+                    direction=(-0.5, -0.5, -1.0),
+                    power=10.0,
                 ),
                 ThrusterCfg(
                     offset=(-0.05, 0.05, -0.05),
-                    direction=(0.0, 0.0, -1.0),
-                    power=25.0,
+                    direction=(-0.5, 0.5, -1.0),
+                    power=10.0,
                 ),
                 ThrusterCfg(
                     offset=(0.05, -0.05, -0.05),
-                    direction=(0.0, 0.0, -1.0),
-                    power=25.0,
+                    direction=(0.5, -0.5, -1.0),
+                    power=10.0,
                 ),
                 ThrusterCfg(
                     offset=(0.05, 0.05, -0.05),
-                    direction=(0.0, 0.0, -1.0),
-                    power=25.0,
+                    direction=(0.5, 0.5, -1.0),
+                    power=10.0,
                 ),
             ),
-            fuel_capacity=10.0,
-            fuel_consumption_rate=(10.0 / (8 * 25.0)) / 20.0,
+            fuel_capacity=5.0,
+            fuel_consumption_rate=(5.0 / (8 * 10.0)) / 20.0,
         )
     )
 
