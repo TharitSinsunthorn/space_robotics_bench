@@ -2,8 +2,8 @@ from math import pi
 
 from srb.core.action import (
     ActionGroup,
-    JointVelocityActionCfg,
-    JointVelocityActionGroup,
+    BinaryJointVelocityActionCfg,
+    JointVelocityBinaryActionGroup,
 )
 from srb.core.actuator import ImplicitActuatorCfg
 from srb.core.asset import (
@@ -68,7 +68,7 @@ class ManualScrewdriverM5(Tool):
 class ElectricScrewdriverM3(ActiveTool):
     ## Model
     asset_cfg: ArticulationCfg = ArticulationCfg(
-        prim_path="{ENV_REGEX_NS}/electric_screwdriver",
+        prim_path="{ENV_REGEX_NS}/screwdriver",
         spawn=UsdFileCfg(
             usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("screwdriver")
             .joinpath("electric_screwdriver_hex_m3.usdz")
@@ -99,21 +99,24 @@ class ElectricScrewdriverM3(ActiveTool):
     )
 
     ## Actions
-    actions: ActionGroup = JointVelocityActionGroup(
-        JointVelocityActionCfg(
-            asset_name="robot", joint_names=["driver_joint"], scale=2.0
-        ),
+    actions: ActionGroup = JointVelocityBinaryActionGroup(
+        BinaryJointVelocityActionCfg(
+            asset_name="robot",
+            joint_names=["driver_joint"],
+            open_command_expr={"driver_joint": 0.0},
+            close_command_expr={"driver_joint": 4.0 * pi},
+        )
     )
 
     ## Frames
-    frame_mount: Frame = Frame(prim_relpath="base")
+    frame_mount: Frame = Frame(prim_relpath="body")
     frame_tool_centre_point: Frame = Frame(offset=Transform(pos=(0.0, 0.0, 0.075)))
 
 
 class ElectricScrewdriverM5(ActiveTool):
     ## Model
     asset_cfg: ArticulationCfg = ArticulationCfg(
-        prim_path="{ENV_REGEX_NS}/electric_screwdriver",
+        prim_path="{ENV_REGEX_NS}/screwdriver",
         spawn=UsdFileCfg(
             usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("screwdriver")
             .joinpath("electric_screwdriver_hex_m5.usdz")
@@ -144,12 +147,15 @@ class ElectricScrewdriverM5(ActiveTool):
     )
 
     ## Actions
-    actions: ActionGroup = JointVelocityActionGroup(
-        JointVelocityActionCfg(
-            asset_name="robot", joint_names=["driver_joint"], scale=2.0
-        ),
+    actions: ActionGroup = JointVelocityBinaryActionGroup(
+        BinaryJointVelocityActionCfg(
+            asset_name="robot",
+            joint_names=["driver_joint"],
+            open_command_expr={"driver_joint": 0.0},
+            close_command_expr={"driver_joint": 4.0 * pi},
+        )
     )
 
     ## Frames
-    frame_mount: Frame = Frame(prim_relpath="base")
+    frame_mount: Frame = Frame(prim_relpath="body")
     frame_tool_centre_point: Frame = Frame(offset=Transform(pos=(0.0, 0.0, 0.075)))
