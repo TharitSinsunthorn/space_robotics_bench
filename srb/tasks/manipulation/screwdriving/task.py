@@ -55,7 +55,7 @@ class SceneCfg(ManipulationSceneCfg):
     decor: AssetBaseCfg = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/decor",
         spawn=UsdFileCfg(
-            usd_path=assets.Ingenuity().asset_cfg.spawn.usd_path,
+            usd_path=assets.Ingenuity().asset_cfg.spawn.usd_path,  # type: ignore
             collision_props=CollisionPropertiesCfg(collision_enabled=False),
             mesh_collision_props=MeshCollisionPropertiesCfg(mesh_approximation="none"),
             articulation_props=ArticulationRootPropertiesCfg(
@@ -131,16 +131,16 @@ class TaskCfg(ManipulationEnvCfg):
             0.0,
             0.493 + thread_offset + 3.0 * thread_pitch,
         )
+        # Scene: Decor
+        self.scene.decor.prim_path = (
+            "/World/decor" if self.stack else "{ENV_REGEX_NS}/decor"
+        )
 
         # Sensor: End-effector contacts
         if isinstance(self.scene.contacts_end_effector, ContactSensorCfg):
             self.scene.contacts_end_effector.filter_prim_paths_expr = [
                 self.scene.bolt.prim_path
             ]
-
-        self.scene.decor.prim_path = (
-            "/World/decor" if self.stack else "{ENV_REGEX_NS}/decor"
-        )
 
 
 ############
@@ -160,7 +160,7 @@ class Task(ManipulationEnv):
 
         ## Initialize buffers
         self._offset_pos_bolt_driver_slot = torch.tensor(
-            self.cfg.bolt.frame_driver_slot.offset.pos,
+            self.cfg.bolt.frame_driver_slot.offset.pos,  # type: ignore
             dtype=torch.float32,
             device=self.device,
         ).repeat(self.num_envs, 1)
