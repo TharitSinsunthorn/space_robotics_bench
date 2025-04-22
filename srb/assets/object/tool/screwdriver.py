@@ -74,9 +74,7 @@ class ElectricScrewdriverM3(ActiveTool):
             .joinpath("electric_screwdriver_hex_m3.usdz")
             .as_posix(),
             activate_contact_sensors=True,
-            collision_props=CollisionPropertiesCfg(
-                contact_offset=0.005, rest_offset=0.0
-            ),
+            collision_props=CollisionPropertiesCfg(),
             rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=True,
                 max_depenetration_velocity=5.0,
@@ -89,7 +87,7 @@ class ElectricScrewdriverM3(ActiveTool):
         ),
         actuators={
             "driver": ImplicitActuatorCfg(
-                joint_names_expr=["driver_joint"],
+                joint_names_expr=["driver_joint", "counterweight_joint"],
                 velocity_limit=4.0 * pi,
                 effort_limit=100.0,
                 stiffness=0.0,
@@ -102,9 +100,12 @@ class ElectricScrewdriverM3(ActiveTool):
     actions: ActionGroup = JointVelocityBinaryActionGroup(
         BinaryJointVelocityActionCfg(
             asset_name="robot",
-            joint_names=["driver_joint"],
-            open_command_expr={"driver_joint": 0.0},
-            close_command_expr={"driver_joint": 4.0 * pi},
+            joint_names=["driver_joint", "counterweight_joint"],
+            open_command_expr={"driver_joint": 0.0, "counterweight_joint": 0.0},
+            close_command_expr={
+                "driver_joint": 4.0 * pi,
+                "counterweight_joint": -4.0 * pi,
+            },
         )
     )
 
@@ -122,9 +123,7 @@ class ElectricScrewdriverM5(ActiveTool):
             .joinpath("electric_screwdriver_hex_m5.usdz")
             .as_posix(),
             activate_contact_sensors=True,
-            collision_props=CollisionPropertiesCfg(
-                contact_offset=0.005, rest_offset=0.0
-            ),
+            collision_props=CollisionPropertiesCfg(),
             rigid_props=RigidBodyPropertiesCfg(
                 disable_gravity=True,
                 max_depenetration_velocity=5.0,
@@ -137,7 +136,7 @@ class ElectricScrewdriverM5(ActiveTool):
         ),
         actuators={
             "driver": ImplicitActuatorCfg(
-                joint_names_expr=["driver_joint"],
+                joint_names_expr=["driver_joint", "counterweight_joint"],
                 velocity_limit=4.0 * pi,
                 effort_limit=100.0,
                 stiffness=0.0,
@@ -150,9 +149,12 @@ class ElectricScrewdriverM5(ActiveTool):
     actions: ActionGroup = JointVelocityBinaryActionGroup(
         BinaryJointVelocityActionCfg(
             asset_name="robot",
-            joint_names=["driver_joint"],
-            open_command_expr={"driver_joint": 0.0},
-            close_command_expr={"driver_joint": 4.0 * pi},
+            joint_names=["driver_joint", "counterweight_joint"],
+            open_command_expr={"driver_joint": 0.0, "counterweight_joint": 0.0},
+            close_command_expr={
+                "driver_joint": 4.0 * pi,
+                "counterweight_joint": -4.0 * pi,
+            },
         )
     )
 
