@@ -223,7 +223,7 @@ class Task(ManipulationEnv):
         )
 
 
-# @torch.jit.script
+@torch.jit.script
 def _compute_step_return(
     *,
     ## Time
@@ -382,8 +382,8 @@ def _compute_step_return(
     )
 
     # Reward: End-effector top-down orientation
-    WEIGHT_TOP_DOWN_ORIENTATION = 8.0
-    TANH_STD_TOP_DOWN_ORIENTATION = 0.15
+    WEIGHT_TOP_DOWN_ORIENTATION = 16.0
+    TANH_STD_TOP_DOWN_ORIENTATION = 0.025
     top_down_alignment = torch.sum(
         fk_rotmat_end_effector[:, :, 2]
         * torch.tensor((0.0, 0.0, -1.0), device=device)
@@ -395,14 +395,12 @@ def _compute_step_return(
         1.0 - torch.tanh((1.0 - top_down_alignment) / TANH_STD_TOP_DOWN_ORIENTATION)
     )
 
-    # Reward: Object top-down orientation
+    # Reward: Object upright orientation
     WEIGHT_OBJECT_TOP_DOWN_ORIENTATION = 4.0
     TANH_STD_OBJECT_TOP_DOWN_ORIENTATION = 0.15
     object_top_down_alignment = torch.sum(
         matrix_from_quat(tf_quat_obj)[:, :, 2]
-        * torch.tensor((0.0, 0.0, -1.0), device=device)
-        .unsqueeze(0)
-        .expand(num_envs, 3),
+        * torch.tensor((0.0, 0.0, 1.0), device=device).unsqueeze(0).expand(num_envs, 3),
         dim=1,
     )
     reward_object_top_down_orientation = WEIGHT_OBJECT_TOP_DOWN_ORIENTATION * (
@@ -413,8 +411,8 @@ def _compute_step_return(
     )
 
     # Reward: Distance | End-effector <--> Object
-    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT = 8.0
-    TANH_STD_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT = 0.2
+    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT = 16.0
+    TANH_STD_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT = 0.35
     reward_distance_end_effector_to_bolt_driver_slot = (
         WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT
         * (
@@ -427,8 +425,8 @@ def _compute_step_return(
     )
 
     # Reward: Distance | End-effector <--> Object
-    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION = 64.0
-    TANH_STD_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION = 0.01
+    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION = 128.0
+    TANH_STD_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION = 0.005
     reward_distance_end_effector_to_bolt_driver_slot_precision = (
         WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION
         * (
@@ -441,7 +439,7 @@ def _compute_step_return(
     )
 
     # Reward: Contact object
-    WEIGHT_CONTACT = 8.0
+    WEIGHT_CONTACT = 16.0
     THRESHOLD_CONTACT = 5.0
     reward_contact = (
         WEIGHT_CONTACT
@@ -459,17 +457,32 @@ def _compute_step_return(
     )
 
     # Reward: Screwing based on angular velocity of the object
-    WEIGHT_SCREWING = 32.0
+    WEIGHT_SCREWING = 64.0
     reward_screwing = WEIGHT_SCREWING * (-vel_ang_obj[:, 2] / torch.pi)
+
+    # Penalty: Distance | Object <--> Target
+    WEIGHT_DISTANCE_OBJ_TO_TARGET_TOO_FAR = -1024.0
+    THRESHOLD_DISTANCE_OBJ_TO_TARGET_TOO_FAR = 0.1
+    is_obj_too_far = (
+        torch.norm(tf_pos_obj_to_target, dim=-1)
+        > THRESHOLD_DISTANCE_OBJ_TO_TARGET_TOO_FAR
+    )
+    penalty_distance_obj_to_target_too_far = (
+        WEIGHT_DISTANCE_OBJ_TO_TARGET_TOO_FAR * is_obj_too_far.float()
+    )
 
     # Reward: Distance | Object <--> Target
     WEIGHT_DISTANCE_OBJ_TO_TARGET = 512.0
-    TANH_STD_DISTANCE_OBJ_TO_TARGET = 0.001
-    reward_distance_obj_to_target = WEIGHT_DISTANCE_OBJ_TO_TARGET * (
-        1.0
-        - torch.tanh(
-            torch.clip(-tf_pos_obj_to_target[:, 2], 0.0)
-            / TANH_STD_DISTANCE_OBJ_TO_TARGET
+    TANH_STD_DISTANCE_OBJ_TO_TARGET = 0.002
+    reward_distance_obj_to_target = (
+        WEIGHT_DISTANCE_OBJ_TO_TARGET
+        * (~is_obj_too_far).float()
+        * (
+            1.0
+            - torch.tanh(
+                torch.clip(-tf_pos_obj_to_target[:, 2], 0.0)
+                / TANH_STD_DISTANCE_OBJ_TO_TARGET
+            )
         )
     )
 
@@ -522,6 +535,7 @@ def _compute_step_return(
             "reward_distance_end_effector_to_bolt_driver_slot_precision": reward_distance_end_effector_to_bolt_driver_slot_precision,
             "reward_contact": reward_contact,
             "reward_screwing": reward_screwing,
+            "penalty_distance_obj_to_target_too_far": penalty_distance_obj_to_target_too_far,
             "reward_distance_obj_to_target": reward_distance_obj_to_target,
         },
         termination,
