@@ -305,7 +305,6 @@ def _compute_step_return(
         q01=tf_quat_obj,
         t12=offset_pos_bolt_driver_slot,
     )
-
     (
         tf_pos_end_effector_to_bolt_driver_slot,
         tf_quat_end_effector_to_bolt_driver_slot,

@@ -66,18 +66,19 @@ class TaskCfg(ManipulationEnvCfg):
 
     ## Time
     env_rate: float = 1.0 / 100.0
-    agent_rate: float = 1.0 / 25.0
+    agent_rate: float = 1.0 / 50.0
     episode_length_s: float = 20.0
     is_finite_horizon: bool = True
 
     ## Particles
     scatter_particles: bool = False
-    particles_ratio: float = 0.25
-    particles_size: float = 0.02
+    particles_ratio: float = 0.8
+    particles_size: float = 0.01
     particles_settle_max_steps: int = 50
     particles_settle_step_time: float = 2.0
     particles_settle_extra_time: float = 10.0
     particles_settle_vel_threshold: float = 0.01
+    particles_update_interval: float = 2.0
 
     def __post_init__(self):
         super().__post_init__()
@@ -87,13 +88,18 @@ class TaskCfg(ManipulationEnvCfg):
         _regolith_dim = round(self.spacing / self.particles_size)
         self.scene.regolith.spawn.ratio = self.particles_ratio  # type: ignore
         self.scene.regolith.spawn.particle_size = self.particles_size  # type: ignore
-        self.scene.regolith.spawn.dim_x = round(0.25 * _regolith_dim)  # type: ignore
-        self.scene.regolith.spawn.dim_y = round(0.5 * _regolith_dim)  # type: ignore
-        self.scene.regolith.spawn.dim_z = round(0.125 * _regolith_dim)  # type: ignore
+        self.scene.regolith.spawn.dim_x = round(0.225 * _regolith_dim)  # type: ignore
+        self.scene.regolith.spawn.dim_y = round(0.35 * _regolith_dim)  # type: ignore
+        self.scene.regolith.spawn.dim_z = round(0.075 * _regolith_dim)  # type: ignore
         self.scene.regolith.init_state.pos = (
             0.15 * self.spacing,
             0.0,
             0.05 * self.spacing,
+        )
+
+        # Async particle updates
+        self._particle_update_interval_n_steps: int = round(
+            self.particles_update_interval / self.agent_rate
         )
 
 
@@ -112,14 +118,30 @@ class Task(ManipulationEnv):
         self._regolith: AssetBase = self.scene["regolith"]
 
         ## Initialize buffers
-        self._initial_particle_positions: torch.Tensor | None = None
-        self._initial_particle_combined_height: torch.Tensor = torch.zeros(
-            self.num_envs, 1, dtype=torch.float32, device=self.device
+        self._initial_particle_pos: torch.Tensor | None = None
+        self._initial_particle_mean_pos: torch.Tensor = torch.zeros(
+            self.num_envs, 3, dtype=torch.float32, device=self.device
+        )
+
+        self._particle_update_counter = self.cfg._particle_update_interval_n_steps
+        self._cached_particles_pos = torch.zeros(
+            self.num_envs,
+            1,
+            3,
+            dtype=torch.float32,
+            device=self.device,
+        )
+        self._cached_particles_vel = torch.zeros(
+            self.num_envs,
+            1,
+            3,
+            dtype=torch.float32,
+            device=self.device,
         )
 
     def _reset_idx(self, env_ids: Sequence[int]):
         ## Let the particles settle on the first reset, then remember their positions for future resets
-        if self._initial_particle_positions is None:
+        if self._initial_particle_pos is None:
             for _ in range(self.cfg.particles_settle_max_steps):
                 for _ in range(
                     round(self.cfg.particles_settle_step_time / self.step_dt)
@@ -141,27 +163,47 @@ class Task(ManipulationEnv):
                     break
 
             # Extract statistics about the initial state of the particles
-            self._initial_particle_positions = particle_utils.get_particles_pos_w(
+            self._initial_particle_pos = particle_utils.get_particles_pos_w(
                 self, self._regolith
             )
-            self._initial_particle_velocities = torch.zeros_like(
-                self._initial_particle_positions
+            self._initial_particle_vel = torch.zeros_like(self._initial_particle_pos)
+            self._initial_particle_mean_pos = torch.mean(
+                self._initial_particle_pos, dim=1
             )
-            self._initial_particle_combined_height = torch.quantile(
-                self._initial_particle_positions[:, :, 2], q=0.95, dim=1
-            ).unsqueeze(1)
+            self._initial_particle_mean_pos[:, 2] = torch.quantile(
+                self._initial_particle_mean_pos[:, 2], q=0.98
+            )
 
+            # Initialize the particle cache
+            self._cached_particles_pos = self._initial_particle_pos.clone()
+            self._cached_particles_vel = self._initial_particle_vel.clone()
         else:
             particle_utils.set_particles_pos_w(
-                self, self._regolith, self._initial_particle_positions, env_ids=env_ids
+                self, self._regolith, self._initial_particle_pos, env_ids=env_ids
             )
             particle_utils.set_particles_vel_w(
-                self, self._regolith, self._initial_particle_velocities, env_ids=env_ids
+                self, self._regolith, self._initial_particle_vel, env_ids=env_ids
             )
+
+        # Reset particle cache
+        self._particle_update_counter = self.cfg._particle_update_interval_n_steps
+        self._cached_particles_pos[env_ids] = self._initial_particle_pos[env_ids]
+        self._cached_particles_vel[env_ids] = self._initial_particle_vel[env_ids]
 
         super()._reset_idx(env_ids)
 
     def extract_step_return(self) -> StepReturn:
+        # Update particle cache if interval is reached
+        self._particle_update_counter -= 1
+        if self._particle_update_counter == 0:
+            self._cached_particles_pos = particle_utils.get_particles_pos_w(
+                self, self._regolith
+            )
+            self._cached_particles_vel = particle_utils.get_particles_vel_w(
+                self, self._regolith
+            )
+            self._particle_update_counter = self.cfg._particle_update_interval_n_steps
+
         return _compute_step_return(
             ## Time
             episode_length=self.episode_length_buf,
@@ -194,15 +236,18 @@ class Task(ManipulationEnv):
             # Kinematics
             fk_pos_end_effector=self._tf_end_effector.data.target_pos_source[:, 0, :],
             fk_quat_end_effector=self._tf_end_effector.data.target_quat_source[:, 0, :],
+            # Transforms (world frame)
+            tf_pos_end_effector=self._tf_end_effector.data.target_pos_w[:, 0, :],
+            tf_quat_end_effector=self._tf_end_effector.data.target_quat_w[:, 0, :],
             # Contacts
             contact_forces_robot=self._contacts_robot.data.net_forces_w,  # type: ignore
             contact_forces_end_effector=self._contacts_end_effector.data.net_forces_w
             if isinstance(self._contacts_end_effector, ContactSensor)
             else None,
             # Particles
-            particles_pos=particle_utils.get_particles_pos_w(self, self._regolith),
-            particles_vel=particle_utils.get_particles_vel_w(self, self._regolith),
-            particles_initial_combined_height=self._initial_particle_combined_height,
+            particles_pos=self._cached_particles_pos,
+            particles_vel=self._cached_particles_vel,
+            particles_initial_mean_pos=self._initial_particle_mean_pos,
         )
 
 
@@ -227,13 +272,16 @@ def _compute_step_return(
     # Kinematics
     fk_pos_end_effector: torch.Tensor,
     fk_quat_end_effector: torch.Tensor,
+    # Transforms (world frame)
+    tf_pos_end_effector: torch.Tensor,
+    tf_quat_end_effector: torch.Tensor,
     # Contacts
     contact_forces_robot: torch.Tensor,
     contact_forces_end_effector: torch.Tensor | None,
     # Particles
     particles_pos: torch.Tensor,
     particles_vel: torch.Tensor,
-    particles_initial_combined_height: torch.Tensor,
+    particles_initial_mean_pos: torch.Tensor,
 ) -> StepReturn:
     num_envs = episode_length.size(0)
     num_particles = particles_pos.size(1)
@@ -273,6 +321,12 @@ def _compute_step_return(
     ## Kinematics
     fk_rotmat_end_effector = matrix_from_quat(fk_quat_end_effector)
     fk_rot6d_end_effector = rotmat_to_rot6d(fk_rotmat_end_effector)
+
+    ## Transforms (world frame)
+    # End-effector -> Initial particles
+    tf_pos_end_effector_to_initial_particles = (
+        tf_pos_end_effector - particles_initial_mean_pos
+    )
 
     ## Contacts
     contact_forces_mean_robot = contact_forces_robot.mean(dim=1)
@@ -317,7 +371,7 @@ def _compute_step_return(
     )
 
     # Penalty: Undesired robot contacts
-    WEIGHT_UNDESIRED_ROBOT_CONTACTS = -5.0
+    WEIGHT_UNDESIRED_ROBOT_CONTACTS = -2.0
     THRESHOLD_UNDESIRED_ROBOT_CONTACTS = 10.0
     penalty_undesired_robot_contacts = WEIGHT_UNDESIRED_ROBOT_CONTACTS * (
         torch.max(torch.norm(contact_forces_robot, dim=-1), dim=1)[0]
@@ -338,16 +392,33 @@ def _compute_step_return(
         1.0 - torch.tanh((1.0 - top_down_alignment) / TANH_STD_TOP_DOWN_ORIENTATION)
     )
 
+    # Reward: Distance end-effector to particles
+    WEIGHT_DISTANCE_END_EFFECTOR_TO_INITIAL_PARTICLES = 16.0
+    TANH_STD_DISTANCE_END_EFFECTOR_TO_INITIAL_PARTICLES = 0.2
+    reward_distance_end_effector_to_initial_particles = (
+        WEIGHT_DISTANCE_END_EFFECTOR_TO_INITIAL_PARTICLES
+        * (
+            1.0
+            - torch.tanh(
+                torch.norm(tf_pos_end_effector_to_initial_particles, dim=-1)
+                / TANH_STD_DISTANCE_END_EFFECTOR_TO_INITIAL_PARTICLES
+            )
+        )
+    )
+
     # Penalty: Particle velocity
-    WEIGHT_SPLASHING_PENALTY = -512.0
-    penalty_particle_velocity = WEIGHT_SPLASHING_PENALTY * (
-        torch.sum(torch.square(particles_vel_norm), dim=1) / num_particles
+    WEIGHT_SPLASHING_PENALTY = -32.0
+    MAX_SPLASHING_PENALTY = -512.0
+    penalty_particle_velocity = torch.clamp_min(
+        WEIGHT_SPLASHING_PENALTY
+        * (torch.sum(torch.square(particles_vel_norm), dim=1) / num_particles),
+        min=MAX_SPLASHING_PENALTY,
     )
 
     # Reward: Number of lifted particles
-    WEIGHT_PARTICLE_LIFT = 2048.0
-    HEIGHT_OFFSET_PARTICLE_LIFT = 0.2
-    HEIGHT_SPAN_PARTICLE_LIFT = 0.1
+    WEIGHT_PARTICLE_LIFT = 16384.0
+    HEIGHT_OFFSET_PARTICLE_LIFT = 0.5
+    HEIGHT_SPAN_PARTICLE_LIFT = 0.35
     TANH_STD_HEIGHT_PARTICLE_LIFT = 0.025
     reward_particle_lift = (
         WEIGHT_PARTICLE_LIFT
@@ -357,7 +428,7 @@ def _compute_step_return(
                 (
                     torch.abs(
                         particles_pos[:, :, 2]
-                        - particles_initial_combined_height
+                        - particles_initial_mean_pos[:, 2]
                         - HEIGHT_OFFSET_PARTICLE_LIFT
                     )
                     - HEIGHT_SPAN_PARTICLE_LIFT
@@ -370,7 +441,7 @@ def _compute_step_return(
     )
 
     # Reward: Stabilization of excavated particles
-    WEIGHT_STABILIZATION_REWARD = 8192.0
+    WEIGHT_STABILIZATION_REWARD = 65536.0
     THRESHOLD_STABILIZATION_POSITION = 0.05
     TANH_STD_STABILIZATION_VELOCITY = 0.025
     reward_particle_stabilization = (
@@ -379,7 +450,7 @@ def _compute_step_return(
             (
                 torch.abs(
                     particles_pos[:, :, 2]
-                    - particles_initial_combined_height
+                    - particles_initial_mean_pos[:, 2]
                     - HEIGHT_OFFSET_PARTICLE_LIFT
                 )
                 < THRESHOLD_STABILIZATION_POSITION
@@ -429,6 +500,7 @@ def _compute_step_return(
             "penalty_joint_acceleration": penalty_joint_acceleration,
             "penalty_undesired_robot_contacts": penalty_undesired_robot_contacts,
             "reward_top_down_orientation": reward_top_down_orientation,
+            "reward_distance_end_effector_to_initial_particles": reward_distance_end_effector_to_initial_particles,
             "penalty_particle_velocity": penalty_particle_velocity,
             "reward_particle_lift": reward_particle_lift,
             "reward_particle_stabilization": reward_particle_stabilization,
