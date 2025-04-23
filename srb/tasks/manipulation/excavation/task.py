@@ -167,11 +167,11 @@ class Task(ManipulationEnv):
                 self, self._regolith
             )
             self._initial_particle_vel = torch.zeros_like(self._initial_particle_pos)
-            self._initial_particle_mean_pos = torch.mean(
+            self._initial_particle_mean_pos = self.scene.env_origins + torch.mean(
                 self._initial_particle_pos, dim=1
             )
             self._initial_particle_mean_pos[:, 2] = torch.quantile(
-                self._initial_particle_mean_pos[:, 2], q=0.98
+                self._initial_particle_pos[:, 2], q=0.95
             )
 
             # Initialize the particle cache
@@ -407,8 +407,8 @@ def _compute_step_return(
     )
 
     # Penalty: Particle velocity
-    WEIGHT_SPLASHING_PENALTY = -32.0
-    MAX_SPLASHING_PENALTY = -512.0
+    WEIGHT_SPLASHING_PENALTY = -256.0
+    MAX_SPLASHING_PENALTY = -2048.0
     penalty_particle_velocity = torch.clamp_min(
         WEIGHT_SPLASHING_PENALTY
         * (torch.sum(torch.square(particles_vel_norm), dim=1) / num_particles),
@@ -428,7 +428,7 @@ def _compute_step_return(
                 (
                     torch.abs(
                         particles_pos[:, :, 2]
-                        - particles_initial_mean_pos[:, 2]
+                        - particles_initial_mean_pos[:, 2].unsqueeze(1)
                         - HEIGHT_OFFSET_PARTICLE_LIFT
                     )
                     - HEIGHT_SPAN_PARTICLE_LIFT
@@ -450,7 +450,7 @@ def _compute_step_return(
             (
                 torch.abs(
                     particles_pos[:, :, 2]
-                    - particles_initial_mean_pos[:, 2]
+                    - particles_initial_mean_pos[:, 2].unsqueeze(1)
                     - HEIGHT_OFFSET_PARTICLE_LIFT
                 )
                 < THRESHOLD_STABILIZATION_POSITION
@@ -478,6 +478,7 @@ def _compute_step_return(
             "state": {
                 "contact_forces_mean_robot": contact_forces_mean_robot,
                 "contact_forces_mean_end_effector": contact_forces_mean_end_effector,
+                "tf_pos_end_effector_to_initial_particles": tf_pos_end_effector_to_initial_particles,
             },
             "state_dyn": {
                 "contact_forces_robot": contact_forces_robot,
