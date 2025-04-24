@@ -1,11 +1,16 @@
-from srb.core.action import (
+from srb.core.action import (  # noqa: F401
     ActionGroup,
-    DifferentialInverseKinematicsActionCfg,
-    InverseKinematicsActionGroup,
+    DifferentialIKControllerCfg,
+    JointEffortActionCfg,
+    JointEffortActionGroup,
+    JointPositionRelativeActionGroup,
+    OperationalSpaceControlActionGroup,
+    OperationalSpaceControllerActionCfg,
+    OperationalSpaceControllerCfg,
+    RelativeJointPositionActionCfg,
 )
 from srb.core.actuator import ImplicitActuatorCfg
 from srb.core.asset import ArticulationCfg, Frame, SerialManipulator, Transform
-from srb.core.controller import DifferentialIKControllerCfg
 from srb.core.sim import (
     ArticulationRootPropertiesCfg,
     CollisionPropertiesCfg,
@@ -65,21 +70,42 @@ class Canadarm3(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=["canadarm3_large_joint_[1-7]"],
+    #         base_name="canadarm3_large_0",
+    #         body_name="canadarm3_large_7",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(
+    #             pos=(0.0, 0.0, -0.45),
+    #         ),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=["canadarm3_large_joint_[1-7]"],
             body_name="canadarm3_large_7",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
+                nullspace_control="position",
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(
-                pos=(0.0, 0.0, -0.45),
-            ),
-        ),
+            nullspace_joint_pos_target="center",
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
 
     ## Frames

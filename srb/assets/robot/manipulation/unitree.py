@@ -1,11 +1,16 @@
-from srb.core.action import (
+from srb.core.action import (  # noqa: F401
     ActionGroup,
-    DifferentialInverseKinematicsActionCfg,
-    InverseKinematicsActionGroup,
+    DifferentialIKControllerCfg,
+    JointEffortActionCfg,
+    JointEffortActionGroup,
+    JointPositionRelativeActionGroup,
+    OperationalSpaceControlActionGroup,
+    OperationalSpaceControllerActionCfg,
+    OperationalSpaceControllerCfg,
+    RelativeJointPositionActionCfg,
 )
 from srb.core.actuator import ImplicitActuatorCfg
 from srb.core.asset import ArticulationCfg, Frame, SerialManipulator, Transform
-from srb.core.controller import DifferentialIKControllerCfg
 from srb.core.sim import (
     ArticulationRootPropertiesCfg,
     CollisionPropertiesCfg,
@@ -58,20 +63,38 @@ class UnitreeZ1(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=["joint.*"],
+    #         base_name="link00",
+    #         body_name="link06",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.025,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=["joint.*"],
-            base_name="link00",
             body_name="link06",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
             ),
-            scale=0.025,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
 
     ## Frames

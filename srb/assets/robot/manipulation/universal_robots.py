@@ -70,75 +70,39 @@ class UR3(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=[".*_joint"],
+    #         base_name="base_link",
+    #         body_name="wrist_3_link",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=[".*_joint"],
-            base_name="base_link",
             body_name="wrist_3_link",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="fixed",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_task=100.0,
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable_kp",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_limits_task=(0.5, 2.5),
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         damping_ratio_scale=1.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base_link")
@@ -204,75 +168,39 @@ class UR3e(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=[".*_joint"],
+    #         base_name="base_link",
+    #         body_name="wrist_3_link",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=[".*_joint"],
-            base_name="base_link",
             body_name="wrist_3_link",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="fixed",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_task=100.0,
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable_kp",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_limits_task=(0.5, 2.5),
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         damping_ratio_scale=1.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base_link")
@@ -338,75 +266,39 @@ class UR5(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=[".*_joint"],
+    #         base_name="base_link",
+    #         body_name="wrist_3_link",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=[".*_joint"],
-            base_name="base_link",
             body_name="wrist_3_link",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="fixed",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_task=100.0,
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable_kp",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_limits_task=(0.5, 2.5),
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         damping_ratio_scale=1.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base_link")
@@ -472,21 +364,21 @@ class UR5e(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
-            asset_name="robot",
-            joint_names=[".*_joint"],
-            base_name="base_link",
-            body_name="wrist_3_link",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
-            ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
-    )
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=[".*_joint"],
+    #         base_name="base_link",
+    #         body_name="wrist_3_link",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
     # actions: ActionGroup = OperationalSpaceControlActionGroup(
     #     OperationalSpaceControllerActionCfg(
     #         asset_name="robot",
@@ -504,24 +396,24 @@ class UR5e(SerialManipulator):
     #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
     #     )
     # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable_kp",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
+            asset_name="robot",
+            joint_names=[".*_joint"],
+            body_name="wrist_3_link",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
+            ),
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
+    )
     # actions: ActionGroup = OperationalSpaceControlActionGroup(
     #     OperationalSpaceControllerActionCfg(
     #         asset_name="robot",
@@ -606,75 +498,39 @@ class UR10(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=[".*_joint"],
+    #         base_name="base_link",
+    #         body_name="ee_link",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=[".*_joint"],
-            base_name="base_link",
             body_name="ee_link",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="ee_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="fixed",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_task=100.0,
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="ee_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable_kp",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="ee_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_limits_task=(0.5, 2.5),
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         damping_ratio_scale=1.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base_link")
@@ -743,75 +599,39 @@ class UR10e(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=[".*_joint"],
+    #         base_name="base_link",
+    #         body_name="wrist_3_link",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=[".*_joint"],
-            base_name="base_link",
             body_name="wrist_3_link",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="fixed",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_task=100.0,
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable_kp",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_limits_task=(0.5, 2.5),
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         damping_ratio_scale=1.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base_link")
@@ -877,75 +697,39 @@ class UR16e(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=[".*_joint"],
+    #         base_name="base_link",
+    #         body_name="wrist_3_link",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=[".*_joint"],
-            base_name="base_link",
             body_name="wrist_3_link",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="fixed",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_task=100.0,
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable_kp",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_limits_task=(0.5, 2.5),
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         damping_ratio_scale=1.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base_link")
@@ -1011,75 +795,39 @@ class UR20(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=[".*_joint"],
+    #         base_name="base_link",
+    #         body_name="wrist_3_link",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=[".*_joint"],
-            base_name="base_link",
             body_name="wrist_3_link",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="fixed",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_task=100.0,
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable_kp",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_limits_task=(0.5, 2.5),
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         damping_ratio_scale=1.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base_link")
@@ -1145,75 +893,39 @@ class UR30(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=[".*_joint"],
+    #         base_name="base_link",
+    #         body_name="wrist_3_link",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=[".*_joint"],
-            base_name="base_link",
             body_name="wrist_3_link",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="fixed",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_task=100.0,
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable_kp",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_limits_task=(0.5, 2.5),
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         damping_ratio_scale=1.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base_link")
@@ -1251,75 +963,39 @@ class RandomURManipulator(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=[".*_joint"],
+    #         base_name="base_link",
+    #         body_name="wrist_3_link",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=[".*_joint"],
-            base_name="base_link",
             body_name="wrist_3_link",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="fixed",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_task=100.0,
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable_kp",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_task=1.0,
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
-    # actions: ActionGroup = OperationalSpaceControlActionGroup(
-    #     OperationalSpaceControllerActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*_joint"],
-    #         body_name="wrist_3_link",
-    #         controller_cfg=OperationalSpaceControllerCfg(
-    #             target_types=["pose_rel"],
-    #             impedance_mode="variable",
-    #             inertial_dynamics_decoupling=True,
-    #             motion_stiffness_limits_task=(10.0, 250.0),
-    #             motion_damping_ratio_limits_task=(0.5, 2.5),
-    #         ),
-    #         position_scale=0.1,
-    #         orientation_scale=0.1,
-    #         stiffness_scale=120.0,
-    #         damping_ratio_scale=1.0,
-    #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-    #     )
-    # )
 
     ## Frames
     frame_base: Frame = Frame(prim_relpath="base_link")

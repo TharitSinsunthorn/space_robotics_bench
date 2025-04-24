@@ -1,9 +1,13 @@
 from srb.assets.object.tool import Kinova300
-from srb.core.action import (
+from srb.core.action import (  # noqa: F401
     ActionGroup,
-    DifferentialIKControllerCfg,
-    DifferentialInverseKinematicsActionCfg,
-    InverseKinematicsActionGroup,
+    JointEffortActionCfg,
+    JointEffortActionGroup,
+    JointPositionRelativeActionGroup,
+    OperationalSpaceControlActionGroup,
+    OperationalSpaceControllerActionCfg,
+    OperationalSpaceControllerCfg,
+    RelativeJointPositionActionCfg,
 )
 from srb.core.actuator import ImplicitActuatorCfg
 from srb.core.asset import ArticulationCfg, Frame, SerialManipulator, Tool, Transform
@@ -73,20 +77,38 @@ class KinovaJ2n6s(SerialManipulator):
     end_effector: Tool | None = Kinova300()
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=["j2n6s_joint_[1-6]"],
+    #         base_name="j2n6s_link_base",
+    #         body_name="j2n6s_link_6",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=["j2n6s_joint_[1-6]"],
-            base_name="j2n6s_link_base",
             body_name="j2n6s_link_6",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
 
     ## Frames
@@ -169,20 +191,40 @@ class KinovaJ2n7s(SerialManipulator):
     end_effector: Tool | None = Kinova300()
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=["j2n7s_joint_[1-7]"],
+    #         base_name="j2n7s_link_base",
+    #         body_name="j2n7s_link_7",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=["j2n7s_joint_[1-7]"],
-            base_name="j2n7s_link_base",
             body_name="j2n7s_link_7",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
+                nullspace_control="position",
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            nullspace_joint_pos_target="center",
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
 
     ## Frames
@@ -256,20 +298,40 @@ class KinovaGen3n7(SerialManipulator):
     )
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=["joint_[1-7]"],
+    #         base_name="base_link",
+    #         body_name="end_effector_link",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="svd",
+    #         ),
+    #         scale=0.1,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=["joint_[1-7]"],
-            base_name="base_link",
             body_name="end_effector_link",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="svd",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
+                nullspace_control="position",
             ),
-            scale=0.1,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            nullspace_joint_pos_target="center",
+            position_scale=0.1,
+            orientation_scale=0.1,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
 
     ## Frames
