@@ -1543,7 +1543,7 @@ def parse_cli_args() -> argparse.Namespace:
             dest="video_enable",
             help="Record videos",
             action="store_true",
-            default=False,
+            default=True,
         )
 
         performance_group = _agent_parser.add_argument_group("Performance")

@@ -4,17 +4,12 @@ from srb.core.action import (  # noqa: F401
     DifferentialIKControllerCfg,
     DifferentialInverseKinematicsActionCfg,
     InverseKinematicsActionGroup,
-    JointEffortActionCfg,
-    JointEffortActionGroup,
-    JointPositionRelativeActionGroup,
     OperationalSpaceControlActionGroup,
     OperationalSpaceControllerActionCfg,
     OperationalSpaceControllerCfg,
-    RelativeJointPositionActionCfg,
 )
 from srb.core.actuator import ImplicitActuatorCfg
 from srb.core.asset import ArticulationCfg, Frame, SerialManipulator, Tool, Transform
-from srb.core.controller import DifferentialIKControllerCfg
 from srb.core.sim import (
     ArticulationRootPropertiesCfg,
     CollisionPropertiesCfg,
@@ -71,20 +66,38 @@ class SOArm100D5(SerialManipulator):
     end_effector: Tool | None = SOArm100Gripper()
 
     ## Actions
-    actions: ActionGroup = InverseKinematicsActionGroup(
-        DifferentialInverseKinematicsActionCfg(
+    # actions: ActionGroup = InverseKinematicsActionGroup(
+    #     DifferentialInverseKinematicsActionCfg(
+    #         asset_name="robot",
+    #         joint_names=[".*"],
+    #         base_name="Base",
+    #         body_name="Fixed_Gripper",
+    #         controller=DifferentialIKControllerCfg(
+    #             command_type="pose",
+    #             use_relative_mode=True,
+    #             ik_method="pinv",
+    #         ),
+    #         scale=0.05,
+    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+    #     ),
+    # )
+    actions: ActionGroup = OperationalSpaceControlActionGroup(
+        OperationalSpaceControllerActionCfg(
             asset_name="robot",
             joint_names=[".*"],
-            base_name="Base",
             body_name="Fixed_Gripper",
-            controller=DifferentialIKControllerCfg(
-                command_type="pose",
-                use_relative_mode=True,
-                ik_method="pinv",
+            controller_cfg=OperationalSpaceControllerCfg(
+                target_types=["pose_rel"],
+                impedance_mode="variable_kp",
+                inertial_dynamics_decoupling=True,
+                motion_stiffness_limits_task=(10.0, 250.0),
+                motion_damping_ratio_task=1.0,
             ),
-            scale=0.02,
-            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-        ),
+            position_scale=0.05,
+            orientation_scale=0.05,
+            stiffness_scale=120.0,
+            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
+        )
     )
 
     ## Frames
@@ -158,38 +171,20 @@ class SOArm100D7(SerialManipulator):
     )
 
     ## Actions
-    # actions: ActionGroup = InverseKinematicsActionGroup(
-    #     DifferentialInverseKinematicsActionCfg(
-    #         asset_name="robot",
-    #         joint_names=[".*"],
-    #         base_name="Base",
-    #         body_name="End_Servo",
-    #         controller=DifferentialIKControllerCfg(
-    #             command_type="pose",
-    #             use_relative_mode=True,
-    #             ik_method="svd",
-    #         ),
-    #         scale=0.02,
-    #         body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
-    #     ),
-    # )
-    actions: ActionGroup = OperationalSpaceControlActionGroup(
-        OperationalSpaceControllerActionCfg(
+    actions: ActionGroup = InverseKinematicsActionGroup(
+        DifferentialInverseKinematicsActionCfg(
             asset_name="robot",
             joint_names=[".*"],
+            base_name="Base",
             body_name="End_Servo",
-            controller_cfg=OperationalSpaceControllerCfg(
-                target_types=["pose_rel"],
-                impedance_mode="variable_kp",
-                inertial_dynamics_decoupling=True,
-                motion_stiffness_limits_task=(10.0, 250.0),
-                motion_damping_ratio_task=1.0,
+            controller=DifferentialIKControllerCfg(
+                command_type="pose",
+                use_relative_mode=True,
+                ik_method="svd",
             ),
-            position_scale=0.1,
-            orientation_scale=0.1,
-            stiffness_scale=120.0,
-            body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
-        )
+            scale=0.05,
+            body_offset=DifferentialInverseKinematicsActionCfg.OffsetCfg(),
+        ),
     )
 
     ## Frames
