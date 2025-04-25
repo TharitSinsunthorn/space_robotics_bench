@@ -2,7 +2,7 @@
 seed: 0
 run:
   steps: 100000000
-  train_ratio: 32.0
+  train_ratio: 16.0
 replay:
   size: 1000000
   online: True
@@ -40,13 +40,13 @@ jax.debug: False
 # .*\.depth: 4
 # .*\.units: 64
 ##  12M
-.*\.rssm: { deter: 2048, hidden: 256, classes: 16 }
-.*\.depth: 16
-.*\.units: 256
+# .*\.rssm: { deter: 2048, hidden: 256, classes: 16 }
+# .*\.depth: 16
+# .*\.units: 256
 ##  25M
-# .*\.rssm: { deter: 3072, hidden: 384, classes: 24 }
-# .*\.depth: 24
-# .*\.units: 384
+.*\.rssm: { deter: 3072, hidden: 384, classes: 24 }
+.*\.depth: 24
+.*\.units: 384
 ##  50M
 # .*\.rssm: { deter: 4096, hidden: 512, classes: 32 }
 # .*\.depth: 32

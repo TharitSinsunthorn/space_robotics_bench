@@ -40,7 +40,7 @@ class OperationalSpaceControlActionGroup(ActionGroup):
                 return torch.cat(
                     (
                         twist,
-                        torch.ones(6, dtype=twist.dtype, device=twist.device),
+                        -torch.ones(6, dtype=twist.dtype, device=twist.device),
                     ),
                     dim=-1,
                 )
@@ -48,7 +48,8 @@ class OperationalSpaceControlActionGroup(ActionGroup):
                 return torch.cat(
                     (
                         twist,
-                        torch.ones(12, dtype=twist.dtype, device=twist.device),
+                        -torch.ones(6, dtype=twist.dtype, device=twist.device),
+                        torch.ones(6, dtype=twist.dtype, device=twist.device),
                     ),
                     dim=-1,
                 )

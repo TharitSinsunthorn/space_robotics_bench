@@ -356,7 +356,7 @@ def _compute_step_return(
     )
 
     # Penalty: Joint torque
-    WEIGHT_JOINT_TORQUE = -0.000025
+    WEIGHT_JOINT_TORQUE = -0.00025
     MAX_JOINT_TORQUE_PENALTY = -4.0
     penalty_joint_torque = torch.clamp_min(
         WEIGHT_JOINT_TORQUE
@@ -365,7 +365,7 @@ def _compute_step_return(
     )
 
     # Penalty: Joint acceleration
-    WEIGHT_JOINT_ACCELERATION = -0.0005
+    WEIGHT_JOINT_ACCELERATION = -0.005
     MAX_JOINT_ACCELERATION_PENALTY = -4.0
     penalty_joint_acceleration = torch.clamp_min(
         WEIGHT_JOINT_ACCELERATION * torch.sum(torch.square(joint_acc_robot), dim=1),
@@ -373,7 +373,7 @@ def _compute_step_return(
     )
 
     # Penalty: Undesired robot contacts
-    WEIGHT_UNDESIRED_ROBOT_CONTACTS = -10.0
+    WEIGHT_UNDESIRED_ROBOT_CONTACTS = -5.0
     THRESHOLD_UNDESIRED_ROBOT_CONTACTS = 10.0
     penalty_undesired_robot_contacts = WEIGHT_UNDESIRED_ROBOT_CONTACTS * (
         torch.max(torch.norm(contact_forces_robot, dim=-1), dim=1)[0]
@@ -395,23 +395,22 @@ def _compute_step_return(
     )
 
     # Reward: Object upright orientation
-    WEIGHT_OBJECT_TOP_DOWN_ORIENTATION = 4.0
-    TANH_STD_OBJECT_TOP_DOWN_ORIENTATION = 0.15
+    WEIGHT_OBJECT_TOP_DOWN_ORIENTATION = -32.0
+    TANH_STD_OBJECT_TOP_DOWN_ORIENTATION = 0.05
     object_top_down_alignment = torch.sum(
         matrix_from_quat(tf_quat_obj)[:, :, 2]
         * torch.tensor((0.0, 0.0, 1.0), device=device).unsqueeze(0).expand(num_envs, 3),
         dim=1,
     )
-    reward_object_top_down_orientation = WEIGHT_OBJECT_TOP_DOWN_ORIENTATION * (
-        1.0
-        - torch.tanh(
+    penalty_object_top_down_orientation = WEIGHT_OBJECT_TOP_DOWN_ORIENTATION * (
+        torch.tanh(
             (1.0 - object_top_down_alignment) / TANH_STD_OBJECT_TOP_DOWN_ORIENTATION
         )
     )
 
     # Reward: Distance | End-effector <--> Object
-    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT = 16.0
-    TANH_STD_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT = 0.35
+    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT = 8.0
+    TANH_STD_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT = 0.4
     reward_distance_end_effector_to_bolt_driver_slot = (
         WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT
         * (
@@ -424,7 +423,21 @@ def _compute_step_return(
     )
 
     # Reward: Distance | End-effector <--> Object
-    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION = 128.0
+    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_CLOSE = 32.0
+    TANH_STD_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_CLOSE = 0.02
+    reward_distance_end_effector_to_bolt_driver_slot_close = (
+        WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_CLOSE
+        * (
+            1.0
+            - torch.tanh(
+                dist_end_effector_to_bolt_driver_slot
+                / TANH_STD_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_CLOSE
+            )
+        )
+    )
+
+    # Reward: Distance | End-effector <--> Object
+    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION = 256.0
     TANH_STD_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION = 0.005
     reward_distance_end_effector_to_bolt_driver_slot_precision = (
         WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION
@@ -471,8 +484,8 @@ def _compute_step_return(
     )
 
     # Reward: Distance | Object <--> Target
-    WEIGHT_DISTANCE_OBJ_TO_TARGET = 512.0
-    TANH_STD_DISTANCE_OBJ_TO_TARGET = 0.002
+    WEIGHT_DISTANCE_OBJ_TO_TARGET = 2048.0
+    TANH_STD_DISTANCE_OBJ_TO_TARGET = 0.001
     reward_distance_obj_to_target = (
         WEIGHT_DISTANCE_OBJ_TO_TARGET
         * (~is_obj_too_far).float()
@@ -529,8 +542,9 @@ def _compute_step_return(
             "penalty_joint_acceleration": penalty_joint_acceleration,
             "penalty_undesired_robot_contacts": penalty_undesired_robot_contacts,
             "reward_top_down_orientation": reward_top_down_orientation,
-            "reward_object_top_down_orientation": reward_object_top_down_orientation,
+            "penalty_object_top_down_orientation": penalty_object_top_down_orientation,
             "reward_distance_end_effector_to_bolt_driver_slot": reward_distance_end_effector_to_bolt_driver_slot,
+            "reward_distance_end_effector_to_bolt_driver_slot_close": reward_distance_end_effector_to_bolt_driver_slot_close,
             "reward_distance_end_effector_to_bolt_driver_slot_precision": reward_distance_end_effector_to_bolt_driver_slot_precision,
             "reward_contact": reward_contact,
             "reward_screwing": reward_screwing,
