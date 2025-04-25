@@ -11,6 +11,7 @@ from srb.core.asset import (
     RigidObject,
     RigidObjectCfg,
 )
+from srb.core.domain import Domain
 from srb.core.env import (
     ManipulationEnv,
     ManipulationEnvCfg,
@@ -57,8 +58,11 @@ class EventCfg(ManipulationEventCfg):
 
 @configclass
 class TaskCfg(ManipulationEnvCfg):
+    ## Scenario
+    domain: Domain = Domain.MARS
+
     ## Assets
-    sample: Object | AssetVariant = AssetVariant.PROCEDURAL
+    sample: Object | AssetVariant = AssetVariant.DATASET
 
     ## Scene
     scene: SceneCfg = SceneCfg()
