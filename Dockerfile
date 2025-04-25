@@ -279,9 +279,9 @@ RUN if [[ "${DEV,,}" = true && "${SIMFORGE_FOUNDRY_DEV,,}" = true ]]; then \
 ## Reinforcement Learning
 ARG DREAMER_DEV=true
 ARG DREAMER_PATH="/root/dreamerv3"
-ARG DREAMER_REMOTE="https://github.com/danijar/dreamerv3.git"
+ARG DREAMER_REMOTE="https://github.com/AndrejOrsula/dreamerv3.git"
 ARG DREAMER_BRANCH="main"
-ARG DREAMER_COMMIT_SHA="cdf570902b1eaba193cc8ef69426cd4edde1b0bc" # 2025-04-11
+ARG DREAMER_COMMIT_SHA="45c3955afb6ee26310fc5bce65102320b8d98b18" # 2025-04-11
 RUN if [[ "${DEV,,}" = true && "${DREAMER_DEV,,}" = true ]]; then \
     git clone "${DREAMER_REMOTE}" "${DREAMER_PATH}" --branch "${DREAMER_BRANCH}" && \
     git -C "${DREAMER_PATH}" reset --hard "${DREAMER_COMMIT_SHA}" && \

@@ -185,7 +185,7 @@ class Franka(SerialManipulator):
     frame_base_camera: Frame = Frame(
         prim_relpath="panda_link0/camera_base",
         offset=Transform(
-            pos=(0.06, 0.0, 0.15),
-            rot=rpy_to_quat(0.0, -10.0, 0.0),
+            pos=(0.15, 0.0, 0.1),
+            rot=rpy_to_quat(0.0, 45.0, 0.0),
         ),
     )
