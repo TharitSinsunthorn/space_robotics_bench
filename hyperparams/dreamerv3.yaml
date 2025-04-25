@@ -1,10 +1,10 @@
 ### Training ###
 seed: 0
 run:
-  steps: 100000000
+  steps: 50000000
   train_ratio: 16.0
 replay:
-  size: 1000000
+  size: 5000000
   online: True
   fracs: { uniform: 0.0, priority: 0.5, recency: 0.5 }
   chunksize: 1024
