@@ -64,11 +64,12 @@ def run_agent_with_env(
     ],
     env_id: str,
     logdir_path: str,
+    interface: Sequence[str],
     video_enable: bool,
-    video_length: int,
-    video_interval: int,
+    perf_enable: bool,
+    perf_output: str,
+    perf_duration: float,
     hide_ui: bool,
-    interface: Sequence[str] = (),
     forwarded_args: Sequence[str] = (),
     **kwargs,
 ):
@@ -89,7 +90,6 @@ def run_agent_with_env(
     from omni.physx import acquire_physx_interface
 
     from srb.interfaces.teleop import EventKeyboardTeleopInterface
-    from srb.utils import logging
     from srb.utils.cfg import hydra_task_config, last_logdir, new_logdir
     from srb.utils.isaacsim import hide_isaacsim_ui
 
@@ -145,14 +145,169 @@ def run_agent_with_env(
 
         # Add wrapper for video recording
         if video_enable:
-            video_kwargs = {
-                "video_folder": logdir.joinpath("videos"),
-                "step_trigger": lambda step: step % video_interval == 0,
-                "video_length": video_length,
-                "disable_logger": True,
-            }
-            logging.info(f"Recording videos: {video_kwargs}")
-            env = gymnasium.wrappers.RecordVideo(env, **video_kwargs)
+            env = gymnasium.wrappers.RecordVideo(
+                env,
+                video_folder=logdir.joinpath("videos").as_posix(),
+                name_prefix=env_id.removeprefix("srb/"),
+                disable_logger=True,
+            )
+
+        # Add wrapper for performance tests
+        if perf_enable:
+            import sys
+            import time
+            from collections import deque
+
+            import torch
+            from gymnasium.core import ActType, Env, ObsType, Wrapper
+
+            class PerformanceTestWrapper(Wrapper):
+                def __init__(
+                    self,
+                    env: Env[ObsType, ActType],
+                    output: str,
+                    duration: float,
+                    min_report_interval: float = 20.0,
+                    max_buffer_size: int = 1000000,
+                ):
+                    super().__init__(env)
+                    self.__perf_output = output
+                    self.__perf_duration = duration
+                    self.__perf_min_report_interval = min_report_interval
+
+                    _env: "AnyEnv" = env.unwrapped  # type: ignore
+                    self.__num_envs = _env.num_envs
+                    self.__agent_rate = _env.cfg.agent_rate
+
+                    self._perf_num_steps = 0
+                    self._perf_num_episodes = 0
+                    self._perf_total_time = 0.0
+                    self._perf_step_timings = deque(maxlen=max_buffer_size)
+                    self._perf_start_time = time.perf_counter()
+                    self._perf_last_report_time = self._perf_start_time
+
+                def step(self, action):
+                    # Step timing
+                    t_start = time.perf_counter()
+                    obs, reward, terminated, truncated, info = super().step(action)
+                    t_end = time.perf_counter()
+                    step_timing = t_end - t_start
+                    self._perf_step_timings.append(step_timing)
+                    self._perf_num_steps += self.__num_envs
+                    self._perf_total_time += step_timing
+
+                    # Episode end detection
+                    done: torch.Tensor = terminated | truncated  # type: ignore
+                    num_done = torch.sum(done).item()
+                    self._perf_num_episodes += num_done
+                    episode_ended = num_done > 0.5 * self.__num_envs
+
+                    if episode_ended or (
+                        t_end - self._perf_last_report_time
+                        > self.__perf_min_report_interval
+                    ):
+                        self.__perf_report(episode_end=episode_ended)
+                        self._perf_last_report_time = t_end
+
+                    # Check for duration limit
+                    if self._perf_total_time >= self.__perf_duration:
+                        self.__perf_report(final=True)
+                        print(
+                            "The performance test has finished (duration limit reached)."
+                        )
+                        sys.exit(0)
+
+                    return obs, reward, terminated, truncated, info
+
+                def __perf_report(self, episode_end: bool = False, final: bool = False):
+                    steps = self._perf_num_steps
+                    episodes = self._perf_num_episodes
+                    total_time = self._perf_total_time
+                    timings = torch.tensor(list(self._perf_step_timings))
+                    steps_per_sec = steps / total_time if total_time > 0 else 0
+                    mean_step_time = (
+                        torch.mean(timings).item() if timings.numel() > 0 else 0
+                    )
+                    median_step_time = (
+                        torch.median(timings).item() if timings.numel() > 0 else 0
+                    )
+                    min_step_time = (
+                        torch.min(timings).item() if timings.numel() > 0 else 0
+                    )
+                    max_step_time = (
+                        torch.max(timings).item() if timings.numel() > 0 else 0
+                    )
+
+                    def torch_percentiles(t, percentiles):
+                        if t.numel() == 0:
+                            return [0 for _ in percentiles]
+                        t_sorted, _ = torch.sort(t)
+                        n = t.numel()
+                        result = []
+                        for p in percentiles:
+                            k = (n - 1) * (p / 100)
+                            f = torch.floor(torch.tensor(k)).long()
+                            c = torch.ceil(torch.tensor(k)).long()
+                            if f == c:
+                                val = t_sorted[f]
+                            else:
+                                d0 = t_sorted[f] * (c.float() - k)
+                                d1 = t_sorted[c] * (k - f.float())
+                                val = d0 + d1
+                            result.append(val.item())
+                        return result
+
+                    step_time_percentiles = torch_percentiles(timings, [10, 20, 80, 90])
+                    if not hasattr(self, "_perf_episode_lengths"):
+                        self._perf_episode_lengths = []
+                    if episode_end and self._perf_num_episodes > 0:
+                        last_episode_len = (
+                            self._perf_num_steps / self._perf_num_episodes
+                        )
+                        self._perf_episode_lengths.append(last_episode_len)
+                    episode_lengths = torch.tensor(self._perf_episode_lengths)
+                    mean_episode_len = (
+                        torch.mean(episode_lengths).item()
+                        if episode_lengths.numel() > 0
+                        else 0
+                    )
+                    median_episode_len = (
+                        torch.median(episode_lengths).item()
+                        if episode_lengths.numel() > 0
+                        else 0
+                    )
+                    min_episode_len = (
+                        torch.min(episode_lengths).item()
+                        if episode_lengths.numel() > 0
+                        else 0
+                    )
+                    max_episode_len = (
+                        torch.max(episode_lengths).item()
+                        if episode_lengths.numel() > 0
+                        else 0
+                    )
+                    episode_len_percentiles = torch_percentiles(
+                        episode_lengths, [10, 20, 80, 90]
+                    )
+                    report = (
+                        f"\nPerformance Report{' (final)' if final else ''}:\n"
+                        f"    Elapsed time (s)       : {total_time:.2f}\n"
+                        f"    Total steps (#)        : {steps}\n"
+                        f"    Total episodes (#)     : {episodes}\n"
+                        f"    Steps per second (#/s) : {steps_per_sec:.2f}\n"
+                        f"    Step time (ms)         : min={min_step_time * 1000:.3f}, p10={step_time_percentiles[0] * 1000:.3f}, p20={step_time_percentiles[1] * 1000:.3f}, mean={mean_step_time * 1000:.3f}, median={median_step_time * 1000:.3f}, p80={step_time_percentiles[2] * 1000:.3f}, p90={step_time_percentiles[3] * 1000:.3f}, max={max_step_time * 1000:.3f}\n"
+                        f"    Episode length (steps) : min={min_episode_len:.1f}, p10={episode_len_percentiles[0]:.1f}, p20={episode_len_percentiles[1]:.1f}, mean={mean_episode_len:.1f}, median={median_episode_len:.1f}, p80={episode_len_percentiles[2]:.1f}, p90={episode_len_percentiles[3]:.1f}, max={max_episode_len:.1f}\n"
+                        f"    Episode length (s)     : min={self.__agent_rate * min_episode_len:.1f}, p10={self.__agent_rate * episode_len_percentiles[0]:.1f}, p20={self.__agent_rate * episode_len_percentiles[1]:.1f}, mean={self.__agent_rate * mean_episode_len:.1f}, median={self.__agent_rate * median_episode_len:.1f}, p80={self.__agent_rate * episode_len_percentiles[2]:.1f}, p90={self.__agent_rate * episode_len_percentiles[3]:.1f}, max={self.__agent_rate * max_episode_len:.1f}\n"
+                    )
+                    if self.__perf_output == "STDOUT":
+                        print(report)
+                    else:
+                        with open(self.__perf_output, "a") as f:
+                            f.write(report + "\n")
+
+            env = PerformanceTestWrapper(
+                env, output=perf_output, duration=perf_duration
+            )
 
         # Add keyboard callbacks
         if not kwargs["headless"] and agent_subcommand not in [
@@ -211,13 +366,11 @@ def run_agent_with_env(
 
         # Run the implementation
         def agent_impl(**kwargs):
-            kwargs.update(
-                {
-                    "env_id": env_id,
-                    "agent_cfg": agent_cfg,
-                    "env_cfg": env_cfg,
-                }
-            )
+            kwargs.update({
+                "env_id": env_id,
+                "agent_cfg": agent_cfg,
+                "env_cfg": env_cfg,
+            })
 
             match agent_subcommand:
                 case "zero":
@@ -499,12 +652,10 @@ def _teleop_agent_via_policy(
             for event_name in event_names:
                 for recognized_cmd_key in recognized_cmd_keys:
                     if recognized_cmd_key in event_name:
-                        events_to_remove.append(
-                            (
-                                category,
-                                event_names.index(event_name),
-                            )
-                        )
+                        events_to_remove.append((
+                            category,
+                            event_names.index(event_name),
+                        ))
                         break
         for category, event_id in reversed(events_to_remove):
             env.unwrapped.event_manager._mode_term_names[category].pop(  # type: ignore
@@ -584,17 +735,15 @@ def _teleop_agent_via_policy(
                         ),
                     )
                 case 7:
-                    cmd = torch.concat(
-                        (
-                            torch.from_numpy(twist).to(
-                                device=env.unwrapped.device,  # type: ignore
-                                dtype=torch.float32,
-                            ),
-                            torch.Tensor((-1.0 if event else 1.0,)).to(
-                                device=twist.device  # type: ignore
-                            ),
-                        )
-                    )
+                    cmd = torch.concat((
+                        torch.from_numpy(twist).to(
+                            device=env.unwrapped.device,  # type: ignore
+                            dtype=torch.float32,
+                        ),
+                        torch.Tensor((-1.0 if event else 1.0,)).to(
+                            device=twist.device  # type: ignore
+                        ),
+                    ))
                     setattr(
                         env.unwrapped,
                         self._internal_cmd_attr_name,  # type: ignore
@@ -1372,27 +1521,6 @@ def parse_cli_args() -> argparse.Namespace:
             default=SRB_LOGS_DIR,
         )
 
-        video_recording_group = _agent_parser.add_argument_group("Video Recording")
-        video_recording_group.add_argument(
-            "--video",
-            dest="video_enable",
-            help="Record videos",
-            action="store_true",
-            default=False,
-        )
-        video_recording_group.add_argument(
-            "--video_length",
-            help="Length of the recorded video (in steps)",
-            type=int,
-            default=1000,
-        )
-        video_recording_group.add_argument(
-            "--video_interval",
-            help="Interval between video recordings (in steps)",
-            type=int,
-            default=10000,
-        )
-
         interfaces_group = _agent_parser.add_argument_group("Interface")
         interfaces_group.add_argument(
             "--interface",
@@ -1401,6 +1529,36 @@ def parse_cli_args() -> argparse.Namespace:
             nargs="*",
             choices=_interface_choices,
             default=[],
+        )
+
+        video_recording_group = _agent_parser.add_argument_group("Video Recording")
+        video_recording_group.add_argument(
+            "--video",
+            dest="video_enable",
+            help="Record videos",
+            action="store_true",
+            default=False,
+        )
+
+        performance_group = _agent_parser.add_argument_group("Performance")
+        performance_group.add_argument(
+            "--perf",
+            dest="perf_enable",
+            help="Test the performance of the environment",
+            action="store_true",
+            default=False,
+        )
+        logging_group.add_argument(
+            "--perf_output",
+            help='Path to the output of the performance test (special keys: "STDOUT")',
+            type=str,
+            default="STDOUT",
+        )
+        logging_group.add_argument(
+            "--perf_duration",
+            help="Maximum duration of the performance test in seconds (0: No limit)",
+            type=float,
+            default=150.0,
         )
 
     ## Teleop args
