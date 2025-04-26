@@ -884,11 +884,11 @@ def train_agent(algo: str, **kwargs):
         case _sb3 if algo.startswith("sb3"):
             from srb.integrations.sb3 import main as sb3
 
-            sb3.run(workflow=WORKFLOW, algo=algo.strip("sb3_"), **kwargs)
+            sb3.run(workflow=WORKFLOW, algo=algo.removeprefix("sb3_"), **kwargs)
         case _sbx if algo.startswith("sbx"):
             from srb.integrations.sbx import main as sbx
 
-            sbx.run(workflow=WORKFLOW, algo=algo.strip("sbx_"), **kwargs)
+            sbx.run(workflow=WORKFLOW, algo=algo.removeprefix("sbx_"), **kwargs)
 
 
 def eval_agent(algo: str, **kwargs):
@@ -906,11 +906,11 @@ def eval_agent(algo: str, **kwargs):
         case _sb3 if algo.startswith("sb3"):
             from srb.integrations.sb3 import main as sb3
 
-            sb3.run(workflow=WORKFLOW, algo=algo.strip("sb3_"), **kwargs)
+            sb3.run(workflow=WORKFLOW, algo=algo.removeprefix("sb3_"), **kwargs)
         case _sbx if algo.startswith("sbx"):
             from srb.integrations.sbx import main as sbx
 
-            sbx.run(workflow=WORKFLOW, algo=algo.strip("sbx_"), **kwargs)
+            sbx.run(workflow=WORKFLOW, algo=algo.removeprefix("sbx_"), **kwargs)
 
 
 ### List ###
@@ -1543,7 +1543,7 @@ def parse_cli_args() -> argparse.Namespace:
             dest="video_enable",
             help="Record videos",
             action="store_true",
-            default=True,
+            default=False,
         )
 
         performance_group = _agent_parser.add_argument_group("Performance")

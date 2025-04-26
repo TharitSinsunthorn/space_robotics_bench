@@ -1,5 +1,4 @@
 ### Training ###
-seed: 0
 run:
   steps: 50000000
   train_ratio: 16.0

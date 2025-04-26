@@ -66,7 +66,6 @@ class TaskCfg(GroundManipulationEnvCfg):
 
     ## Time
     env_rate: float = 1.0 / 100.0
-    agent_rate: float = 1.0 / 50.0
     episode_length_s: float = 20.0
     is_finite_horizon: bool = True
 

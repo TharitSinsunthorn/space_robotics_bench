@@ -56,8 +56,8 @@ class AerialEnvCfg(MobileEnvCfg):
     events: AerialEventCfg = AerialEventCfg()
 
     ## Time
-    env_rate: float = 1.0 / 50.0
-    agent_rate: float = 1.0 / 50.0
+    env_rate: float = 1.0 / 25.0
+    agent_rate: float = 1.0 / 25.0
 
     ## Viewer
     viewer: ViewerCfg = ViewerCfg(
