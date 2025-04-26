@@ -56,7 +56,9 @@ class EventCfg(ManipulationEventCfg):
 @configclass
 class TaskCfg(ManipulationEnvCfg):
     ## Assets
-    robot: Manipulator | AssetVariant = assets.Franka(end_effector=assets.Scoop())
+    robot: Manipulator | AssetVariant = assets.UR20(
+        end_effector=assets.ScoopRectangular()
+    )
 
     ## Scene
     scene: SceneCfg = SceneCfg()
@@ -141,6 +143,7 @@ class Task(ManipulationEnv):
     def _reset_idx(self, env_ids: Sequence[int]):
         ## Let the particles settle on the first reset, then remember their positions for future resets
         if self._initial_particle_pos is None:
+            super()._reset_idx(env_ids)
             for _ in range(self.cfg.particles_settle_max_steps):
                 for _ in range(
                     round(self.cfg.particles_settle_step_time / self.step_dt)

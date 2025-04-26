@@ -54,7 +54,7 @@ class TaskCfg(GroundManipulationEnvCfg):
     ## Assets
     robot: GroundManipulator | AssetVariant = assets.GenericGroundManipulator(
         mobile_base=assets.Spot(),
-        manipulator=assets.Franka(end_effector=assets.Scoop()),
+        manipulator=assets.Franka(end_effector=assets.ScoopRectangular()),
     )
     robot.asset_cfg.init_state.pos = (0.0, 0.0, 1.0)  # type: ignore
 

@@ -775,7 +775,7 @@ class UR20(SerialManipulator):
         ),
         init_state=ArticulationCfg.InitialStateCfg(
             joint_pos={
-                "shoulder_pan_joint": deg_to_rad(180.0),
+                "shoulder_pan_joint": 0.0,
                 "shoulder_lift_joint": deg_to_rad(-90.0),
                 "elbow_joint": deg_to_rad(90.0),
                 "wrist_1_joint": deg_to_rad(-90.0),
