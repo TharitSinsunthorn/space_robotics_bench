@@ -2,7 +2,7 @@ from typing import Dict
 
 import torch
 
-from srb.core.env import OrbitalEnvVisualExtCfg, VisualExt
+from srb.core.env import GroundEnvVisualExtCfg, VisualExt
 from srb.utils.cfg import configclass
 
 from .task import Task, TaskCfg
@@ -10,10 +10,10 @@ from .task_locomotion import LocomotionTask, LocomotionTaskCfg
 
 
 @configclass
-class VisualTaskCfg(OrbitalEnvVisualExtCfg, TaskCfg):
+class VisualTaskCfg(GroundEnvVisualExtCfg, TaskCfg):
     def __post_init__(self):
         TaskCfg.__post_init__(self)
-        OrbitalEnvVisualExtCfg.wrap(self, env_cfg=self)  # type: ignore
+        GroundEnvVisualExtCfg.wrap(self, env_cfg=self)  # type: ignore
 
 
 class VisualTask(VisualExt, Task):
@@ -31,10 +31,10 @@ class VisualTask(VisualExt, Task):
 
 
 @configclass
-class VisualLocomotionTaskCfg(OrbitalEnvVisualExtCfg, LocomotionTaskCfg):
+class VisualLocomotionTaskCfg(GroundEnvVisualExtCfg, LocomotionTaskCfg):
     def __post_init__(self):
         LocomotionTaskCfg.__post_init__(self)
-        OrbitalEnvVisualExtCfg.wrap(self, env_cfg=self)  # type: ignore
+        GroundEnvVisualExtCfg.wrap(self, env_cfg=self)  # type: ignore
 
 
 class VisualLocomotionTask(VisualExt, LocomotionTask):

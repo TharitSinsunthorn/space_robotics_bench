@@ -67,6 +67,9 @@ class LocomotionTaskCfg(TaskCfg):
     ## Events
     events: LocomotionEventCfg = LocomotionEventCfg()
 
+    ## Time
+    env_rate: float = 1.0 / 125.0
+
     def __post_init__(self):
         super().__post_init__()
 

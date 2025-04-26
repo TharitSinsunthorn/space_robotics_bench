@@ -62,6 +62,12 @@ class Gateway(OrbitalRobot):
             rot=rpy_to_quat(0.0, 0.0, 0.0),
         ),
     )
+    frame_onboard_camera: Frame = Frame(
+        prim_relpath="base/camera_onboard",
+        offset=Transform(
+            pos=(11.148, 0.05865, -1.63578),
+        ),
+    )
 
 
 class Cubesat(OrbitalRobot):
@@ -146,6 +152,13 @@ class Cubesat(OrbitalRobot):
         prim_relpath="cubesat",
         offset=Transform(
             pos=(0.0, 0.0, 0.05),
+            rot=rpy_to_quat(0.0, 0.0, 0.0),
+        ),
+    )
+    frame_onboard_camera: Frame = Frame(
+        prim_relpath="base/camera_onboard",
+        offset=Transform(
+            pos=(0.075, 0.0, 0.0),
             rot=rpy_to_quat(0.0, 0.0, 0.0),
         ),
     )
@@ -286,6 +299,13 @@ class VenusExpress(OrbitalRobot):
             rot=rpy_to_quat(0.0, 0.0, 0.0),
         ),
     )
+    frame_onboard_camera: Frame = Frame(
+        prim_relpath="base/camera_onboard",
+        offset=Transform(
+            pos=(-0.69557, -0.5479, 0.51),
+            rot=rpy_to_quat(0.0, 0.0, 0.0),
+        ),
+    )
 
 
 class Starship(OrbitalRobot):
@@ -363,6 +383,13 @@ class Starship(OrbitalRobot):
         offset=Transform(
             pos=(0.0, 0.0, 0.0),
             rot=rpy_to_quat(0.0, 0.0, 0.0),
+        ),
+    )
+    frame_onboard_camera: Frame = Frame(
+        prim_relpath="base/camera_onboard",
+        offset=Transform(
+            pos=(0.0, 3.6437, -0.0155),
+            rot=rpy_to_quat(0.0, 90.0, 0.0),
         ),
     )
 
@@ -559,5 +586,12 @@ class SuperHeavy(OrbitalRobot):
         offset=Transform(
             pos=(0.0, 0.0, 0.0),
             rot=rpy_to_quat(0.0, 0.0, 0.0),
+        ),
+    )
+    frame_onboard_camera: Frame = Frame(
+        prim_relpath="base/camera_onboard",
+        offset=Transform(
+            pos=(0.0, -4.45, 2.25),
+            rot=rpy_to_quat(0.0, 90.0, 0.0),
         ),
     )

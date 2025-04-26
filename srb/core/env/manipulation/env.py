@@ -113,6 +113,9 @@ class ManipulationEnvCfg(DirectEnvCfg):
                     self.pedestal.frame_manipulator_mount.offset.rot,
                 )
             )
+            self.scene.pedestal.prim_path = (
+                "/World/pedestal" if self.stack else "{ENV_REGEX_NS}/pedestal"
+            )
 
         # Sensor: End-effector transform
         self.scene.tf_end_effector.prim_path = (
