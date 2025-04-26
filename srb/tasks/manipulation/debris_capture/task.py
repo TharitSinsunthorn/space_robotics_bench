@@ -304,20 +304,6 @@ def _compute_step_return(
         min=MAX_JOINT_ACCELERATION_PENALTY,
     )
 
-    # Reward: End-effector top-down orientation
-    WEIGHT_TOP_DOWN_ORIENTATION = 0.5
-    TANH_STD_TOP_DOWN_ORIENTATION = 0.15
-    top_down_alignment = torch.sum(
-        fk_rotmat_end_effector[:, :, 2]
-        * torch.tensor((0.0, 0.0, -1.0), device=device)
-        .unsqueeze(0)
-        .expand(num_envs, 3),
-        dim=1,
-    )
-    reward_top_down_orientation = WEIGHT_TOP_DOWN_ORIENTATION * (
-        1.0 - torch.tanh((1.0 - top_down_alignment) / TANH_STD_TOP_DOWN_ORIENTATION)
-    )
-
     # Reward: Distance | End-effector <--> Object
     WEIGHT_DISTANCE_END_EFFECTOR_TO_OBJ = 4.0
     TANH_STD_DISTANCE_END_EFFECTOR_TO_OBJ = 0.2
@@ -397,7 +383,6 @@ def _compute_step_return(
             "penalty_action_rate": penalty_action_rate,
             "penalty_joint_torque": penalty_joint_torque,
             "penalty_joint_acceleration": penalty_joint_acceleration,
-            "reward_top_down_orientation": reward_top_down_orientation,
             "reward_distance_end_effector_to_obj": reward_distance_end_effector_to_obj,
             "reward_grasp": reward_grasp,
             "penalty_debris_velocity": penalty_debris_velocity,

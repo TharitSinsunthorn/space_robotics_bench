@@ -338,25 +338,11 @@ def _compute_step_return(
     )
 
     # Penalty: Undesired robot contacts
-    WEIGHT_UNDESIRED_ROBOT_CONTACTS = -5.0
+    WEIGHT_UNDESIRED_ROBOT_CONTACTS = -1.0
     THRESHOLD_UNDESIRED_ROBOT_CONTACTS = 10.0
     penalty_undesired_robot_contacts = WEIGHT_UNDESIRED_ROBOT_CONTACTS * (
         torch.max(torch.norm(contact_forces_robot, dim=-1), dim=1)[0]
         > THRESHOLD_UNDESIRED_ROBOT_CONTACTS
-    )
-
-    # Reward: End-effector top-down orientation
-    WEIGHT_TOP_DOWN_ORIENTATION = 1.0
-    TANH_STD_TOP_DOWN_ORIENTATION = 0.15
-    top_down_alignment = torch.sum(
-        fk_rotmat_end_effector[:, :, 2]
-        * torch.tensor((0.0, 0.0, -1.0), device=device)
-        .unsqueeze(0)
-        .expand(num_envs, 3),
-        dim=1,
-    )
-    reward_top_down_orientation = WEIGHT_TOP_DOWN_ORIENTATION * (
-        1.0 - torch.tanh((1.0 - top_down_alignment) / TANH_STD_TOP_DOWN_ORIENTATION)
     )
 
     # Penalty: Particle velocity
@@ -454,7 +440,6 @@ def _compute_step_return(
             "penalty_joint_torque": penalty_joint_torque,
             "penalty_joint_acceleration": penalty_joint_acceleration,
             "penalty_undesired_robot_contacts": penalty_undesired_robot_contacts,
-            "reward_top_down_orientation": reward_top_down_orientation,
             "penalty_particle_velocity": penalty_particle_velocity,
             "reward_particle_lift": reward_particle_lift,
             "reward_particle_stabilization": reward_particle_stabilization,
