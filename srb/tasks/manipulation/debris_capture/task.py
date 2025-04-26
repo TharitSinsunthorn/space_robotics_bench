@@ -9,6 +9,7 @@ from srb.core.asset import (
     Articulation,
     AssetVariant,
     ExtravehicularScenery,
+    Manipulator,
     Object,
     RigidObject,
     RigidObjectCfg,
@@ -79,6 +80,8 @@ class TaskCfg(ManipulationEnvCfg):
     ## Assets
     scenery: ExtravehicularScenery | AssetVariant | None = assets.StaticVenusExpress()
     _scenery: ExtravehicularScenery = MISSING  # type: ignore
+    robot: Manipulator | AssetVariant = assets.UR5e(end_effector=assets.RobotiqHandE())
+    pedestal: Object | AssetVariant | None = None
     debris: Object | AssetVariant | None = AssetVariant.DATASET
 
     ## Scene
