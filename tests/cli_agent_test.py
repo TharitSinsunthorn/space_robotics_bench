@@ -17,14 +17,18 @@ MAX_DURATION_RAND: float = 40.0
 MAX_DURATION_TRAIN: float = 80.0
 
 HEADLESS: bool = True
+STACK: bool = True
 TEST_VISUAL_ENVS: bool = False
 TEST_TEMPLATE_ENVS: bool = False
 TEST_EXCAVATION: bool = True
-PERF: bool = True
-PERF_DURATION: float = 30.0
+
+PERF: bool = False
+PERF_DURATION: float = 600.0
 PERF_OUTPUT_DIR: str = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "_perf"
 )
+
+TEST_START_TIME: float = time.time()
 
 
 def _list_envs() -> Iterable[str]:
@@ -68,21 +72,28 @@ def test_cli_agent_rand(env: str, num_envs: int):
             env,
             "--logs",
             tmpdir,
+            f"env.stack={STACK}",
         )
 
         if PERF:
-            perf_output = os.path.join(
-                PERF_OUTPUT_DIR,
-                f"perf_{env.replace('/', '_')}_{num_envs}_{int(time.time())}.txt",
-            )
-            cmd = (
-                *cmd,
+            cmd += (
                 "--perf",
                 "--perf_duration",
                 str(PERF_DURATION),
                 "--perf_output",
-                perf_output,
+                os.path.join(
+                    PERF_OUTPUT_DIR,
+                    f"perf_{env.replace('/', '_')}_{num_envs}_{int(TEST_START_TIME)}.txt",
+                ),
             )
+
+            if not os.path.exists(PERF_OUTPUT_DIR):
+                os.makedirs(PERF_OUTPUT_DIR, exist_ok=True)
+            with open(
+                os.path.join(PERF_OUTPUT_DIR, f"commands_{int(TEST_START_TIME)}.bash"),
+                "a",
+            ) as f:
+                f.write(" ".join(cmd) + "\n")
 
         environ = os.environ.copy()
         environ["SF_BAKER"] = "0"
@@ -98,17 +109,18 @@ def test_cli_agent_rand(env: str, num_envs: int):
                 preexec_fn=os.setsid,
             )
 
-            start = time.time()
-            while time.time() - start < (
-                MAX_DURATION_RAND if not PERF else 5.0 * PERF_DURATION
-            ):
-                if process.poll() is not None:
-                    logging.critical(f"[{env}] Failed command: {' '.join(cmd)}")
-                    stdout, stderr = process.communicate()
-                    pytest.fail(
-                        f'Process failed for env "{env}"\n[env={env}] STDOUT:\n{stdout}\n[env={env}] STDERR:\n{stderr}'
-                    )
-                time.sleep(0.01 * MAX_DURATION_RAND)
+            if PERF:
+                process.wait()
+            else:
+                start = time.time()
+                while time.time() - start < MAX_DURATION_RAND:
+                    if process.poll() is not None:
+                        logging.critical(f"[{env}] Failed command: {' '.join(cmd)}")
+                        stdout, stderr = process.communicate()
+                        pytest.fail(
+                            f'Process failed for env "{env}"\n[env={env}] STDOUT:\n{stdout}\n[env={env}] STDERR:\n{stderr}'
+                        )
+                    time.sleep(0.01 * MAX_DURATION_RAND)
         except Exception as e:
             logging.critical(f"[{env}] Failed command: {' '.join(cmd)}")
             pytest.fail(
