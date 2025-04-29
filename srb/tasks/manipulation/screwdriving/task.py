@@ -89,7 +89,7 @@ class TaskCfg(ManipulationEnvCfg):
     domain: Domain = Domain.MARS
 
     ## Assets
-    robot: Manipulator | AssetVariant = assets.UR10e(
+    robot: Manipulator | AssetVariant = assets.Franka(
         end_effector=assets.ElectricScrewdriverM5()
     )
     bolt: Object | AssetVariant | None = assets.BoltM8()

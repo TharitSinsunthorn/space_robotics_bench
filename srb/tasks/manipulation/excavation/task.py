@@ -56,7 +56,7 @@ class EventCfg(ManipulationEventCfg):
 @configclass
 class TaskCfg(ManipulationEnvCfg):
     ## Assets
-    robot: Manipulator | AssetVariant = assets.UR20(
+    robot: Manipulator | AssetVariant = assets.Franka(
         end_effector=assets.ScoopRectangular()
     )
 
