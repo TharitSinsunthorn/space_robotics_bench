@@ -167,13 +167,15 @@ def run_agent_with_env(
                     env: Env[ObsType, ActType],
                     output: str,
                     duration: float,
-                    min_report_interval: float = 20.0,
+                    min_report_interval_fraction: float = 0.1,
                     max_buffer_size: int = 1000000,
                 ):
                     super().__init__(env)
                     self.__perf_output = output
                     self.__perf_duration = duration
-                    self.__perf_min_report_interval = min_report_interval
+                    self.__perf_min_report_interval = (
+                        duration * min_report_interval_fraction
+                    )
 
                     _env: "AnyEnv" = env.unwrapped  # type: ignore
                     self.__num_envs = _env.num_envs
@@ -185,6 +187,11 @@ def run_agent_with_env(
                     self._perf_step_timings = deque(maxlen=max_buffer_size)
                     self._perf_start_time = time.perf_counter()
                     self._perf_last_report_time = self._perf_start_time
+
+                    if self.__perf_output != "STDOUT":
+                        parent_dir = os.path.dirname(self.__perf_output)
+                        if not os.path.exists(parent_dir):
+                            os.makedirs(parent_dir, exist_ok=True)
 
                 def step(self, action):
                     # Step timing
@@ -215,6 +222,8 @@ def run_agent_with_env(
                         print(
                             "The performance test has finished (duration limit reached)."
                         )
+                        env.close()
+                        launcher.app.close()
                         sys.exit(0)
 
                     return obs, reward, terminated, truncated, info

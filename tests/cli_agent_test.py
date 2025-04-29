@@ -17,13 +17,24 @@ MAX_DURATION_RAND: float = 40.0
 MAX_DURATION_TRAIN: float = 80.0
 
 HEADLESS: bool = True
-TEST_VISUAL_ENVS: bool = True
+TEST_VISUAL_ENVS: bool = False
+TEST_TEMPLATE_ENVS: bool = False
+TEST_EXCAVATION: bool = True
+PERF: bool = True
+PERF_DURATION: float = 30.0
+PERF_OUTPUT_DIR: str = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs", "_perf"
+)
 
 
 def _list_envs() -> Iterable[str]:
     if envs := read_env_list_cache():
         if not TEST_VISUAL_ENVS:
             envs = filter(lambda env: not _is_visual_env(env), envs)
+        if not TEST_TEMPLATE_ENVS:
+            envs = filter(lambda env: not env.startswith("_"), envs)
+        if not TEST_EXCAVATION:
+            envs = filter(lambda env: "excavation" not in env, envs)
         envs = sorted(envs)
     else:
         test_filepath = Path(__file__)
@@ -59,6 +70,20 @@ def test_cli_agent_rand(env: str, num_envs: int):
             tmpdir,
         )
 
+        if PERF:
+            perf_output = os.path.join(
+                PERF_OUTPUT_DIR,
+                f"perf_{env.replace('/', '_')}_{num_envs}_{int(time.time())}.txt",
+            )
+            cmd = (
+                *cmd,
+                "--perf",
+                "--perf_duration",
+                str(PERF_DURATION),
+                "--perf_output",
+                perf_output,
+            )
+
         environ = os.environ.copy()
         environ["SF_BAKER"] = "0"
 
@@ -74,7 +99,9 @@ def test_cli_agent_rand(env: str, num_envs: int):
             )
 
             start = time.time()
-            while time.time() - start < MAX_DURATION_RAND:
+            while time.time() - start < (
+                MAX_DURATION_RAND if not PERF else 5.0 * PERF_DURATION
+            ):
                 if process.poll() is not None:
                     logging.critical(f"[{env}] Failed command: {' '.join(cmd)}")
                     stdout, stderr = process.communicate()
