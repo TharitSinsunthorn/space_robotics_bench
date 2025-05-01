@@ -1,3 +1,4 @@
+import bisect
 import math
 import types
 from dataclasses import MISSING
@@ -163,20 +164,19 @@ class BaseEnvCfg:
         self._update_debug_vis()
 
     def _update_memory_allocation(self):
-        # TODO[low]: Tune GPU memory allocation for all tasks
-        _mem_fac = math.floor(self.scene.num_envs**0.3)
+        _mem_fac = min(math.floor(self.scene.num_envs**0.3), 8)
         self.sim.physx.gpu_max_rigid_contact_count = 2 ** (12 + _mem_fac)
         self.sim.physx.gpu_max_rigid_patch_count = 2 ** (11 + _mem_fac)
         self.sim.physx.gpu_found_lost_pairs_capacity = 2 ** (20 + _mem_fac)
         self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 2 ** (20 + _mem_fac)
         self.sim.physx.gpu_total_aggregate_pairs_capacity = 2 ** (18 + _mem_fac)
-        self.sim.physx.gpu_collision_stack_size = 2 ** (23 + _mem_fac)
+        self.sim.physx.gpu_collision_stack_size = 2 ** (21 + _mem_fac)
         self.sim.physx.gpu_heap_capacity = 2 ** (16 + _mem_fac)
         self.sim.physx.gpu_temp_buffer_capacity = 2 ** (12 + _mem_fac)
         self.sim.physx.gpu_max_soft_body_contacts = 2 ** (15 + _mem_fac)
         self.sim.physx.gpu_max_particle_contacts = 2 ** (15 + _mem_fac)
-        self.sim.physx.gpu_max_num_partitions = min(
-            32, 2 ** math.floor(self.scene.num_envs**0.2)
+        self.sim.physx.gpu_max_num_partitions = 1 << bisect.bisect_left(
+            (3, 15, 127, 511, 1023), self.scene.num_envs
         )
 
     def _add_sunlight(self, *, prim_path: str = "/World/sunlight", **kwargs):
