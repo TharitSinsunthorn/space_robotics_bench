@@ -20,5 +20,9 @@ SRB_HYPERPARAMS_DIR = SRB_DIR.joinpath("hyperparams")
 # Path to logs
 SRB_LOGS_DIR = SRB_DIR.joinpath("logs")
 
-# Path to a cached list of registered environments
-SRB_ENV_CACHE_PATH: Path = SRB_DIR.joinpath(".envs_cache")
+# Path to a cached list of registered entities
+SRB_CACHE_PATH: Path = SRB_DIR.joinpath(".cache")
+SRB_ENV_CACHE_PATH: Path = SRB_CACHE_PATH.joinpath("env.json")
+SRB_OBJECT_CACHE_PATH: Path = SRB_CACHE_PATH.joinpath("object.json")
+SRB_ROBOT_CACHE_PATH: Path = SRB_CACHE_PATH.joinpath("robot.json")
+SRB_SCENERY_CACHE_PATH: Path = SRB_CACHE_PATH.joinpath("scenery.json")

@@ -8,7 +8,7 @@ from typing import Iterable
 import pytest
 
 from srb.utils import logging
-from srb.utils.cache import read_env_list_cache
+from srb.utils.cache import read_offline_srb_env_cache
 from srb.utils.isaacsim import get_isaacsim_python
 from srb.utils.subprocess import terminate_process
 
@@ -32,7 +32,7 @@ TEST_START_TIME: float = time.time()
 
 
 def _list_envs() -> Iterable[str]:
-    if envs := read_env_list_cache():
+    if envs := read_offline_srb_env_cache():
         if not TEST_VISUAL_ENVS:
             envs = filter(lambda env: not _is_visual_env(env), envs)
         if not TEST_TEMPLATE_ENVS:

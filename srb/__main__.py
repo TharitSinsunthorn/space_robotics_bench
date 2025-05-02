@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Dict, Literal, Mapping, Sequence, Tuple
 from typing_extensions import Self
 
 from srb.interfaces import InterfaceType, TeleopDeviceType
-from srb.utils.cache import read_env_list_cache, update_env_list_cache
+from srb.utils.cache import read_offline_srb_env_cache, update_offline_srb_cache
 from srb.utils.path import SRB_APPS_DIR, SRB_DIR, SRB_LOGS_DIR
 
 if TYPE_CHECKING:
@@ -84,8 +84,8 @@ def run_agent_with_env(
     # Launch Isaac Sim
     launcher = AppLauncher(launcher_args=kwargs)
 
-    # Update the offline environment registry
-    update_env_list_cache()
+    # Update the offline registry cache
+    update_offline_srb_cache()
 
     from omni.physx import acquire_physx_interface
 
@@ -938,8 +938,8 @@ def list_registered(
         headless=True, experience=SRB_APPS_DIR.joinpath("srb.barebones.kit")
     )
 
-    # Update the offline environment registry
-    update_env_list_cache()
+    # Update the offline registry cache
+    update_offline_srb_cache()
 
     import importlib
     import inspect
@@ -948,8 +948,6 @@ def list_registered(
 
     from rich import print
     from rich.table import Table
-
-    from srb.utils.str import convert_to_snake_case
 
     # Standardize category
     category = (  # type: ignore
@@ -997,7 +995,7 @@ def list_registered(
             for asset_subtype, asset_classes in SceneryRegistry.items():
                 for j, asset_class in enumerate(asset_classes):
                     i += 1
-                    asset_name = convert_to_snake_case(asset_class.__name__)
+                    asset_name = asset_class.name()
                     parent_class = asset_class.__bases__[0]
                     asset_cfg_class = asset_class().asset_cfg.__class__  # type: ignore
                     asset_module_path = Path(
@@ -1029,7 +1027,7 @@ def list_registered(
             for asset_subtype, asset_classes in ObjectRegistry.items():
                 for j, asset_class in enumerate(asset_classes):
                     i += 1
-                    asset_name = convert_to_snake_case(asset_class.__name__)
+                    asset_name = asset_class.name()
                     parent_class = asset_class.__bases__[0]
                     asset_cfg_class = asset_class().asset_cfg.__class__  # type: ignore
                     asset_module_path = Path(
@@ -1061,7 +1059,7 @@ def list_registered(
             for asset_subtype, asset_classes in RobotRegistry.items():
                 for j, asset_class in enumerate(asset_classes):
                     i += 1
-                    asset_name = convert_to_snake_case(asset_class.__name__)
+                    asset_name = asset_class.name()
                     parent_class = asset_class.__bases__[0]
                     asset_cfg_class = asset_class().asset_cfg.__class__  # type: ignore
                     asset_module_path = Path(
@@ -1091,7 +1089,7 @@ def list_registered(
 
     # Print table for action groups
     if EntityToList.ACTION in category:
-        from srb.core.action import ActionGroupRegistry, canonicalize_action_group_name
+        from srb.core.action import ActionGroupRegistry
         from srb.core.action import group as srb_action_groups
 
         table = Table(title="Action Groups of the Space Robotics Bench")
@@ -1100,9 +1098,7 @@ def list_registered(
         table.add_column("Path", justify="left", style="white")
 
         for i, action_group_class in enumerate(ActionGroupRegistry.registry, 1):
-            action_group_name = canonicalize_action_group_name(
-                action_group_class.__name__
-            )
+            action_group_name = action_group_class.name()
             action_group_path = Path(
                 inspect.getabsfile(
                     importlib.import_module(action_group_class.__module__)
@@ -1226,14 +1222,14 @@ def enter_repl(hide_ui: bool, forwarded_args: Sequence[str] = (), **kwargs):
     # Launch Isaac Sim
     launcher = AppLauncher(launcher_args=kwargs)
 
+    # Update the offline registry cache
+    update_offline_srb_cache()
+
     import ptpython
 
     import srb  # noqa: F401
     from srb.utils import logging  # noqa: F401
     from srb.utils.isaacsim import hide_isaacsim_ui
-
-    # Update the offline environment registry
-    update_env_list_cache()
 
     # Post-launch configuration
     if hide_ui:
@@ -1502,7 +1498,7 @@ def parse_cli_args() -> argparse.Namespace:
         )
 
     ## Environment args
-    _env_choices = read_env_list_cache()
+    _env_choices = read_offline_srb_env_cache()
     _interface_choices = sorted(map(str, InterfaceType))
     for _agent_parser in (
         zero_agent_parser,
@@ -1723,8 +1719,7 @@ class AutoNamespaceTaskAction(argparse.Action):
         option_string: str | None = None,
     ):
         if "/" not in values:
-            DEFAULT_TASK_NAMESPACE: str = "srb"
-            values = f"{DEFAULT_TASK_NAMESPACE}/{values}"
+            values = f"srb/{values}"
         setattr(namespace, self.dest, values)
 
 
