@@ -101,7 +101,7 @@ class TaskCfg(ManipulationEnvCfg):
     events: EventCfg = EventCfg()
 
     ## Time
-    env_rate: float = 1.0 / 200.0
+    env_rate: float = 1.0 / 400.0
     episode_length_s: float = 15.0
     is_finite_horizon: bool = True
 
@@ -381,7 +381,7 @@ def _compute_step_return(
     )
 
     # Reward: End-effector top-down orientation
-    WEIGHT_TOP_DOWN_ORIENTATION = 16.0
+    WEIGHT_TOP_DOWN_ORIENTATION = 8.0
     TANH_STD_TOP_DOWN_ORIENTATION = 0.025
     top_down_alignment = torch.sum(
         fk_rotmat_end_effector[:, :, 2]
@@ -395,7 +395,7 @@ def _compute_step_return(
     )
 
     # Reward: Object upright orientation
-    WEIGHT_OBJECT_TOP_DOWN_ORIENTATION = -32.0
+    WEIGHT_OBJECT_TOP_DOWN_ORIENTATION = -64.0
     TANH_STD_OBJECT_TOP_DOWN_ORIENTATION = 0.05
     object_top_down_alignment = torch.sum(
         matrix_from_quat(tf_quat_obj)[:, :, 2]
@@ -409,7 +409,7 @@ def _compute_step_return(
     )
 
     # Reward: Distance | End-effector <--> Object
-    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT = 8.0
+    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT = 12.0
     TANH_STD_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT = 0.4
     reward_distance_end_effector_to_bolt_driver_slot = (
         WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT
@@ -437,7 +437,7 @@ def _compute_step_return(
     )
 
     # Reward: Distance | End-effector <--> Object
-    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION = 256.0
+    WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION = 512.0
     TANH_STD_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION = 0.005
     reward_distance_end_effector_to_bolt_driver_slot_precision = (
         WEIGHT_DISTANCE_END_EFFECTOR_TO_BOLT_DRIVER_SLOT_PRECISION
@@ -451,7 +451,7 @@ def _compute_step_return(
     )
 
     # Reward: Contact object
-    WEIGHT_CONTACT = 16.0
+    WEIGHT_CONTACT = 4.0
     THRESHOLD_CONTACT = 5.0
     reward_contact = (
         WEIGHT_CONTACT
@@ -469,14 +469,14 @@ def _compute_step_return(
     )
 
     # Reward: Screwing based on angular velocity of the object
-    WEIGHT_SCREWING = 64.0
+    WEIGHT_SCREWING = 128.0
     reward_screwing = WEIGHT_SCREWING * (-vel_ang_obj[:, 2] / torch.pi)
 
     # Penalty: Distance | Object <--> Target
-    WEIGHT_DISTANCE_OBJ_TO_TARGET_TOO_FAR = -1024.0
-    THRESHOLD_DISTANCE_OBJ_TO_TARGET_TOO_FAR = 0.1
+    WEIGHT_DISTANCE_OBJ_TO_TARGET_TOO_FAR = -256.0
+    THRESHOLD_DISTANCE_OBJ_TO_TARGET_TOO_FAR = 0.075
     is_obj_too_far = (
-        torch.norm(tf_pos_obj_to_target, dim=-1)
+        torch.norm(tf_pos_obj_to_target[:, :2], dim=-1)
         > THRESHOLD_DISTANCE_OBJ_TO_TARGET_TOO_FAR
     )
     penalty_distance_obj_to_target_too_far = (
@@ -485,7 +485,7 @@ def _compute_step_return(
 
     # Reward: Distance | Object <--> Target
     WEIGHT_DISTANCE_OBJ_TO_TARGET = 2048.0
-    TANH_STD_DISTANCE_OBJ_TO_TARGET = 0.001
+    TANH_STD_DISTANCE_OBJ_TO_TARGET = 0.00075
     reward_distance_obj_to_target = (
         WEIGHT_DISTANCE_OBJ_TO_TARGET
         * (~is_obj_too_far).float()

@@ -9,7 +9,6 @@ from srb.core.asset import (
     Articulation,
     AssetVariant,
     ExtravehicularScenery,
-    Manipulator,
     Object,
     RigidObject,
     RigidObjectCfg,
@@ -80,9 +79,6 @@ class TaskCfg(ManipulationEnvCfg):
     ## Assets
     scenery: ExtravehicularScenery | AssetVariant | None = assets.StaticVenusExpress()
     _scenery: ExtravehicularScenery = MISSING  # type: ignore
-    robot: Manipulator | AssetVariant = assets.Franka(
-        end_effector=assets.RobotiqHandE()
-    )
     pedestal: Object | AssetVariant | None = None
     debris: Object | AssetVariant | None = AssetVariant.DATASET
 
@@ -321,7 +317,7 @@ def _compute_step_return(
     )
 
     # Reward: Grasp object
-    WEIGHT_GRASP = 16.0
+    WEIGHT_GRASP = 32.0
     THRESHOLD_GRASP = 5.0
     reward_grasp = (
         WEIGHT_GRASP
@@ -339,8 +335,8 @@ def _compute_step_return(
     )
 
     # Penalty: Debris velocity
-    WEIGHT_DEBRIS_VELOCITY_LIN = -1.0
-    WEIGHT_DEBRIS_VELOCITY_ANG = -0.3
+    WEIGHT_DEBRIS_VELOCITY_LIN = -5.0
+    WEIGHT_DEBRIS_VELOCITY_ANG = -2.5
     penalty_debris_velocity = WEIGHT_DEBRIS_VELOCITY_LIN * torch.norm(
         vel_lin_obj, dim=-1
     ) + WEIGHT_DEBRIS_VELOCITY_ANG * torch.norm(vel_ang_obj, dim=-1)
