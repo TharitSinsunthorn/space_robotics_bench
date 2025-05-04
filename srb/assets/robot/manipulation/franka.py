@@ -115,6 +115,8 @@ class Franka(SerialManipulator):
     #             inertial_dynamics_decoupling=True,
     #             motion_stiffness_task=100.0,
     #             motion_damping_ratio_task=1.0,
+    #             # motion_stiffness_task=250.0,
+    #             # motion_damping_ratio_task=1.5,
     #             nullspace_control="position",
     #         ),
     #         nullspace_joint_pos_target="center",
@@ -134,12 +136,14 @@ class Franka(SerialManipulator):
                 inertial_dynamics_decoupling=True,
                 motion_stiffness_limits_task=(10.0, 250.0),
                 motion_damping_ratio_task=1.0,
+                # motion_damping_ratio_task=1.5,
                 nullspace_control="position",
             ),
             nullspace_joint_pos_target="center",
             position_scale=0.1,
             orientation_scale=0.1,
             stiffness_scale=120.0,
+            # stiffness_scale=240.0,
             body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
         )
     )
@@ -161,6 +165,8 @@ class Franka(SerialManipulator):
     #         orientation_scale=0.1,
     #         stiffness_scale=120.0,
     #         damping_ratio_scale=1.0,
+    #         # stiffness_scale=240.0,
+    #         # damping_ratio_scale=2.0,
     #         body_offset=OperationalSpaceControllerActionCfg.OffsetCfg(),
     #     )
     # )
