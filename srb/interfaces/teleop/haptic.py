@@ -12,6 +12,7 @@ from collections.abc import Callable
 import numpy
 import rclpy
 from geometry_msgs.msg import Twist, Vector3
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from std_msgs.msg import Bool, Float64
 
@@ -35,27 +36,27 @@ class HapticROSTeleopInterface(DeviceBase):
         self.rot_sensitivity = rot_sensitivity
 
         self.sub_twist = self._node.create_subscription(
-            Twist, "touch/twist_stylus_current", self.cb_twist, 1
+            Twist, "/touch/twist_stylus_current", self.cb_twist, 1
         )
         self.sub_button = self._node.create_subscription(
-            Bool, "touch/button", self.cb_button, 1
+            Bool, "/touch/button", self.cb_button, 1
         )
         self.sub_event = self._node.create_subscription(
-            Bool, "touch/event", self.cb_event, 1
+            Bool, "/touch/event", self.cb_event, 1
         )
         self.pub_force_feedback = self._node.create_publisher(
-            Vector3, "touch/force_feedback", 1
+            Vector3, "/touch/force_feedback", 1
         )
 
         self.sub_latency = self._node.create_subscription(
-            Float64, "gui/latency", self.cb_latency, 1
+            Float64, "/gui/latency", self.cb_latency, 1
         )
         self.sub_motion_sensitivity = self._node.create_subscription(
-            Float64, "gui/motion_sensitivity", self.cb_motion_sensitivity, 1
+            Float64, "/gui/motion_sensitivity", self.cb_motion_sensitivity, 1
         )
         self.sub_force_feedback_sensitivity = self._node.create_subscription(
             Float64,
-            "gui/force_feedback_sensitivity",
+            "/gui/force_feedback_sensitivity",
             self.cb_force_feedback_sensitivity,
             1,
         )
@@ -80,7 +81,9 @@ class HapticROSTeleopInterface(DeviceBase):
 
         # Run a thread for listening to device
         if not node:
-            self._thread = threading.Thread(target=rclpy.spin, args=(self._node,))
+            self._executor = MultiThreadedExecutor(num_threads=2)
+            self._executor.add_node(self._node)
+            self._thread = threading.Thread(target=self._executor.spin)
             self._thread.daemon = True
             self._thread.start()
 

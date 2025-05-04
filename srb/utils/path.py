@@ -13,6 +13,8 @@ SRB_ASSETS_DIR_SRB_OBJECT = SRB_ASSETS_DIR_SRB.joinpath("object")
 SRB_ASSETS_DIR_SRB_ROBOT = SRB_ASSETS_DIR_SRB.joinpath("robot")
 SRB_ASSETS_DIR_SRB_SCENERY = SRB_ASSETS_DIR_SRB.joinpath("scenery")
 SRB_ASSETS_DIR_SRB_SKYDOME = SRB_ASSETS_DIR_SRB.joinpath("skydome")
+SRB_ASSETS_DIR_SRB_SKYDOME_LOW_RES = SRB_ASSETS_DIR_SRB_SKYDOME.joinpath("low_res")
+SRB_ASSETS_DIR_SRB_SKYDOME_HIGH_RES = SRB_ASSETS_DIR_SRB_SKYDOME.joinpath("high_res")
 
 # Path to hyperparameters directory
 SRB_HYPERPARAMS_DIR = SRB_DIR.joinpath("hyperparams")

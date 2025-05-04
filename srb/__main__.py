@@ -602,6 +602,12 @@ def _teleop_agent_direct(
 
     from srb.utils import logging
 
+    # Invert only for manipulation environments
+    if invert_controls:
+        from srb.core.env import ManipulationEnv
+
+        invert_controls = isinstance(env.unwrapped, ManipulationEnv)
+
     ## Run the environment
     with torch.inference_mode():
         while sim_app.is_running():
@@ -1599,9 +1605,9 @@ def parse_cli_args() -> argparse.Namespace:
         teleop_group.add_argument(
             "--invert_controls",
             "--invert",
-            help="Flag to invert the controls for translation",
+            help="Flag to invert the controls for translation in manipulation environments",
             action="store_true",
-            default=False,
+            default=True,
         )
 
     ## Algorithm args

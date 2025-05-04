@@ -18,7 +18,7 @@ from srb.utils.math import matrix_from_quat, rotmat_to_rot6d
 
 @configclass
 class SceneCfg(GroundSceneCfg):
-    env_spacing = 32.0
+    pass
 
 
 @configclass

@@ -3,7 +3,7 @@ import math
 import types
 from dataclasses import MISSING
 from os import environ
-from typing import Dict, get_type_hints
+from typing import Dict, Literal, get_type_hints
 
 import torch
 from simforge import BakeType
@@ -52,7 +52,10 @@ from srb.core.visuals import VisualsCfg
 from srb.utils import logging
 from srb.utils.cfg import configclass
 from srb.utils.math import combine_frame_transforms_tuple
-from srb.utils.path import SRB_ASSETS_DIR_SRB_SKYDOME
+from srb.utils.path import (
+    SRB_ASSETS_DIR_SRB_SKYDOME_HIGH_RES,
+    SRB_ASSETS_DIR_SRB_SKYDOME_LOW_RES,
+)
 
 from .event_cfg import BaseEventCfg
 from .scene_cfg import BaseSceneCfg
@@ -69,6 +72,7 @@ class BaseEnvCfg:
     _scenery: Scenery | None = MISSING  # type: ignore
     robot: Robot | AssetVariant = AssetVariant.DATASET
     _robot: Robot = MISSING  # type: ignore
+    skydome: Literal["low_res", "high_res"] | bool | None = "low_res"
 
     ## Assemblies (dynamic joints)
     joint_assemblies: Dict[str, RobotAssemblerCfg] = {}
@@ -113,6 +117,7 @@ class BaseEnvCfg:
             enable_reflections=True,
         ),
     )
+    malloc_scale: float = 1.0
 
     ## Visuals
     visuals: VisualsCfg = VisualsCfg()
@@ -164,20 +169,57 @@ class BaseEnvCfg:
         self._update_debug_vis()
 
     def _update_memory_allocation(self):
-        _mem_fac = min(math.floor(self.scene.num_envs**0.3), 8)
-        self.sim.physx.gpu_max_rigid_contact_count = 2 ** (12 + _mem_fac)
-        self.sim.physx.gpu_max_rigid_patch_count = 2 ** (11 + _mem_fac)
-        self.sim.physx.gpu_found_lost_pairs_capacity = 2 ** (20 + _mem_fac)
-        self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 2 ** (20 + _mem_fac)
-        self.sim.physx.gpu_total_aggregate_pairs_capacity = 2 ** (18 + _mem_fac)
-        self.sim.physx.gpu_collision_stack_size = 2 ** (21 + _mem_fac)
-        self.sim.physx.gpu_heap_capacity = 2 ** (16 + _mem_fac)
-        self.sim.physx.gpu_temp_buffer_capacity = 2 ** (12 + _mem_fac)
-        self.sim.physx.gpu_max_soft_body_contacts = 2 ** (15 + _mem_fac)
-        self.sim.physx.gpu_max_particle_contacts = 2 ** (15 + _mem_fac)
+        _pow = min(math.floor(self.scene.num_envs ** (1.0 / 3.0)) - 1, 8)
+
+        self.sim.physx.gpu_max_rigid_contact_count = math.floor(
+            self.malloc_scale * 2 ** (13 + _pow),
+        )
+        self.sim.physx.gpu_max_rigid_patch_count = math.floor(
+            self.malloc_scale * 2 ** (12 + _pow),
+        )
+        self.sim.physx.gpu_found_lost_pairs_capacity = math.floor(
+            self.malloc_scale * 2 ** (12 + _pow),
+        )
+        self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = math.floor(
+            self.malloc_scale * 2 ** (13 + _pow),
+        )
+        self.sim.physx.gpu_total_aggregate_pairs_capacity = math.floor(
+            self.malloc_scale * 2 ** (10 + _pow),
+        )
+        self.sim.physx.gpu_collision_stack_size = math.floor(
+            self.malloc_scale * 2 ** (17 + _pow),
+        )
+        self.sim.physx.gpu_heap_capacity = math.floor(
+            self.malloc_scale * 2 ** (10 + _pow),
+        )
+        self.sim.physx.gpu_temp_buffer_capacity = math.floor(
+            self.malloc_scale * 2 ** (10 + _pow),
+        )
+        self.sim.physx.gpu_max_soft_body_contacts = math.floor(
+            self.malloc_scale * 2 ** (10 + _pow),
+        )
+        self.sim.physx.gpu_max_particle_contacts = math.floor(
+            self.malloc_scale * 2 ** (10 + _pow),
+        )
+
         self.sim.physx.gpu_max_num_partitions = 1 << bisect.bisect_left(
             (3, 15, 127, 511, 1023), self.scene.num_envs
         )
+
+        # _pow = min(math.floor(self.scene.num_envs**0.3), 8)
+        # self.sim.physx.gpu_max_rigid_contact_count = 2 ** (12 + _pow)
+        # self.sim.physx.gpu_max_rigid_patch_count = 2 ** (11 + _pow)
+        # self.sim.physx.gpu_found_lost_pairs_capacity = 2 ** (20 + _pow)
+        # self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 2 ** (20 + _pow)
+        # self.sim.physx.gpu_total_aggregate_pairs_capacity = 2 ** (18 + _pow)
+        # self.sim.physx.gpu_collision_stack_size = 2 ** (21 + _pow)
+        # self.sim.physx.gpu_heap_capacity = 2 ** (16 + _pow)
+        # self.sim.physx.gpu_temp_buffer_capacity = 2 ** (12 + _pow)
+        # self.sim.physx.gpu_max_soft_body_contacts = 2 ** (15 + _pow)
+        # self.sim.physx.gpu_max_particle_contacts = 2 ** (15 + _pow)
+        # self.sim.physx.gpu_max_num_partitions = 1 << bisect.bisect_left(
+        #     (3, 15, 127, 511, 1023), self.scene.num_envs
+        # )
 
     def _add_sunlight(self, *, prim_path: str = "/World/sunlight", **kwargs):
         if self.domain.light_intensity <= 0.0:
@@ -194,15 +236,28 @@ class BaseEnvCfg:
         )
 
     def _add_skydome(self, *, prim_path: str = "/World/skydome", **kwargs):
+        if not self.skydome:
+            self.scene.skydome = None
+            self.events.randomize_skydome_orientation = None
+            return
+        elif isinstance(self.skydome, str):
+            match self.skydome:
+                case "low_res":
+                    skydome_dir = SRB_ASSETS_DIR_SRB_SKYDOME_LOW_RES
+                case "high_res":
+                    skydome_dir = SRB_ASSETS_DIR_SRB_SKYDOME_HIGH_RES
+                case _:
+                    raise ValueError(f"Invalid skydome option: {self.skydome}")
+        else:
+            skydome_dir = SRB_ASSETS_DIR_SRB_SKYDOME_LOW_RES
+
         match self.domain:
             case Domain.EARTH:
                 self.scene.skydome = AssetBaseCfg(
                     prim_path=prim_path,
                     spawn=DomeLightCfg(
                         intensity=0.25 * self.domain.light_intensity,
-                        texture_file=SRB_ASSETS_DIR_SRB_SKYDOME.joinpath(
-                            "cloudy_sky.exr"
-                        ).as_posix(),
+                        texture_file=skydome_dir.joinpath("cloudy_sky.exr").as_posix(),
                         **kwargs,
                     ),
                 )
@@ -211,8 +266,9 @@ class BaseEnvCfg:
                     prim_path=prim_path,
                     spawn=DomeLightCfg(
                         intensity=0.25 * self.domain.light_intensity,
-                        texture_file=SRB_ASSETS_DIR_SRB_SKYDOME.joinpath(
+                        texture_file=skydome_dir.joinpath(
                             "stars.exr"
+                            # "milky_way.exr
                         ).as_posix(),
                         **kwargs,
                     ),
@@ -236,9 +292,7 @@ class BaseEnvCfg:
                     prim_path=prim_path,
                     spawn=DomeLightCfg(
                         intensity=0.25 * self.domain.light_intensity,
-                        texture_file=SRB_ASSETS_DIR_SRB_SKYDOME.joinpath(
-                            "mars_sky.exr"
-                        ).as_posix(),
+                        texture_file=skydome_dir.joinpath("mars_sky.exr").as_posix(),
                         **kwargs,
                     ),
                 )
@@ -248,9 +302,9 @@ class BaseEnvCfg:
                     prim_path=prim_path,
                     spawn=DomeLightCfg(
                         intensity=0.25 * self.domain.light_intensity,
-                        texture_file=SRB_ASSETS_DIR_SRB_SKYDOME.joinpath(
-                            # "low_lunar_orbit.jpg"
+                        texture_file=skydome_dir.joinpath(
                             "low_earth_orbit.exr"
+                            # "low_lunar_orbit.jpg"
                         ).as_posix(),
                         **kwargs,
                     ),
@@ -680,9 +734,9 @@ class BaseEnvCfg:
             )
 
         ## Update command mapping function
-        self.actions.map_cmd_to_action = lambda twist, event: torch.cat(
-            [func(twist, event) for func in map_cmd_to_action_fns]
-        )
+        self.actions.map_cmd_to_action = lambda twist, event: torch.cat([
+            func(twist, event) for func in map_cmd_to_action_fns
+        ])
 
         # Store the updated config in an internal state
         self._robot = robot

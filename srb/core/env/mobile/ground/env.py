@@ -20,7 +20,7 @@ from srb.utils.math import deg_to_rad
 
 @configclass
 class GroundSceneCfg(MobileSceneCfg):
-    env_spacing = 48.0
+    env_spacing = 32.0
 
 
 @configclass

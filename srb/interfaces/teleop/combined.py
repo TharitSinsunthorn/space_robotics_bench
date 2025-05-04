@@ -45,22 +45,22 @@ class CombinedTeleopInterface(DeviceBase):
                 case TeleopDeviceType.KEYBOARD:
                     self.interfaces.append(
                         KeyboardTeleopInterface(
-                            pos_sensitivity=1.0 * pos_sensitivity,
-                            rot_sensitivity=1.0 * rot_sensitivity,
+                            pos_sensitivity=0.6 * pos_sensitivity,
+                            rot_sensitivity=0.4 * rot_sensitivity,
                         )
                     )
                 case TeleopDeviceType.SPACEMOUSE:
                     self.interfaces.append(
                         SpacemouseTeleopInterface(
-                            pos_sensitivity=1.0 * pos_sensitivity,
-                            rot_sensitivity=1.0 * rot_sensitivity,
+                            pos_sensitivity=2.0 * pos_sensitivity,
+                            rot_sensitivity=0.8 * rot_sensitivity,
                         )
                     )
                 case TeleopDeviceType.GAMEPAD:
                     self.interfaces.append(
                         Se3Gamepad(
-                            pos_sensitivity=1.0 * pos_sensitivity,
-                            rot_sensitivity=1.0 * rot_sensitivity,
+                            pos_sensitivity=10.0 * pos_sensitivity,
+                            rot_sensitivity=8.0 * rot_sensitivity,
                         )
                     )
                 case TeleopDeviceType.ROS:
@@ -69,8 +69,9 @@ class CombinedTeleopInterface(DeviceBase):
                     self.interfaces.append(
                         ROSTeleopInterface(
                             node=self._node,
-                            pos_sensitivity=1.0 * pos_sensitivity,
-                            rot_sensitivity=1.0 * rot_sensitivity,
+                            # Note: Gains assume that ROS messages originate from a gamepad
+                            pos_sensitivity=10.0 * pos_sensitivity,
+                            rot_sensitivity=8.0 * rot_sensitivity,
                         )
                     )
                 case TeleopDeviceType.HAPTIC:
@@ -78,7 +79,7 @@ class CombinedTeleopInterface(DeviceBase):
 
                     interface = HapticROSTeleopInterface(
                         node=self._node,
-                        pos_sensitivity=1.0 * pos_sensitivity,
+                        pos_sensitivity=8.0 * pos_sensitivity,
                         rot_sensitivity=1.0 * rot_sensitivity,
                     )
                     self.interfaces.append(interface)
@@ -102,7 +103,11 @@ class CombinedTeleopInterface(DeviceBase):
 
         # Run a thread for listening to device
         if not node and self._node is not None:
-            self._thread = threading.Thread(target=rclpy.spin, args=(self._node,))
+            from rclpy.executors import MultiThreadedExecutor
+
+            self._executor = MultiThreadedExecutor(num_threads=2)
+            self._executor.add_node(self._node)
+            self._thread = threading.Thread(target=self._executor.spin)
             self._thread.daemon = True
             self._thread.start()
 
