@@ -67,7 +67,7 @@ class TaskCfg(ManipulationEnvCfg):
     events: EventCfg = EventCfg()
 
     ## Time
-    env_rate: float = 1.0 / 100.0
+    env_rate: float = 1.0 / 200.0
     episode_length_s: float = 20.0
     is_finite_horizon: bool = True
 
@@ -409,7 +409,7 @@ def _compute_step_return(
     )
 
     # Penalty: Particle velocity
-    WEIGHT_SPLASHING_PENALTY = -256.0
+    WEIGHT_SPLASHING_PENALTY = -512.0
     MAX_SPLASHING_PENALTY = -2048.0
     penalty_particle_velocity = torch.clamp_min(
         WEIGHT_SPLASHING_PENALTY
