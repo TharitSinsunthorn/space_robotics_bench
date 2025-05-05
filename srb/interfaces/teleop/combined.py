@@ -3,6 +3,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Sequence
 
 import numpy
+import torch
 
 from srb.core.action import ActionGroup
 from srb.interfaces.enums import TeleopDeviceType
@@ -170,7 +171,7 @@ class CombinedTeleopInterface(DeviceBase):
 
         return twist, self._close_gripper
 
-    def set_ft_feedback(self, ft_feedback: numpy.ndarray):
+    def set_ft_feedback(self, ft_feedback: numpy.ndarray | torch.Tensor):
         for interface in self.ft_feedback_interfaces:
             interface.set_ft_feedback(ft_feedback)
 

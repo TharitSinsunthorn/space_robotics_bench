@@ -11,6 +11,7 @@ from collections.abc import Callable
 
 import numpy
 import rclpy
+import torch
 from geometry_msgs.msg import Twist, Vector3
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
@@ -174,7 +175,7 @@ class HapticROSTeleopInterface(DeviceBase):
                 else:
                     return numpy.zeros(6), commands[1]
 
-    def set_ft_feedback(self, ft_feedback):
+    def set_ft_feedback(self, ft_feedback: numpy.ndarray | torch.Tensor):
         from geometry_msgs.msg import Vector3
 
         if self.latency == 0.0:

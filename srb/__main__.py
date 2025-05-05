@@ -598,13 +598,14 @@ def _teleop_agent_direct(
 ):
     import torch
 
-    from srb.core.asset import Articulation, RigidObject
     from srb.core.env import ManipulationEnv
     from srb.utils import logging
 
     # Invert only for manipulation environments
     if invert_controls:
         invert_controls = isinstance(env.unwrapped, ManipulationEnv)
+    if teleop_interface.ft_feedback_interfaces:
+        ft_feedback_use_contacts = False
 
     ## Run the environment
     with torch.inference_mode():
@@ -637,21 +638,46 @@ def _teleop_agent_direct(
 
             # Provide force feedback for teleop devices
             if teleop_interface.ft_feedback_interfaces:
-                if (
-                    isinstance(env.unwrapped, ManipulationEnv)
-                    and env.unwrapped._end_effector is not None  # type: ignore
-                ):
-                    end_effector: Articulation | RigidObject = (
-                        env.unwrapped._end_effector  # type: ignore
-                    )
-                    incoming_ft = (
-                        end_effector.root_physx_view.get_link_incoming_joint_force()  # type: ignore
-                    )[0].mean(dim=0)
-                    ft_feedback = (
-                        torch.tensor([0.33, 0.33, 0.33, 0.0, 0.0, 0.0])
-                        * incoming_ft.cpu()
-                    )
-                    teleop_interface.set_ft_feedback(ft_feedback)
+                if isinstance(env.unwrapped, ManipulationEnv):
+                    if (
+                        not ft_feedback_use_contacts
+                        and env.unwrapped._end_effector is not None
+                    ):
+                        end_effector = env.unwrapped._end_effector
+                        try:
+                            incoming_ft = (
+                                end_effector.root_physx_view.get_link_incoming_joint_force()  # type: ignore
+                            )[0].mean(dim=0)
+                            ft_feedback: torch.Tensor = (
+                                torch.tensor([0.33, 0.33, 0.33, 0.0, 0.0, 0.0])
+                                * incoming_ft.cpu()
+                            )
+                            teleop_interface.set_ft_feedback(ft_feedback)
+                        except Exception:
+                            ft_feedback_use_contacts = True
+                    if (
+                        ft_feedback_use_contacts
+                        and env.unwrapped._contacts_end_effector is not None
+                    ):
+                        contacts_end_effector = env.unwrapped._contacts_end_effector
+                        contact_forces = (
+                            contacts_end_effector.data.net_forces_w  # type: ignore
+                        )[0].mean(dim=0)
+                        contact_ft = torch.cat(
+                            [
+                                contact_forces,
+                                torch.zeros(
+                                    3,
+                                    device=contact_forces.device,
+                                    dtype=contact_forces.dtype,
+                                ),
+                            ]
+                        )
+                        ft_feedback = (
+                            torch.tensor([0.33, 0.33, 0.33, 0.0, 0.0, 0.0])
+                            * contact_ft.cpu()
+                        )
+                        teleop_interface.set_ft_feedback(ft_feedback)
 
             ## Process reset request
             global should_reset
