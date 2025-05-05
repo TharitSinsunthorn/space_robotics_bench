@@ -190,7 +190,7 @@ class HapticROSTeleopInterface(DeviceBase):
             else:
                 if self.inactive_feedback_decay > 0.0:
                     self.inactive_feedback_decay = max(
-                        0.0, 0.95 * self.inactive_feedback_decay
+                        0.0, 0.1 * self.inactive_feedback_decay
                     )
                     self.pub_force_feedback.publish(
                         Vector3(

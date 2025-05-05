@@ -509,8 +509,6 @@ def teleop_agent(
         actions=env.unwrapped.cfg.actions,  # type: ignore
     )
 
-    # TODO[low]: Add force feedback for haptic teleoperation
-
     ## Set up reset callback
     def cb_reset():
         global should_reset
@@ -600,12 +598,12 @@ def _teleop_agent_direct(
 ):
     import torch
 
+    from srb.core.asset import Articulation, RigidObject
+    from srb.core.env import ManipulationEnv
     from srb.utils import logging
 
     # Invert only for manipulation environments
     if invert_controls:
-        from srb.core.env import ManipulationEnv
-
         invert_controls = isinstance(env.unwrapped, ManipulationEnv)
 
     ## Run the environment
@@ -636,6 +634,24 @@ def _teleop_agent_direct(
                 f"truncated: {truncated}\n"
                 f"info: {info}\n"
             )
+
+            # Provide force feedback for teleop devices
+            if teleop_interface.ft_feedback_interfaces:
+                if (
+                    isinstance(env.unwrapped, ManipulationEnv)
+                    and env.unwrapped._end_effector is not None  # type: ignore
+                ):
+                    end_effector: Articulation | RigidObject = (
+                        env.unwrapped._end_effector  # type: ignore
+                    )
+                    incoming_ft = (
+                        end_effector.root_physx_view.get_link_incoming_joint_force()  # type: ignore
+                    )[0].mean(dim=0)
+                    ft_feedback = (
+                        torch.tensor([0.33, 0.33, 0.33, 0.0, 0.0, 0.0])
+                        * incoming_ft.cpu()
+                    )
+                    teleop_interface.set_ft_feedback(ft_feedback)
 
             ## Process reset request
             global should_reset
