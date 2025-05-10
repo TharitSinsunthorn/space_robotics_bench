@@ -21,7 +21,7 @@ from srb.utils.math import deg_to_rad
 
 @configclass
 class OrbitalSceneCfg(MobileSceneCfg):
-    env_spacing = 4.0
+    env_spacing: float = 4.0
 
 
 @configclass

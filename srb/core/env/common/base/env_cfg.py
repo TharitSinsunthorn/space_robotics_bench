@@ -51,7 +51,7 @@ from srb.core.sim.robot_setup import RobotAssemblerCfg
 from srb.core.visuals import VisualsCfg
 from srb.utils import logging
 from srb.utils.cfg import configclass
-from srb.utils.math import combine_frame_transforms_tuple
+from srb.utils.math import combine_frame_transforms_tuple, rpy_to_quat
 from srb.utils.path import (
     SRB_ASSETS_DIR_SRB_SKYDOME_HIGH_RES,
     SRB_ASSETS_DIR_SRB_SKYDOME_LOW_RES,
@@ -232,6 +232,13 @@ class BaseEnvCfg:
                 color_temperature=self.domain.light_color_temperature,
                 enable_color_temperature=True,
                 **kwargs,
+            ),
+            init_state=AssetBaseCfg.InitialStateCfg(
+                rot=rpy_to_quat(
+                    45.0,
+                    30.0,
+                    0.0,
+                ),
             ),
         )
 
