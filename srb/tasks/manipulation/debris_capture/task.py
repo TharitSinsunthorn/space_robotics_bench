@@ -306,8 +306,8 @@ def _compute_step_return(
     )
 
     # Reward: Distance | End-effector <--> Object
-    WEIGHT_DISTANCE_END_EFFECTOR_TO_OBJ = 4.0
-    TANH_STD_DISTANCE_END_EFFECTOR_TO_OBJ = 0.2
+    WEIGHT_DISTANCE_END_EFFECTOR_TO_OBJ = 16.0
+    TANH_STD_DISTANCE_END_EFFECTOR_TO_OBJ = 0.05
     reward_distance_end_effector_to_obj = WEIGHT_DISTANCE_END_EFFECTOR_TO_OBJ * (
         1.0
         - torch.tanh(
@@ -317,7 +317,7 @@ def _compute_step_return(
     )
 
     # Reward: Grasp object
-    WEIGHT_GRASP = 32.0
+    WEIGHT_GRASP = 16.0
     THRESHOLD_GRASP = 5.0
     reward_grasp = (
         WEIGHT_GRASP
@@ -335,8 +335,8 @@ def _compute_step_return(
     )
 
     # Penalty: Debris velocity
-    WEIGHT_DEBRIS_VELOCITY_LIN = -5.0
-    WEIGHT_DEBRIS_VELOCITY_ANG = -2.5
+    WEIGHT_DEBRIS_VELOCITY_LIN = -3.0
+    WEIGHT_DEBRIS_VELOCITY_ANG = -1.0
     penalty_debris_velocity = WEIGHT_DEBRIS_VELOCITY_LIN * torch.norm(
         vel_lin_obj, dim=-1
     ) + WEIGHT_DEBRIS_VELOCITY_ANG * torch.norm(vel_ang_obj, dim=-1)
