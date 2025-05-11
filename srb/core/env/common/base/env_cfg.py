@@ -169,7 +169,7 @@ class BaseEnvCfg:
         self._update_debug_vis()
 
     def _update_memory_allocation(self):
-        _pow = min(math.floor(self.scene.num_envs ** (1.0 / 3.0)) - 1, 8)
+        _pow = min(math.floor(self.scene.num_envs**0.375) - 1, 14)
 
         self.sim.physx.gpu_max_rigid_contact_count = math.floor(
             self.malloc_scale * 2 ** (13 + _pow),
@@ -184,13 +184,13 @@ class BaseEnvCfg:
             self.malloc_scale * 2 ** (13 + _pow),
         )
         self.sim.physx.gpu_total_aggregate_pairs_capacity = math.floor(
-            self.malloc_scale * 2 ** (10 + _pow),
+            self.malloc_scale * 2 ** (11 + _pow),
         )
         self.sim.physx.gpu_collision_stack_size = math.floor(
             self.malloc_scale * 2 ** (17 + _pow),
         )
         self.sim.physx.gpu_heap_capacity = math.floor(
-            self.malloc_scale * 2 ** (10 + _pow),
+            self.malloc_scale * 2 ** (14 + _pow),
         )
         self.sim.physx.gpu_temp_buffer_capacity = math.floor(
             self.malloc_scale * 2 ** (10 + _pow),
@@ -205,21 +205,6 @@ class BaseEnvCfg:
         self.sim.physx.gpu_max_num_partitions = 1 << bisect.bisect_left(
             (3, 15, 127, 511, 1023), self.scene.num_envs
         )
-
-        # _pow = min(math.floor(self.scene.num_envs**0.3), 8)
-        # self.sim.physx.gpu_max_rigid_contact_count = 2 ** (12 + _pow)
-        # self.sim.physx.gpu_max_rigid_patch_count = 2 ** (11 + _pow)
-        # self.sim.physx.gpu_found_lost_pairs_capacity = 2 ** (20 + _pow)
-        # self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 2 ** (20 + _pow)
-        # self.sim.physx.gpu_total_aggregate_pairs_capacity = 2 ** (18 + _pow)
-        # self.sim.physx.gpu_collision_stack_size = 2 ** (21 + _pow)
-        # self.sim.physx.gpu_heap_capacity = 2 ** (16 + _pow)
-        # self.sim.physx.gpu_temp_buffer_capacity = 2 ** (12 + _pow)
-        # self.sim.physx.gpu_max_soft_body_contacts = 2 ** (15 + _pow)
-        # self.sim.physx.gpu_max_particle_contacts = 2 ** (15 + _pow)
-        # self.sim.physx.gpu_max_num_partitions = 1 << bisect.bisect_left(
-        #     (3, 15, 127, 511, 1023), self.scene.num_envs
-        # )
 
     def _add_sunlight(self, *, prim_path: str = "/World/sunlight", **kwargs):
         if self.domain.light_intensity <= 0.0:
