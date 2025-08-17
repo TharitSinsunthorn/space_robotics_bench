@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import functools
+import operator
+import types
 from functools import cache, cached_property
 from itertools import chain
 from typing import (
+    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -18,13 +22,23 @@ from typing import (
 from pydantic import BaseModel, PositiveFloat
 from simforge import BlGeometry, BlModel, BlShader, TexResConfig
 
-from srb.core.asset import AssetBaseCfg
+from srb.core.asset import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
 from srb.core.asset.asset_type import AssetType
 from srb.core.asset.asset_variant import AssetVariant
 from srb.core.domain import Domain
-from srb.core.sim import MultiAssetSpawnerCfg, ShapeCfg, SimforgeAssetCfg, SpawnerCfg
+from srb.core.sim import (
+    ArticulationRootPropertiesCfg,
+    MultiAssetSpawnerCfg,
+    RigidBodyPropertiesCfg,
+    ShapeCfg,
+    SimforgeAssetCfg,
+    SpawnerCfg,
+)
 from srb.utils import logging
 from srb.utils.str import convert_to_snake_case
+
+if TYPE_CHECKING:
+    from srb._typing import AnyEnvCfg
 
 
 class Asset(BaseModel):
@@ -32,7 +46,7 @@ class Asset(BaseModel):
     DOMAINS: ClassVar[Sequence[Domain]] = ()
 
     ## Model
-    asset_cfg: AssetBaseCfg
+    asset_cfg: AssetBaseCfg | RigidObjectCfg | ArticulationCfg
 
     ## Attributes forwarded to the spawner
     SPAWNER_ATTRIBUTES: ClassVar[Sequence[str]] = (
@@ -40,14 +54,8 @@ class Asset(BaseModel):
         "scale",
         "texture_resolution",
     )
-    size: Tuple[PositiveFloat, PositiveFloat] | None = None
     scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat] | None = None
     texture_resolution: TexResConfig | None = None
-
-    @classmethod
-    @cache
-    def name(cls) -> str:
-        return convert_to_snake_case(cls.__name__)
 
     def __new__(cls, *args, **kwargs):
         if cls in (
@@ -57,6 +65,26 @@ class Asset(BaseModel):
         ):
             raise TypeError(f"Cannot instantiate abstract class {cls.__name__}")
         return super().__new__(cls)
+
+    @classmethod
+    @cache
+    def name(cls) -> str:
+        return convert_to_snake_case(cls.__name__)
+
+    @property
+    def size(self) -> Tuple[PositiveFloat, PositiveFloat] | None:
+        if self.scale is not None:
+            return (self.scale[0], self.scale[1])
+        else:
+            return None
+
+    def setup_extras(self, env_cfg: "AnyEnvCfg"):
+        """
+        This method allows for additional scene setup that is specific to the asset.
+        It is called after the asset has been added to the scene, but before the simulation starts.
+        The intended use for this method is to create additional scene elements or modify existing ones.
+        """
+        pass
 
     def __init_subclass__(
         cls,
@@ -257,6 +285,147 @@ class Asset(BaseModel):
                     logging.trace(
                         f'Input "{k}" of type "{type(k)}" not updated for "{spawner.__class__.__name__}"'
                     )
+
+    def as_asset_base_cfg(
+        self, disable_articulation: bool = False, disable_rigid_body: bool = False
+    ) -> AssetBaseCfg:
+        if isinstance(self.asset_cfg, (RigidObjectCfg, ArticulationCfg)):
+            asset_cfg = AssetBaseCfg(
+                prim_path=self.asset_cfg.prim_path,
+                spawn=self.asset_cfg.spawn,
+                init_state=self.asset_cfg.init_state,
+            )
+
+            def remove_props(attr: Any):
+                for props in (
+                    "articulation_props",
+                    "deformable_props",
+                    "fixed_tendons_props",
+                    "joint_drive_props",
+                    "mass_props",
+                    "rigid_props",
+                ):
+                    if hasattr(attr, props):
+                        setattr(attr, props, None)
+                if hasattr(attr, "activate_contact_sensors"):
+                    attr.activate_contact_sensors = False  # type: ignore
+                if disable_articulation:
+                    setattr(
+                        attr,
+                        "articulation_props",
+                        ArticulationRootPropertiesCfg(articulation_enabled=False),
+                    )
+                if disable_rigid_body:
+                    setattr(
+                        attr,
+                        "rigid_props",
+                        RigidBodyPropertiesCfg(rigid_body_enabled=False),
+                    )
+
+            remove_props(asset_cfg.spawn)
+            if isinstance(asset_cfg.spawn, MultiAssetSpawnerCfg):
+                for subspawner in asset_cfg.spawn.assets_cfg:
+                    remove_props(subspawner)
+
+            new_annotation: Any | None = None
+            if isinstance(self.__annotations__["asset_cfg"], types.UnionType):
+                for typ in self.__annotations__["asset_cfg"].__args__:
+                    if issubclass(AssetBaseCfg, typ):
+                        break
+                else:
+                    new_annotation = functools.reduce(
+                        operator.or_,
+                        tuple(
+                            chain(
+                                (AssetBaseCfg,),
+                                self.__annotations__["asset_cfg"].__args__,
+                            ),
+                        ),
+                    )
+            elif not isinstance(self.__annotations__["asset_cfg"], AssetBaseCfg):
+                new_annotation = functools.reduce(
+                    operator.or_, (AssetBaseCfg, self.__annotations__["asset_cfg"])
+                )
+            if new_annotation is not None:
+                self.__annotations__["asset_cfg"] = new_annotation
+                self.model_fields["asset_cfg"].annotation = new_annotation
+                self.model_rebuild(force=True)
+
+            return asset_cfg
+        elif isinstance(self.asset_cfg, AssetBaseCfg):
+            return self.asset_cfg.copy()  # type: ignore
+        else:
+            raise TypeError(
+                f"Cannot convert asset of type '{type(self.asset_cfg)}' to {AssetBaseCfg.__name__}"
+            )
+
+    def as_rigid_object_cfg(self, disable_articulation: bool = False) -> RigidObjectCfg:
+        if isinstance(self.asset_cfg, ArticulationCfg):
+            asset_cfg = RigidObjectCfg(
+                prim_path=self.asset_cfg.prim_path,
+                spawn=self.asset_cfg.spawn,
+                init_state=self.asset_cfg.init_state,  # type: ignore
+            )
+
+            def remove_props(attr: Any):
+                for props in (
+                    "articulation_props",
+                    "fixed_tendons_props",
+                    "joint_drive_props",
+                ):
+                    if hasattr(attr, props):
+                        setattr(attr, props, None)
+                if disable_articulation:
+                    setattr(
+                        attr,
+                        "articulation_props",
+                        ArticulationRootPropertiesCfg(articulation_enabled=False),
+                    )
+
+            remove_props(asset_cfg.spawn)
+            if isinstance(asset_cfg.spawn, MultiAssetSpawnerCfg):
+                for subspawner in asset_cfg.spawn.assets_cfg:
+                    remove_props(subspawner)
+
+            new_annotation: Any | None = None
+            if isinstance(self.__annotations__["asset_cfg"], types.UnionType):
+                for typ in self.__annotations__["asset_cfg"].__args__:
+                    if issubclass(RigidObjectCfg, typ):
+                        break
+                else:
+                    new_annotation = functools.reduce(
+                        operator.or_,
+                        tuple(
+                            chain(
+                                (RigidObjectCfg,),
+                                self.__annotations__["asset_cfg"].__args__,
+                            ),
+                        ),
+                    )
+            elif not isinstance(self.__annotations__["asset_cfg"], RigidObjectCfg):
+                new_annotation = functools.reduce(
+                    operator.or_, (RigidObjectCfg, self.__annotations__["asset_cfg"])
+                )
+            if new_annotation is not None:
+                self.__annotations__["asset_cfg"] = new_annotation
+                self.model_fields["asset_cfg"].annotation = new_annotation
+                self.model_rebuild(force=True)
+
+            return asset_cfg
+        elif isinstance(self.asset_cfg, RigidObjectCfg):
+            return self.asset_cfg.copy()  # type: ignore
+        else:
+            raise TypeError(
+                f"Cannot convert asset of type '{type(self.asset_cfg)}' to {RigidObjectCfg.__name__}"
+            )
+
+    def as_articulation_cfg(self) -> ArticulationCfg:
+        if isinstance(self.asset_cfg, ArticulationCfg):
+            return self.asset_cfg.copy()  # type: ignore
+        else:
+            raise TypeError(
+                f"Cannot convert asset of type '{type(self.asset_cfg)}' to {ArticulationCfg.__name__}"
+            )
 
 
 class AssetRegistry:
