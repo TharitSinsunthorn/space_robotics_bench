@@ -3,6 +3,7 @@ import signal
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Sequence
 
+import gymnasium
 import numpy
 from isaacsim.simulation_app import SimulationApp
 from rl_zoo3 import ALGOS
@@ -12,6 +13,7 @@ from srb.integrations.sb3.exp_manager import ExperimentManager
 from srb.integrations.sb3.wrapper import Sb3EnvWrapper
 from srb.utils import logging
 from srb.utils.cfg import last_file, stamp_dir
+from srb.wrappers import maybe_wrap_action_smoothing
 
 if TYPE_CHECKING:
     from srb._typing import AnyEnv, AnyEnvCfg
@@ -23,10 +25,10 @@ OFF_POLICY_ALGOS: Sequence[str] = ("qrdqn", "dqn", "ddpg", "sac", "her", "td3", 
 def run(
     workflow: Literal["train", "eval"],
     algo: str,
-    env: "AnyEnv",
+    env: "AnyEnv | gymnasium.Env",
     sim_app: SimulationApp,
     env_id: str,
-    env_cfg: "AnyEnvCfg",
+    env_cfg: "AnyEnvCfg | None",
     agent_cfg: dict,
     logdir: Path,
     model: Path,
@@ -51,6 +53,9 @@ def run(
     n_evaluations = agent_cfg.pop("n_evaluations", 1)
     # HER
     truncate_last_trajectory = agent_cfg.pop("truncate_last_trajectory", True)
+
+    # Pop the entire smoothing config dictionary to be handled separately.
+    smoothing_cfg = agent_cfg.pop("smoothing", {})
 
     # Determine checkpoint path
     if model:
@@ -78,6 +83,12 @@ def run(
             monitor_gym=True,
         )
 
+    # Enable action smoothing if enabled
+    env = maybe_wrap_action_smoothing(
+        env,  # type: ignore
+        smoothing_cfg,
+    )
+
     # Wrap the environment
     env = Sb3EnvWrapper(env)  # type: ignore
 
@@ -103,7 +114,7 @@ def run(
         n_startup_trials=n_startup_trials,
         n_evaluations=n_evaluations,
         truncate_last_trajectory=truncate_last_trajectory,
-        seed=env_cfg.seed,
+        seed=env_cfg.seed if env_cfg else 0,
         log_interval=log_interval,
         save_replay_buffer=save_replay_buffer,
         verbose=verbose,
