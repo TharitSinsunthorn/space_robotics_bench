@@ -1,7 +1,7 @@
 ### Training ###
 run:
   steps: 100000000
-  train_ratio: 64.0
+  train_ratio: 32.0
 replay:
   size: 2500000
   online: True
@@ -23,8 +23,8 @@ logger:
       # wandb,
     ]
   filter: "score|length|fps|ratio|train/loss/|train/rand/"
-  timer: True
-  fps: 15
+  timer: False
+  fps: 10
 run.log_every: 120
 run.report_every: 300
 run.save_every: 1200
