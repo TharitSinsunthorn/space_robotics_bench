@@ -1540,6 +1540,21 @@ def parse_cli_args() -> argparse.Namespace:
             default=-1,
         )
         launcher_group.add_argument(
+            "--rendering_mode",
+            help=(
+                f"Configure the rendering parameters with one of the predefined presets in the {SRB_APPS_DIR.joinpath('rendering_modes').resolve().as_posix()} directory. "
+            ),
+            type=str,
+            action=ExplicitAction,
+            choices={"performance", "balanced", "quality", "xr"},
+        )
+        launcher_group.add_argument(
+            "--xr",
+            help="Enable XR mode for VR/AR applications.",
+            action="store_true",
+            default=False,
+        )
+        launcher_group.add_argument(
             "--kit_args",
             help="CLI args for the Omniverse Kit as a string separated by a space delimiter (e.g., '--ext-folder=/path/to/ext1 --ext-folder=/path/to/ext2')",
             type=str,
