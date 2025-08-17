@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.5] - 2025-08-17
+
+### Added
+- Docs: Add sim-to-real workflow ([f1f9f00](https://github.com/AndrejOrsula/space_robotics_bench/commit/f1f9f006b148cb7a3f6d06d97428d1c45fdebe8c)) by @AndrejOrsula
+- Waypoint_navigation: Add sim-to-real utils ([1e3a1de](https://github.com/AndrejOrsula/space_robotics_bench/commit/1e3a1ded9026c60aeeea4e29485d7aacafa1b77f)) by @AndrejOrsula
+- Add sim-to-real support for all RL integrations ([9f650ef](https://github.com/AndrejOrsula/space_robotics_bench/commit/9f650ef6857846e1caf838749a92a48f7a9a44df)) by @AndrejOrsula
+- Add sim-to-real interface ([b003dc3](https://github.com/AndrejOrsula/space_robotics_bench/commit/b003dc3acf7a9bc424d318c7aa529cdc92bc5389)) by @AndrejOrsula
+- Add action/observation delays ([51f4272](https://github.com/AndrejOrsula/space_robotics_bench/commit/51f4272f6141841c697108c232b494c612283394)) by @AndrejOrsula
+- Add asset type casting ([4e58acd](https://github.com/AndrejOrsula/space_robotics_bench/commit/4e58acd2d750b96370da690c4a8c10b513b6643a)) by @AndrejOrsula
+- Add action smoothing wrapper ([8bf600c](https://github.com/AndrejOrsula/space_robotics_bench/commit/8bf600c7355e0f7164005cc20a8ec27f0301f094)) by @AndrejOrsula
+- Add XR support and option to select rendering modes ([099e2ec](https://github.com/AndrejOrsula/space_robotics_bench/commit/099e2ec98b5b546d01457ab0c817f230034c4781)) by @AndrejOrsula
+- Dreamer: Add "debug" model size ([8551535](https://github.com/AndrejOrsula/space_robotics_bench/commit/8551535eb8e853a2ab732bd97189f4936c04d151)) by @AndrejOrsula
+- Docs: Add missing videos for RL workflow ([75de328](https://github.com/AndrejOrsula/space_robotics_bench/commit/75de328c6089988d2c3fef12f3f485a3a03966a2)) by @AndrejOrsula
+
+### Changed
+- Bump MSRV to 1.88 ([cea6f7d](https://github.com/AndrejOrsula/space_robotics_bench/commit/cea6f7d60032f160ef9a961044c385134b9f7658)) by @AndrejOrsula
+- Docs: Enhance troubleshooting ([8789a23](https://github.com/AndrejOrsula/space_robotics_bench/commit/8789a2399124024dcf23233a230ead70e715bd3b)) by @AndrejOrsula
+- CLI: Update with sim-to-real workflows ([fd0d9a2](https://github.com/AndrejOrsula/space_robotics_bench/commit/fd0d9a27b0df6cda9566e362ea3ab6d35b26196d)) by @AndrejOrsula
+- Screwdriving: Refactor Ingenuity decor handling ([404b517](https://github.com/AndrejOrsula/space_robotics_bench/commit/404b517b3e7597e9d60eb87f629fd996da8ca654)) by @AndrejOrsula
+- Waypoint_navigation: Update task for dynamic pose tracking ([78deed9](https://github.com/AndrejOrsula/space_robotics_bench/commit/78deed973d836fdd59c710dfe3d9d9d31aa0e76f)) by @AndrejOrsula
+- Standardize particle handling ([b669bad](https://github.com/AndrejOrsula/space_robotics_bench/commit/b669bad7a4a2088d617aaa2784a90cae8363657c)) by @AndrejOrsula
+- Update utils to support real robot workflows ([58288a9](https://github.com/AndrejOrsula/space_robotics_bench/commit/58288a98b8c63f7bcafc795a7e7641c62ce0d834)) by @AndrejOrsula
+- Standardize teleop interface naming ([618d6d4](https://github.com/AndrejOrsula/space_robotics_bench/commit/618d6d456bb8fd11c7ee6695e03d85d4c239c991)) by @AndrejOrsula
+- Update hyperparams ([a5d42e1](https://github.com/AndrejOrsula/space_robotics_bench/commit/a5d42e1201c601517d225fbbea660f15bb3c96b6)) by @AndrejOrsula
+- Update assets ([25430de](https://github.com/AndrejOrsula/space_robotics_bench/commit/25430de24e92c2823dc1b2cae34685c8037f0c5f)) by @AndrejOrsula
+- Update dependencies ([a21fd8b](https://github.com/AndrejOrsula/space_robotics_bench/commit/a21fd8bd46d4dbe7f328daa1316893bbd87e866d)) by @AndrejOrsula
+- Docker:  Refactor Docker scripts for better argument handling ([a89e9cc](https://github.com/AndrejOrsula/space_robotics_bench/commit/a89e9cc8859944311359c4f7681cab81e4f01918)) by @AndrejOrsula
+- Build(deps): bump strum from 0.27.1 to 0.27.2 ([debb2fe](https://github.com/AndrejOrsula/space_robotics_bench/commit/debb2fe7c6abb0cde7aafc76ae7933f3d3b8dbb1)) by @dependabot[bot] in [#71](https://github.com/AndrejOrsula/space_robotics_bench/pull/71)
+- Build(deps): bump sysinfo from 0.35.2 to 0.36.0 ([99c3932](https://github.com/AndrejOrsula/space_robotics_bench/commit/99c39329db47c4f3e17d61f312caface539023aa)) by @dependabot[bot] in [#67](https://github.com/AndrejOrsula/space_robotics_bench/pull/67)
+- Simplify Omniverse app dependencies ([b64f677](https://github.com/AndrejOrsula/space_robotics_bench/commit/b64f677d73481adf864947b6eb596e2a48597ac4)) by @AndrejOrsula
+- Docker: Skip GUI setup if no DISPLAY is set ([57842a4](https://github.com/AndrejOrsula/space_robotics_bench/commit/57842a4229f8ac4c09f21eeb3479010cf5ad8ef1)) by @AndrejOrsula
+
+### Fixed
+- Fix seeding of SimForge assets ([2eff3f6](https://github.com/AndrejOrsula/space_robotics_bench/commit/2eff3f6ac63077eaac08371bbe46f642ec50b9e1)) by @AndrejOrsula
+- Fix action scaling in WheeledDriveAction ([49ffd84](https://github.com/AndrejOrsula/space_robotics_bench/commit/49ffd84415377e4811b2533594123adf3c90d97c)) by @AndrejOrsula
+
 ## [0.0.4] - 2025-06-16
 
 ### Added
@@ -29,7 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docs: Add link to Docker Hub repository ([22fec40](https://github.com/AndrejOrsula/space_robotics_bench/commit/22fec40cbcf4508508152b52484375ecea074438)) by @AndrejOrsula
 
 ### Changed
-- Update assets ([0b4c6cf](https://github.com/AndrejOrsula/space_robotics_bench/commit/0b4c6cfeb861a76c4629f0841c24aaf51ad19f7c))
+- Bump to 0.0.4 ([8fd170c](https://github.com/AndrejOrsula/space_robotics_bench/commit/8fd170ce242d3f03973fb8ad53b175bb3b438765)) by @AndrejOrsula
+- Update assets ([0b4c6cf](https://github.com/AndrejOrsula/space_robotics_bench/commit/0b4c6cfeb861a76c4629f0841c24aaf51ad19f7c)) by @AndrejOrsula
 - Docs: Update robots and tasks ([fbd8968](https://github.com/AndrejOrsula/space_robotics_bench/commit/fbd89688138ba0a07e71f8a40543e537e6ec29d1)) by @AndrejOrsula
 - Docs: Update usage based on new task defaults ([36dc86e](https://github.com/AndrejOrsula/space_robotics_bench/commit/36dc86ef2b3265ecf5af67c733caa231b3b64f03)) by @AndrejOrsula
 - Docs: Simplfy CLI args in examples ([691cb97](https://github.com/AndrejOrsula/space_robotics_bench/commit/691cb97b2901ca16d2ba348c113edd452dc72c4b)) by @AndrejOrsula
@@ -282,6 +319,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## New Contributors
 * @AndrejOrsula made their first contribution
 * @dependabot[bot] made their first contribution in [#46](https://github.com/AndrejOrsula/space_robotics_bench/pull/46)
+[0.0.5]: https://github.com/AndrejOrsula/space_robotics_bench/compare/0.0.4..0.0.5
 [0.0.4]: https://github.com/AndrejOrsula/space_robotics_bench/compare/0.0.3..0.0.4
 [0.0.3]: https://github.com/AndrejOrsula/space_robotics_bench/compare/0.0.2..0.0.3
 [0.0.2]: https://github.com/AndrejOrsula/space_robotics_bench/compare/0.0.1..0.0.2

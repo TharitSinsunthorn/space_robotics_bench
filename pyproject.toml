@@ -8,7 +8,7 @@ ignore_missing_imports = true
 
 [project]
 name = "srb"
-version = "0.0.4"
+version = "0.0.5"
 description = "Space Robotics Bench"
 authors = [{ name = "Andrej Orsula", email = "orsula.andrej@gmail.com" }]
 maintainers = [{ name = "Andrej Orsula", email = "orsula.andrej@gmail.com" }]

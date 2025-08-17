@@ -3272,11 +3272,11 @@ dependencies = [
 
 [[package]]
 name = "srb"
-version = "0.0.4"
+version = "0.0.5"
 
 [[package]]
 name = "srb_gui"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "chrono",
  "const_format",
@@ -3304,11 +3304,11 @@ dependencies = [
 
 [[package]]
 name = "srb_py"
-version = "0.0.4"
+version = "0.0.5"
 
 [[package]]
 name = "srb_sys"
-version = "0.0.4"
+version = "0.0.5"
 
 [[package]]
 name = "stable_deref_trait"
