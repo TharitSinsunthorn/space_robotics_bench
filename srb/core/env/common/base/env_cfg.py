@@ -3,7 +3,7 @@ import math
 import types
 from dataclasses import MISSING
 from os import environ
-from typing import Dict, Literal, get_type_hints
+from typing import Any, Dict, Iterable, Literal, Mapping, Sequence, get_type_hints
 
 import torch
 from simforge import BakeType
@@ -19,6 +19,7 @@ from srb.core.action.term import DummyActionCfg
 from srb.core.asset import (
     ActiveTool,
     ArticulationCfg,
+    Asset,
     AssetBaseCfg,
     AssetVariant,
     CombinedMobileManipulator,
@@ -33,13 +34,12 @@ from srb.core.asset import (
 from srb.core.domain import Domain
 from srb.core.manager import EventTermCfg, SceneEntityCfg
 from srb.core.marker import VisualizationMarkersCfg
-from srb.core.mdp import follow_xform_orientation_linear_trajectory  # noqa F401
-from srb.core.mdp import reset_scene_to_default  # noqa F401
-from srb.core.mdp import reset_xform_orientation_uniform
-from srb.core.sensor import SensorBaseCfg
+from srb.core.mdp import reset_xform_orientation_uniform, settle_and_reset_particles
+from srb.core.sensor import ImuCfg, SensorBaseCfg
 from srb.core.sim import (
     DistantLightCfg,
     DomeLightCfg,
+    MultiAssetSpawnerCfg,
     ParticlesSpawnerCfg,
     PhysxCfg,
     PyramidParticlesSpawnerCfg,
@@ -57,6 +57,7 @@ from srb.utils.path import (
     SRB_ASSETS_DIR_SRB_SKYDOME_HIGH_RES,
     SRB_ASSETS_DIR_SRB_SKYDOME_LOW_RES,
 )
+from srb.utils.str import sanitize_action_term_name
 
 from .event_cfg import BaseEventCfg
 from .scene_cfg import BaseSceneCfg
@@ -67,16 +68,18 @@ class BaseEnvCfg:
     ## Scenario
     seed: int = 0
     domain: Domain = Domain.MOON
+    gravity: Domain | str | None = None
+    skydome: Literal["low_res", "high_res"] | bool | None = "low_res"
 
     ## Assets
     scenery: Scenery | AssetVariant | None = AssetVariant.PROCEDURAL
     _scenery: Scenery | None = MISSING  # type: ignore
     robot: Robot | AssetVariant = AssetVariant.DATASET
     _robot: Robot = MISSING  # type: ignore
-    skydome: Literal["low_res", "high_res"] | bool | None = "low_res"
 
     ## Assemblies (dynamic joints)
     joint_assemblies: Dict[str, RobotAssemblerCfg] = {}
+    assemble_rigid_end_effector: bool = True
 
     ## Scene
     scene: BaseSceneCfg = BaseSceneCfg()
@@ -131,12 +134,19 @@ class BaseEnvCfg:
     ).lower() in ("true", "1")
 
     ## Particles
-    # Note: This option is likely to be removed in the future
-    scatter_particles: bool = False
+    particles: bool = False
     particles_size: float = 0.025
     particles_ratio: float = 0.001
 
     def __post_init__(self):
+        ## Scenario
+        if isinstance(self.gravity, str):
+            _gravity = Domain.from_str(self.gravity)
+            assert _gravity is not None, (
+                f"Gravity '{self.gravity}' must be a valid member of {{{Domain.__name__}: {' | '.join(Domain.__members__.keys())}}}"
+            )
+            self.gravity = _gravity
+
         ## Scene
         if self.num_envs is not None:
             self.scene.num_envs = self.num_envs
@@ -149,12 +159,9 @@ class BaseEnvCfg:
         self._add_skydome()
         self._add_scenery()
         self._add_robot()
-        # Update seed & number of variants for procedural assets
-        self._update_procedural_assets()
 
         ## Particles
-        self._maybe_add_particles()
-        self._maybe_disable_fabric_for_particles()
+        self._add_particles()
 
         ## Events
         self.events.update(self)
@@ -163,11 +170,25 @@ class BaseEnvCfg:
         self.decimation = math.floor(self.agent_rate / self.env_rate)
         self.sim.dt = self.env_rate
         self.sim.render_interval = self.decimation
-        self.sim.gravity = (0.0, 0.0, -self.domain.gravity_magnitude)
+        self.sim.gravity = (
+            0.0,
+            0.0,
+            -(
+                self.gravity.gravity_magnitude
+                if self.gravity is not None
+                else self.domain.gravity_magnitude
+            ),
+        )
         self._update_memory_allocation()
 
+        ## Additional setup
+        self._setup_asset_extras()
+
         ## Misc
+        self._settle_down_particles()
+        self._update_procedural_assets()
         self._update_debug_vis()
+        self._maybe_disable_fabric_for_particles()
 
     def _update_memory_allocation(self):
         _pow = math.floor(self.scene.num_envs**0.375) - 1
@@ -179,28 +200,28 @@ class BaseEnvCfg:
             self.malloc_scale * 2 ** min(12 + _pow, 31),
         )
         self.sim.physx.gpu_found_lost_pairs_capacity = math.floor(
-            self.malloc_scale * 2 ** min(12 + _pow, 31),
+            self.malloc_scale * 2 ** min(17 + _pow, 31),
         )
         self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = math.floor(
-            self.malloc_scale * 2 ** min(13 + _pow, 31),
+            self.malloc_scale * 2 ** min(14 + _pow, 31),
         )
         self.sim.physx.gpu_total_aggregate_pairs_capacity = math.floor(
             self.malloc_scale * 2 ** min(12 + _pow, 31),
         )
         self.sim.physx.gpu_collision_stack_size = math.floor(
-            self.malloc_scale * 2 ** min(19 + _pow, 31),
+            self.malloc_scale * 2 ** min(22 + _pow, 31),
         )
         self.sim.physx.gpu_heap_capacity = math.floor(
             self.malloc_scale * 2 ** min(19 + _pow, 31),
         )
         self.sim.physx.gpu_temp_buffer_capacity = math.floor(
-            self.malloc_scale * 2 ** min(10 + _pow, 31),
+            self.malloc_scale * 2 ** min(16 + _pow, 31),
         )
         self.sim.physx.gpu_max_soft_body_contacts = math.floor(
-            self.malloc_scale * 2 ** min(10 + _pow, 31),
+            self.malloc_scale * 2 ** min(16 + _pow, 31),
         )
         self.sim.physx.gpu_max_particle_contacts = math.floor(
-            self.malloc_scale * 2 ** min(10 + _pow, 31),
+            self.malloc_scale * 2 ** min(22 + _pow, 31),
         )
 
         self.sim.physx.gpu_max_num_partitions = 1 << bisect.bisect_left(
@@ -250,18 +271,33 @@ class BaseEnvCfg:
                     prim_path=prim_path,
                     spawn=DomeLightCfg(
                         intensity=0.25 * self.domain.light_intensity,
-                        texture_file=skydome_dir.joinpath("cloudy_sky.exr").as_posix(),
+                        texture_file=skydome_dir.joinpath(
+                            # "spaceport_moon_lab.exr",
+                            "cloudy_sky.exr",
+                        ).as_posix(),
                         **kwargs,
                     ),
                 )
-            case Domain.MOON:
+                self.events.randomize_skydome_orientation = EventTermCfg(
+                    func=reset_xform_orientation_uniform,
+                    mode="interval",
+                    is_global_time=True,
+                    interval_range_s=(10.0, 60.0),
+                    params={
+                        "asset_cfg": SceneEntityCfg("skydome"),
+                        "orientation_distribution_params": {
+                            "yaw": (-torch.pi, torch.pi),
+                        },
+                    },
+                )
+            case Domain.MOON | Domain.ASTEROID:
                 self.scene.skydome = AssetBaseCfg(
                     prim_path=prim_path,
                     spawn=DomeLightCfg(
                         intensity=0.25 * self.domain.light_intensity,
                         texture_file=skydome_dir.joinpath(
-                            "stars.exr"
-                            # "milky_way.exr
+                            "stars.exr",
+                            # "milky_way.exr",
                         ).as_posix(),
                         **kwargs,
                     ),
@@ -285,19 +321,32 @@ class BaseEnvCfg:
                     prim_path=prim_path,
                     spawn=DomeLightCfg(
                         intensity=0.25 * self.domain.light_intensity,
-                        texture_file=skydome_dir.joinpath("mars_sky.exr").as_posix(),
+                        texture_file=skydome_dir.joinpath(
+                            "mars_sky.exr",
+                        ).as_posix(),
                         **kwargs,
                     ),
                 )
-                self.events.randomize_skydome_orientation = None
+                self.events.randomize_skydome_orientation = EventTermCfg(
+                    func=reset_xform_orientation_uniform,
+                    mode="interval",
+                    is_global_time=True,
+                    interval_range_s=(10.0, 60.0),
+                    params={
+                        "asset_cfg": SceneEntityCfg("skydome"),
+                        "orientation_distribution_params": {
+                            "yaw": (-torch.pi, torch.pi),
+                        },
+                    },
+                )
             case Domain.ORBIT:
                 self.scene.skydome = AssetBaseCfg(
                     prim_path=prim_path,
                     spawn=DomeLightCfg(
                         intensity=0.25 * self.domain.light_intensity,
                         texture_file=skydome_dir.joinpath(
-                            "low_earth_orbit.exr"
-                            # "low_lunar_orbit.jpg"
+                            "low_earth_orbit.exr",
+                            # "low_lunar_orbit.jpg",
                         ).as_posix(),
                         **kwargs,
                     ),
@@ -338,7 +387,6 @@ class BaseEnvCfg:
 
             ## Attributes
             assert self.spacing is not None
-            size = (self.spacing, self.spacing)
             scale = (
                 self.spacing,
                 self.spacing,
@@ -380,7 +428,6 @@ class BaseEnvCfg:
                         if issubclass(registered_scenery, typ):
                             try:
                                 _scenery = registered_scenery(
-                                    size=size,
                                     scale=scale,
                                     texture_resolution=texture_resolution,
                                     density=density,
@@ -506,13 +553,17 @@ class BaseEnvCfg:
         robot.asset_cfg.prim_path = prim_path
         setattr(self.scene, robot_name, robot.asset_cfg)
         # Actions
-        for action_key, action_term in robot.actions.__dict__.items():
+        for action_term in robot.actions.__dict__.values():
             if not isinstance(action_term, ActionTermCfg):
                 continue
             # Ensure the actions terms are applied to the correct asset
             action_term.asset_name = robot_name
             # Add action terms to the action group
-            setattr(self.actions, f"{robot_name}__{action_key}", action_term)
+            setattr(
+                self.actions,
+                f"{robot_name}/{sanitize_action_term_name(action_term.class_type.__name__)}",
+                action_term,
+            )
         # Add the command mapping function to the action group
         map_cmd_to_action_fns.append(robot.actions.map_cmd_to_action)
 
@@ -603,16 +654,17 @@ class BaseEnvCfg:
                 disable_root_joints=not manipulator_needs_jacobian,
             )
             # Actions
-            for (
-                action_key,
-                action_term,
-            ) in robot.manipulator.actions.__dict__.items():
+            for action_term in robot.manipulator.actions.__dict__.values():
                 if not isinstance(action_term, ActionTermCfg):
                     continue
                 # Ensure the actions terms are applied to the correct asset
                 action_term.asset_name = manipulator_name
                 # Add action terms to the action group
-                setattr(self.actions, f"{manipulator_name}__{action_key}", action_term)
+                setattr(
+                    self.actions,
+                    f"{manipulator_name}/{sanitize_action_term_name(action_term.class_type.__name__)}",
+                    action_term,
+                )
             # Add the command mapping function to the action group
             map_cmd_to_action_fns.append(robot.manipulator.actions.map_cmd_to_action)
         else:
@@ -624,7 +676,11 @@ class BaseEnvCfg:
             if isinstance(manipulator.end_effector, Tool):
                 if isinstance(
                     manipulator.end_effector.asset_cfg,
-                    (RigidObjectCfg, ArticulationCfg),
+                    (
+                        (RigidObjectCfg, ArticulationCfg)
+                        if self.assemble_rigid_end_effector
+                        else ArticulationCfg
+                    ),
                 ):
                     manipulator.end_effector.asset_cfg.prim_path = (
                         prim_path_end_effector
@@ -656,6 +712,9 @@ class BaseEnvCfg:
                     )
                 else:
                     self.joint_assemblies.pop(end_effector_name, None)
+                    manipulator.end_effector.asset_cfg = (  # type: ignore
+                        manipulator.end_effector.as_asset_base_cfg()
+                    )
                     manipulator.end_effector.asset_cfg.prim_path = f"{manipulator.asset_cfg.prim_path}/{manipulator.frame_flange.prim_relpath}/{end_effector_name}"
                     (
                         manipulator.end_effector.asset_cfg.init_state.pos,
@@ -693,9 +752,8 @@ class BaseEnvCfg:
                 # Actions
                 if isinstance(manipulator.end_effector, ActiveTool):
                     for (
-                        action_key,
-                        action_term,
-                    ) in manipulator.end_effector.actions.__dict__.items():
+                        action_term
+                    ) in manipulator.end_effector.actions.__dict__.values():
                         if not isinstance(action_term, ActionTermCfg):
                             continue
                         # Ensure the actions terms are applied to the correct asset
@@ -703,7 +761,7 @@ class BaseEnvCfg:
                         # Add action terms to the action group
                         setattr(
                             self.actions,
-                            f"{end_effector_name}__{action_key}",
+                            f"{end_effector_name}/{sanitize_action_term_name(action_term.class_type.__name__)}",
                             action_term,
                         )
                     # Add the command mapping function to the action group
@@ -738,30 +796,9 @@ class BaseEnvCfg:
         # Store the updated config in an internal state
         self._robot = robot
 
-    def _update_procedural_assets(self):
-        def _update_simforge_asset(asset_cfg: AssetBaseCfg):
-            if not isinstance(asset_cfg.spawn, SimforgeAssetCfg):
-                return
-            if asset_cfg.spawn.seed == 0:
-                asset_cfg.spawn.seed = self.seed
-            if asset_cfg.spawn.num_assets == 1 and (
-                asset_cfg.prim_path.startswith("{ENV_REGEX_NS}")
-                or asset_cfg.prim_path.startswith("/World/envs/env_.*")
-            ):
-                asset_cfg.spawn.num_assets = self.scene.num_envs
-
-        for asset_cfg in self.scene.__dict__.values():
-            if isinstance(asset_cfg, AssetBaseCfg):
-                _update_simforge_asset(asset_cfg)
-            elif isinstance(asset_cfg, RigidObjectCollectionCfg):
-                if not isinstance(asset_cfg.rigid_objects, Dict):
-                    continue
-                for rigid_object_cfg in asset_cfg.rigid_objects.values():
-                    _update_simforge_asset(rigid_object_cfg)
-
-    def _maybe_add_particles(self):
+    def _add_particles(self):
         assert self.spacing is not None
-        if self.scatter_particles and self.spacing > 0.0:
+        if self.particles and self.spacing > 0.0:
             self.scene.particles = AssetBaseCfg(  # type: ignore
                 prim_path="{ENV_REGEX_NS}/particles",
                 spawn=PyramidParticlesSpawnerCfg(
@@ -778,6 +815,26 @@ class BaseEnvCfg:
                 ),
                 init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, 0.5)),
             )
+        else:
+            self.scene.particles = None  # type: ignore
+
+    def _settle_down_particles(self):
+        particle_asset_cfg: Sequence[SceneEntityCfg] = tuple(
+            SceneEntityCfg(attr_name)
+            for attr_name, asset_cfg in self.scene.__dict__.items()
+            if isinstance(asset_cfg, AssetBaseCfg)
+            and isinstance(asset_cfg.spawn, ParticlesSpawnerCfg)
+        )
+        if particle_asset_cfg:
+            self.events.settle_and_reset_particles = (  # type: ignore
+                EventTermCfg(
+                    func=settle_and_reset_particles,
+                    mode="reset",
+                    params={"asset_cfg": particle_asset_cfg},
+                )
+            )
+        else:
+            self.events.settle_and_reset_particles = None  # type: ignore
 
     def _maybe_disable_fabric_for_particles(self):
         for asset_cfg in self.scene.__dict__.values():
@@ -786,26 +843,76 @@ class BaseEnvCfg:
             ):
                 self.sim.use_fabric = False
                 return
-            elif isinstance(asset_cfg, RigidObjectCollectionCfg):
-                if not isinstance(asset_cfg.rigid_objects, Dict):
-                    continue
-                for rigid_object_cfg in asset_cfg.rigid_objects.values():
-                    if isinstance(rigid_object_cfg, AssetBaseCfg) and isinstance(
-                        rigid_object_cfg.spawn, ParticlesSpawnerCfg
-                    ):
-                        self.sim.use_fabric = False
-                        return
+
+    def _setup_asset_extras(self):
+        def _recursive_impl(attr: Any):
+            if isinstance(attr, Asset):
+                attr.setup_extras(self)
+            elif isinstance(attr, Iterable) and not isinstance(attr, (str, bytes)):
+                for item in attr:
+                    _recursive_impl(item)
+            elif isinstance(attr, Mapping):
+                for item in attr.values():
+                    _recursive_impl(item)
+
+        _recursive_impl(self.__dict__.values())
+
+    def _update_procedural_assets(self):
+        def _recursive_impl(attr: Any, prim_path: str = ""):
+            if isinstance(attr, SimforgeAssetCfg):
+                assert prim_path
+                if attr.seed == 0:
+                    attr.seed = self.seed
+                if attr.num_assets == 1 and (
+                    prim_path.startswith("{ENV_REGEX_NS}")
+                    or prim_path.startswith("/World/envs/env_.*")
+                ):
+                    attr.num_assets = self.scene.num_envs
+            elif isinstance(attr, AssetBaseCfg):
+                if isinstance(attr.spawn, MultiAssetSpawnerCfg):
+                    for item in attr.spawn.assets_cfg:
+                        _recursive_impl(item, prim_path=attr.prim_path)
+                else:
+                    _recursive_impl(attr.spawn, prim_path=attr.prim_path)
+            elif isinstance(attr, RigidObjectCollectionCfg):
+                _recursive_impl(attr.rigid_objects)
+            elif isinstance(attr, Mapping):
+                for item in attr.values():
+                    _recursive_impl(item)
+            elif isinstance(attr, Iterable) and not isinstance(attr, (str, bytes)):
+                for item in attr:
+                    _recursive_impl(item)
+
+        _recursive_impl(self.scene.__dict__.values())
 
     def _update_debug_vis(self):
-        for asset_cfg in self.scene.__dict__.values():
-            if isinstance(asset_cfg, SensorBaseCfg):
-                asset_cfg.debug_vis = self.debug_vis
+        for action_term in self.actions.__dict__.values():
+            if isinstance(action_term, ActionTermCfg):
+                action_term.debug_vis = self.debug_vis
 
-        for action_template in self.actions.__dict__.values():
-            if isinstance(action_template, ActionTermCfg):
-                action_template.debug_vis = self.debug_vis
+        def _recursive_asset_impl(attr: Any):
+            if isinstance(attr, SensorBaseCfg):
+                # Note: Ignore debug visualization for IMUs
+                if not isinstance(attr, ImuCfg):
+                    attr.debug_vis = self.debug_vis
+            elif isinstance(attr, Mapping):
+                for item in attr.values():
+                    _recursive_asset_impl(item)
+            elif isinstance(attr, Iterable) and not isinstance(attr, (str, bytes)):
+                for item in attr:
+                    _recursive_asset_impl(item)
 
-        for attr in self.__dict__.values():
+        _recursive_asset_impl(self.scene.__dict__.values())
+
+        def _recursive_marker_impl(attr: Any):
             if isinstance(attr, VisualizationMarkersCfg):
                 for marker in attr.markers.values():
                     marker.visible = self.debug_vis
+            elif isinstance(attr, Mapping):
+                for item in attr.values():
+                    _recursive_marker_impl(item)
+            elif isinstance(attr, Iterable) and not isinstance(attr, (str, bytes)):
+                for item in attr:
+                    _recursive_marker_impl(item)
+
+        _recursive_marker_impl(self.__dict__.values())
