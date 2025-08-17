@@ -106,6 +106,7 @@ fn dark_theme() -> Visuals {
         interact_cursor: Some(egui::CursorIcon::PointingHand),
         image_loading_spinners: true,
         numeric_color_space: NumericColorSpace::GammaByte,
+        ..Default::default()
     }
 }
 
@@ -203,5 +204,6 @@ fn light_theme() -> Visuals {
         interact_cursor: Some(egui::CursorIcon::PointingHand),
         image_loading_spinners: true,
         numeric_color_space: NumericColorSpace::GammaByte,
+        ..Default::default()
     }
 }

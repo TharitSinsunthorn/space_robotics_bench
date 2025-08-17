@@ -149,6 +149,7 @@ RUN if [[ "${INSTALL_SPACEROS,,}" != true ]]; then \
     DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
     ros-dev-tools \
     "ros-${ROS_DISTRO}-ros-base" \
+    "ros-${ROS_DISTRO}-rmw-fastrtps-cpp" \
     "ros-${ROS_DISTRO}-rmw-cyclonedds-cpp" && \
     rm -rf /var/lib/apt/lists/* && \
     "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir catkin_pkg && \
@@ -231,7 +232,7 @@ ARG ISAACLAB_DEV=true
 ARG ISAACLAB_PATH="/root/isaaclab"
 ARG ISAACLAB_REMOTE="https://github.com/isaac-sim/IsaacLab.git"
 ARG ISAACLAB_BRANCH="main"
-ARG ISAACLAB_COMMIT_SHA="7de6d6fef9424c95fc68dc767af67ffbe0da6832" # 2025-04-11
+ARG ISAACLAB_COMMIT_SHA="3d6f55b9858dc1595c956d904577a364818f77bd" # 2025-06-28
 # hadolint ignore=SC2044
 RUN if [[ "${DEV,,}" = true && "${ISAACLAB_DEV,,}" = true ]]; then \
     echo -e "\n# Isaac Lab ${ISAACLAB_COMMIT_SHA}" >> /entrypoint.bash && \
@@ -263,7 +264,7 @@ ARG SIMFORGE_REMOTE="https://github.com/AndrejOrsula/simforge.git"
 ARG SIMFORGE_BRANCH="main"
 RUN if [[ "${DEV,,}" = true && "${SIMFORGE_DEV,,}" = true ]]; then \
     git clone "${SIMFORGE_REMOTE}" "${SIMFORGE_PATH}" --branch "${SIMFORGE_BRANCH}" && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_PATH}[all]" && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_PATH}[assets,cli,dev]" && \
     "${BLENDER_PYTHON}" -m pip install --no-input --no-cache-dir --editable "${SIMFORGE_PATH}[dev]" ; \
     fi
 ARG SIMFORGE_FOUNDRY_DEV=true
@@ -281,7 +282,7 @@ ARG DREAMER_DEV=true
 ARG DREAMER_PATH="/root/dreamerv3"
 ARG DREAMER_REMOTE="https://github.com/AndrejOrsula/dreamerv3.git"
 ARG DREAMER_BRANCH="main"
-ARG DREAMER_COMMIT_SHA="45c3955afb6ee26310fc5bce65102320b8d98b18" # 2025-04-11
+ARG DREAMER_COMMIT_SHA="4049794d4135e41c691f18da38a9af7541b01553" # 2025-07-16
 RUN if [[ "${DEV,,}" = true && "${DREAMER_DEV,,}" = true ]]; then \
     git clone "${DREAMER_REMOTE}" "${DREAMER_PATH}" --branch "${DREAMER_BRANCH}" && \
     git -C "${DREAMER_PATH}" reset --hard "${DREAMER_COMMIT_SHA}" && \

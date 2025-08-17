@@ -639,7 +639,7 @@ impl App {
                                 }
 
                                 let task_text_size = 0.125 * button.rect.height();
-                                ui.allocate_new_ui(
+                                ui.scope_builder(
                                     egui::UiBuilder::new().max_rect(egui::Rect {
                                         min: egui::Pos2 {
                                             x: button.rect.min.x,
@@ -683,7 +683,7 @@ impl App {
                                 );
 
                                 let difficulty_text_size = 0.1125 * button.rect.height();
-                                ui.allocate_new_ui(
+                                ui.scope_builder(
                                     egui::UiBuilder::new().max_rect(egui::Rect {
                                         min: egui::Pos2 {
                                             x: button.rect.min.x + 0.5 * difficulty_text_size,
