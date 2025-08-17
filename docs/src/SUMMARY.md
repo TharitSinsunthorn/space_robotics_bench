@@ -32,7 +32,7 @@ ______________________________________________________________________
   - [ROS 2](workflows/ros2.md)
   - [Reinforcement Learning](workflows/reinforcement_learning.md)
   - [Imitation Learning](<>)
-  - [Sim-to-Real](<>)
+  - [Sim-to-Real Transfer](workflows/sim_to_real.md)
 
 # Configuration
 
@@ -55,6 +55,7 @@ ______________________________________________________________________
   - [Evaluate Agent](reference/cli_agent_eval.md)
   - [Collect Demonstrations](<>)
   - [Learn from Demonstrations](<>)
+  - [Generate Sim-to-Real Environment Interface](reference/cli_real_agent_gen.md)
   - [Enter Python REPL](reference/cli_repl.md)
 - [Graphical User Interface](reference/gui.md)
 

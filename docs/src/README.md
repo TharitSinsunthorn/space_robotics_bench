@@ -37,6 +37,7 @@
 1. [Workflows](workflows/index.md)
    - [ROS 2](workflows/ros2.md)
    - [Reinforcement Learning](workflows/reinforcement_learning.md)
+   - [Sim-to-Real Transfer](workflows/sim_to_real.md)
 
 #### Configuration
 
