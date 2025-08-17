@@ -128,7 +128,7 @@ RUN apt-get update && \
 RUN "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir --upgrade pip
 
 ## Install Rust
-ARG RUST_VERSION="1.87"
+ARG RUST_VERSION="1.89"
 RUN echo -e "\n# Rust ${RUST_VERSION}" >> /entrypoint.bash && \
     echo "export PATH=\"${HOME}/.cargo/bin\${PATH:+:\${PATH}}\"" >> /entrypoint.bash && \
     echo "export CARGO_TARGET_DIR=\"${HOME}/.cargo/target\"" >> /entrypoint.bash && \

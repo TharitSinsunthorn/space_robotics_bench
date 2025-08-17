@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  MSRV: "1.87"
+  MSRV: "1.88"
   ROS_DISTRO: "jazzy"
   CARGO_TERM_COLOR: always
   CRATE_NAME_SYS: srb_sys
