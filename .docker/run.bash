@@ -210,7 +210,7 @@ if [[ "${WITH_GUI,,}" = true ]]; then
     # Check if DISPLAY is set
     if [[ -n "${DISPLAY}" ]]; then
         # To enable GUI, make sure processes in the container can connect to the x server
-        XAUTH="${TMPDIR:-"/tmp"}/xauth_docker_${PROJECT_NAME}"
+        XAUTH="${TMPDIR:-"/tmp"}/xauth_docker_${PROJECT_NAME}_${USER}"
         touch "${XAUTH}"
         chmod a+r "${XAUTH}"
         XAUTH_LIST=$(xauth nlist "${DISPLAY}")
