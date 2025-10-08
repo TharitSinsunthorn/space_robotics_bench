@@ -128,24 +128,23 @@ dev = [
 ]
 rich = [
   #
-  "rich~=13.0",
+  "rich~=14.0",
 ]
 test = [
   #
   "pytest~=8.0",
   "pytest-order~=1.0",
   "pytest-sugar~=1.0",
-  "lark~=1.0",
 ]
 tracing = [
   #
   "srb[rich]",
-  "logfire~=3.0",
+  "logfire~=4.0",
 ]
 typing = [
   #
   "mypy~=1.0",
-  "types-psutil~=6.0",
+  "types-psutil~=7.0",
   "types-PyYAML~=6.0",
   "types-toml~=0.10",
 ]
