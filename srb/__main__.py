@@ -93,6 +93,7 @@ def run_agent_with_env(
         "collect",
     ],
     env_id: str,
+    config: str,
     logdir_path: str,
     interface: Sequence[str],
     video_enable: bool,
@@ -121,7 +122,8 @@ def run_agent_with_env(
     from omni.physx import acquire_physx_interface
 
     from srb.interfaces.teleop import EventOmniKeyboardTeleopInterface
-    from srb.utils.cfg import last_logdir, new_logdir
+    from srb.utils import logging
+    from srb.utils.cfg import DEFAULT_DATETIME_FORMAT, last_logdir, new_logdir
     from srb.utils.hydra.sim import hydra_task_config
     from srb.utils.isaacsim import hide_isaacsim_ui
 
@@ -158,17 +160,45 @@ def run_agent_with_env(
     else:
         logdir = new_logdir(env_id=env_id, workflow=workflow, root=logdir_root)
 
+    # Determine the Hydra config path
+    config_path = None
+    if config.upper() == "DEFAULT":
+        search_dir = logdir
+        while search_dir != search_dir.parent:
+            maybe_path = search_dir.joinpath(".hydra", "config.yaml").resolve()
+            if maybe_path.exists():
+                config_path = maybe_path
+                logging.info(f"Using default Hydra config from: {config_path}")
+                break
+            search_dir = search_dir.parent
+    elif config and config.upper() not in ("IGNORE", "NONE", "NULL"):
+        config_path = Path(config).expanduser().resolve()
+        if not config_path.exists():
+            raise FileNotFoundError(f"Hydra config path does not exist: {config_path}")
+        logging.info(f"Using custom Hydra config from: {config_path}")
+        if config_path.suffix.lower() not in (".yaml", ".yml"):
+            logging.warning(
+                f"The provided Hydra config path does not appear to be a YAML file: {config_path}"
+            )
+
     # Update Hydra output directory
-    if not any(arg.startswith("hydra.run.dir=") for arg in forwarded_args):
-        sys.argv.extend([f"hydra.run.dir={logdir.as_posix()}"])
     maybe_config_path = Path(logdir).joinpath(".hydra", "config.yaml").resolve()
+    if not any(arg.startswith("hydra.run.dir=") for arg in forwarded_args):
+        if agent_subcommand in ("eval", "teleop") and kwargs["algo"]:
+            sys.argv.extend([f"hydra.run.dir={logdir.joinpath('eval').as_posix()}"])
+            if maybe_config_path.exists():
+                eval_hydra_dir = logdir.joinpath("eval").joinpath(".hydra")
+                os.makedirs(eval_hydra_dir, exist_ok=True)
+                shutil.copytree(
+                    maybe_config_path.parent, eval_hydra_dir, dirs_exist_ok=True
+                )
+        else:
+            sys.argv.extend([f"hydra.run.dir={logdir.as_posix()}"])
 
     @hydra_task_config(
         task_name=env_id,
         agent_cfg_entry_point=f"{kwargs['algo']}_cfg" if kwargs.get("algo") else None,
-        config_path=maybe_config_path.as_posix()
-        if maybe_config_path.exists()
-        else None,
+        config_path=config_path.as_posix() if config_path else None,
     )
     def hydra_main(env_cfg: Dict[str, Any], agent_cfg: Dict[str, Any] | None = None):
         import gymnasium
@@ -181,11 +211,16 @@ def run_agent_with_env(
 
         # Add wrapper for video recording
         if video_enable:
+            from datetime import datetime
+
             env = gymnasium.wrappers.RecordVideo(
                 env,
-                video_folder=logdir.joinpath("videos").as_posix(),
+                video_folder=logdir.joinpath("videos")
+                .joinpath(datetime.now().strftime(DEFAULT_DATETIME_FORMAT))
+                .as_posix(),
                 name_prefix=env_id.rsplit("/", 1)[-1],
                 disable_logger=True,
+                episode_trigger=lambda _: True,
             )
 
         # Add wrapper for performance tests
@@ -250,6 +285,7 @@ def run_agent_with_env(
                     return step_return
 
             env = InterfaceWrapper(env)  # type: ignore
+            env.unwrapped.ros_node = ros_node
             env.unwrapped.cfg.extras = True  # type: ignore
 
         # Run the implementation
@@ -909,6 +945,7 @@ def run_real_agent_with_env(
         "collect",
     ],
     env_id: str,
+    config: str,
     hardware: Sequence[str],
     logdir_path: str,
     forwarded_args: Sequence[str] = (),
@@ -978,17 +1015,35 @@ def run_real_agent_with_env(
             env_id=env_id, workflow=workflow, root=logdir_root, namespace="srb_real"
         )
 
+    # Determine the Hydra config path
+    config_path = None
+    if config.upper() == "DEFAULT":
+        search_dir = logdir
+        while search_dir != search_dir.parent:
+            maybe_path = search_dir.joinpath(".hydra", "config.yaml").resolve()
+            if maybe_path.exists():
+                config_path = maybe_path
+                logging.info(f"Using default Hydra config from: {config_path}")
+                break
+            search_dir = search_dir.parent
+    elif config and config.upper not in ("IGNORE", "NONE", "NULL"):
+        config_path = Path(config).expanduser().resolve()
+        if not config_path.exists():
+            raise FileNotFoundError(f"Hydra config path does not exist: {config_path}")
+        logging.info(f"Using custom Hydra config from: {config_path}")
+        if config_path.suffix.lower() not in (".yaml", ".yml"):
+            logging.warning(
+                f"The provided Hydra config path does not appear to be a YAML file: {config_path}"
+            )
+
     # Update Hydra output directory
     if not any(arg.startswith("hydra.run.dir=") for arg in forwarded_args):
         sys.argv.extend([f"hydra.run.dir={logdir.as_posix()}"])
-    maybe_config_path = Path(logdir).joinpath(".hydra", "config.yaml").resolve()
 
     @hydra_task_config(
         task_name=env_id,
         agent_cfg_entry_point=f"{kwargs['algo']}_cfg" if kwargs.get("algo") else None,
-        config_path=maybe_config_path.as_posix()
-        if maybe_config_path.exists()
-        else None,
+        config_path=config_path.as_posix() if config_path else None,
     )
     def hydra_main(agent_cfg: Dict[str, Any] | None = None):
         # Create the environment and initialize it
@@ -2043,6 +2098,21 @@ def parse_cli_args() -> argparse.Namespace:
                 else (("ALL", *env_choices) if env_choices else ())
             ),
             required=True,
+        )
+
+    ## Config args
+    for _parser in (
+        *agent_parsers_with_env,
+        *real_agent_parsers_with_env,
+        *real_env_gen_parsers,
+    ):
+        config_group = _parser.add_argument_group("Config")
+        config_group.add_argument(
+            "--cfg",
+            dest="config",
+            help="Path to the Hydra configuration YAML file to override the default settings ('default': use the default config from the environment, 'ignore'/'none'/'null': no config)",
+            type=str,
+            default="DEFAULT",
         )
 
     ## Environment args (extras)
