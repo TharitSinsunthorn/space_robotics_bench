@@ -72,10 +72,11 @@ class BaseEnvCfg:
     skydome: Literal["low_res", "high_res"] | bool | None = "low_res"
 
     ## Assets
-    scenery: Scenery | AssetVariant | None = AssetVariant.PROCEDURAL
-    _scenery: Scenery | None = MISSING  # type: ignore
+    scenery: Scenery | MobileRobot | AssetVariant | None = AssetVariant.PROCEDURAL
+    _scenery: Scenery | MobileRobot | None = MISSING  # type: ignore
     robot: Robot | AssetVariant = AssetVariant.DATASET
     _robot: Robot = MISSING  # type: ignore
+    n_procgen_variants: int | None = None
 
     ## Assemblies (dynamic joints)
     joint_assemblies: Dict[str, RobotAssemblerCfg] = {}
@@ -347,6 +348,8 @@ class BaseEnvCfg:
                         texture_file=skydome_dir.joinpath(
                             "low_earth_orbit.exr",
                             # "low_lunar_orbit.jpg",
+                            # "stars.exr",
+                            # "milky_way.exr",
                         ).as_posix(),
                         **kwargs,
                     ),
@@ -463,7 +466,7 @@ class BaseEnvCfg:
                 logging.error(
                     f"Unsupported type hints for scenery specified via {AssetVariant}: {type_hints} ({type(type_hints)})"
                 )
-        assert isinstance(scenery, Scenery), (
+        assert isinstance(scenery, (Scenery, MobileRobot)), (
             f"Failed to instantiate scenery from {repr(scenery)}"
         )
 
@@ -472,6 +475,9 @@ class BaseEnvCfg:
             prim_path_stacked
             if self.stack or isinstance(self.scenery, assets.GroundPlane)
             else prim_path
+        )
+        scenery.asset_cfg = scenery.as_asset_base_cfg(  # type: ignore
+            disable_articulation=True, disable_rigid_body=True
         )
 
         # Add to the scene
@@ -810,8 +816,10 @@ class BaseEnvCfg:
                     velocity=((-0.5, 0.5), (-0.5, 0.5), (-0.5, 0.0)),
                     fluid=False,
                     density=1500.0,
-                    friction=0.85,
-                    cohesion=0.65,
+                    friction=0.9,
+                    damping=0.2,
+                    cohesion=0.1,
+                    adhesion=0.1,
                 ),
                 init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, 0.5)),
             )
@@ -867,7 +875,7 @@ class BaseEnvCfg:
                     prim_path.startswith("{ENV_REGEX_NS}")
                     or prim_path.startswith("/World/envs/env_.*")
                 ):
-                    attr.num_assets = self.scene.num_envs
+                    attr.num_assets = self.n_procgen_variants or self.scene.num_envs
             elif isinstance(attr, AssetBaseCfg):
                 if isinstance(attr.spawn, MultiAssetSpawnerCfg):
                     for item in attr.spawn.assets_cfg:
