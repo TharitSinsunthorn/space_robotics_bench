@@ -960,9 +960,9 @@ def settle_and_reset_particles(
     env: "AnyEnv",
     env_ids: torch.Tensor,
     asset_cfg: Sequence[SceneEntityCfg],
-    particles_settle_max_steps: int = 25,
-    particles_settle_step_time: float = 20.0,
-    particles_settle_vel_threshold: float = 0.0025,
+    particles_settle_max_steps: int = 10,
+    particles_settle_step_time: float = 30.0,
+    particles_settle_vel_threshold: float = 0.01,
 ):
     num_particle_systems = len(asset_cfg)
     particles: Sequence[AssetBase] = tuple(env.scene[cfg.name] for cfg in asset_cfg)
@@ -975,23 +975,50 @@ def settle_and_reset_particles(
 
     ## Let the particles settle on the first reset, then remember their positions for future resets
     if not hasattr(env, initial_pos_ident[0]):
-        for _ in range(particles_settle_max_steps):
+        # Evacuate the scene by moving all dynamic assets far away
+        for asset in chain(
+            env.scene.articulations.values(), env.scene.rigid_objects.values()
+        ):
+            new_state = asset.data.default_root_state.clone()
+            new_state[:, 2] -= 10000.0
+            asset.write_root_state_to_sim(new_state)
+        for collection in env.scene.rigid_object_collections.values():
+            new_state = collection.data.default_object_state.clone()
+            new_state[:, :, 2] -= 10000.0
+            collection.write_object_state_to_sim(new_state)
+
+        # Let the particles settle
+        logging.info("Letting particles settle, please be patient...")
+        for i in range(particles_settle_max_steps):
             for _ in range(round(particles_settle_step_time / env.step_dt)):
                 env.sim.step(render=False)
 
-            for i in range(num_particle_systems):
-                if (
-                    torch.median(
-                        torch.linalg.norm(
-                            particle_utils.get_particles_vel_w(env, particles[i]),
-                            dim=-1,
-                        )
+            for j in range(num_particle_systems):
+                particles_vel = particle_utils.get_particles_vel_w(env, particles[j])
+                particles_vel_norm_median = torch.median(
+                    torch.linalg.norm(particles_vel, dim=-1)
+                )
+                num_particles = particles_vel.shape[1]
+                if particles_vel_norm_median > particles_settle_vel_threshold:
+                    logging.info(
+                        f"[{i + 1}/{particles_settle_max_steps}] Particles of system {j + 1}/{num_particle_systems} are not yet settled (count: {num_particles}, vel: {particles_vel_norm_median:.5f}>{particles_settle_vel_threshold:.5f})"
                     )
-                    > particles_settle_vel_threshold
-                ):
                     break
+                else:
+                    logging.info(
+                        f"[{i + 1}/{particles_settle_max_steps}] Particles of system {j + 1}/{num_particle_systems} are now settled (count: {num_particles}, vel: {particles_vel_norm_median:.5f}<{particles_settle_vel_threshold:.5f})"
+                    )
+
             else:
                 break
+
+        # Restore the original states
+        for asset in chain(
+            env.scene.articulations.values(), env.scene.rigid_objects.values()
+        ):
+            asset.write_root_state_to_sim(asset.data.default_root_state)
+        for collection in env.scene.rigid_object_collections.values():
+            collection.write_object_state_to_sim(collection.data.default_object_state)
 
         # Extract statistics about the initial state of the particles
         for i in range(num_particle_systems):
