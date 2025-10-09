@@ -84,8 +84,6 @@ class TaskCfg(ManipulationEnvCfg):
     )
     scenery.asset_cfg.init_state.pos = (-0.55, 0.0, -0.35)
     scenery.asset_cfg.init_state.rot = rpy_to_quat(0.0, 0.0, 90.0)
-
-    _scenery: ExtravehicularScenery = MISSING  # type: ignore
     pedestal: Object | AssetVariant | None = None
     debris: Object | AssetVariant | None = AssetVariant.DATASET
 

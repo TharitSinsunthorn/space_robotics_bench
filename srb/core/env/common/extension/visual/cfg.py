@@ -1,8 +1,10 @@
 from dataclasses import MISSING
+from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Literal, Sequence, Tuple
 
 from srb.core.sensor import CameraCfg
 from srb.utils.cfg import configclass
+from srb.utils.path import SRB_LOGS_DIR
 
 if TYPE_CHECKING:
     from srb._typing import AnyEnvCfg
@@ -47,6 +49,10 @@ class VisualExtCfg:
         ]
         | None
     ) = ("rgb", "depth")
+
+    ## Recording
+    camera_record: bool = False
+    camera_record_dir: Path | str = SRB_LOGS_DIR.joinpath("camera_videos")
 
     def wrap(self, env_cfg: "AnyEnvCfg"):
         ## Add camera sensors to the scene
