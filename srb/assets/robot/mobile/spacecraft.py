@@ -187,8 +187,7 @@ class Cubesat(OrbitalRobot):
                 ),
             ),
             fuel_capacity=5.0,
-            # fuel_consumption_rate=(5.0 / (8 * 10.0)) / 20.0,
-            fuel_consumption_rate=0.0,
+            fuel_consumption_rate=(5.0 / (8 * 5.0)) / 20.0,
         )
     )
 
