@@ -9,6 +9,8 @@
         "../isaaclab/source/isaaclab_mimic",
         "../isaaclab/source/isaaclab_rl",
         "../isaaclab/source/isaaclab_tasks",
+        "../simforge",
+        "../simforge_foundry",
         "~/isaac-sim/exts/isaacsim.app.about",
         "~/isaac-sim/exts/isaacsim.app.selector",
         "~/isaac-sim/exts/isaacsim.app.setup",
