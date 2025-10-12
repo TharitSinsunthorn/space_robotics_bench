@@ -4,6 +4,7 @@ import argparse
 import os
 import shutil
 import sys
+import warnings
 from enum import Enum, auto
 from importlib.util import find_spec
 from pathlib import Path
@@ -1822,7 +1823,7 @@ def parse_cli_args() -> argparse.Namespace:
     algo_choices = sorted(map(str, SupportedAlgo))
     hardware_choices = read_offline_srb_hardware_interface_cache()
 
-    parser = argparse.ArgumentParser(
+    parser = PermissiveChoiceArgumentParser(
         description="Space Robotics Bench",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -2353,12 +2354,21 @@ def parse_cli_args() -> argparse.Namespace:
     return args
 
 
+class PermissiveChoiceArgumentParser(argparse.ArgumentParser):
+    def _check_value(self, action, value):
+        if action.choices is not None and value not in action.choices:
+            warnings.warn(
+                f"Choice '{value}' is not (yet) a known option from the registered set {{{', '.join(action.choices)}}}.",
+                category=UserWarning,
+            )
+
+
 class AutoNamespaceTaskAction(argparse.Action):
     NAMESPACE: str = "srb"
 
     def __call__(
         self,
-        parser: argparse.ArgumentParser,
+        parser: PermissiveChoiceArgumentParser,
         namespace: argparse.Namespace,
         values: str,
         option_string: str | None = None,
@@ -2375,7 +2385,7 @@ class AutoRealNamespaceTaskAction(AutoNamespaceTaskAction):
 class ExplicitAction(argparse.Action):
     def __call__(
         self,
-        parser: argparse.ArgumentParser,
+        parser: PermissiveChoiceArgumentParser,
         namespace: argparse.Namespace,
         values: str,
         option_string: str | None = None,
