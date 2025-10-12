@@ -54,9 +54,9 @@ Install Isaac Lab either by following the official instructions above or using t
 ./space_robotics_bench/scripts/install_isaaclab.bash "$HOME/isaaclab"
 ```
 
-## 4. Install Blender 4.3 with SimForge
+## 4. Install Blender 4.5 with SimForge
 
-> Official instructions: [Blender — Install from blender.org](https://docs.blender.org/manual/en/4.3/getting_started/installing/linux.html#install-from-blender-org)
+> Official instructions: [Blender — Install from blender.org](https://docs.blender.org/manual/en/4.5/getting_started/installing/linux.html#install-from-blender-org)
 
 1. Install Blender by following the official instructions for downloading and extracting its archive.
 1. Ensure that the `blender` executable is accessible from your system's `PATH`.
@@ -65,7 +65,7 @@ Install Isaac Lab either by following the official instructions above or using t
 As an example, the commands below will install Blender in your home directory and create a symbolic link to `$HOME/.local/bin/blender` (assuming it is in your `PATH`):
 
 ```bash
-export BLENDER_VERSION="4.3.2"
+export BLENDER_VERSION="4.5.3"
 export BLENDER_VERSION_SHORT=$(echo $BLENDER_VERSION | sed 's/\.[^.]*$//')
 mkdir -p $HOME/blender
 curl -fsSL "https://download.blender.org/release/Blender$BLENDER_VERSION_SHORT/blender-$BLENDER_VERSION-linux-x64.tar.xz" | tar xJ -C $HOME/blender --strip-components=1
