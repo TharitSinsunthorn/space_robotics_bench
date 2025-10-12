@@ -46,6 +46,7 @@ ln -sf "${ISAAC_SIM_PATH}" "${DEST_DIR}/_isaac_sim"
 
 # Update pip
 echo "[INFO] Updating pip in extracted environment"
+"${ISAAC_SIM_PYTHON}" -m ensurepip
 "${ISAAC_SIM_PYTHON}" -m pip install --upgrade pip
 
 # Install all extensions in editable mode

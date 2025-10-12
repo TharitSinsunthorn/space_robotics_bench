@@ -52,6 +52,7 @@ fi
 # Update pip in the extracted environment
 echo "[INFO] Updating pip in extracted environment"
 if [[ -f "${DEST_DIR}/python.sh" ]]; then
+    "${DEST_DIR}/python.sh" -m ensurepip
     "${DEST_DIR}/python.sh" -m pip install --upgrade pip
 else
     echo >&2 -e "\033[1;33m[WARNING] python.sh not found in ${DEST_DIR}, skipping pip upgrade\033[0m"
