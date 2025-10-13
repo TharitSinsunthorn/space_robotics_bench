@@ -173,8 +173,9 @@ RUN echo -e "\n# Rust ${RUST_VERSION}" >> /entrypoint.bash && \
 ## Build ROS
 ARG ROS_DISTRO="jazzy"
 ENV ROS_UNDERLAY_PATH="/root/ros/${ROS_DISTRO}"
+ARG ROS_PACKAGES_SKIP="python_orocos_kdl_vendor qt_gui_cpp"
 WORKDIR "${ROS_UNDERLAY_PATH}"
-# hadolint ignore=SC2086,DL3008
+# hadolint ignore=SC2046,SC2086,DL3008
 RUN curl --proto "=https" --tlsv1.2 -sSfL "https://raw.githubusercontent.com/ros/rosdistro/master/ros.key" -o /usr/share/keyrings/ros-archive-keyring.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null && \
     apt-get update && \
@@ -183,19 +184,21 @@ RUN curl --proto "=https" --tlsv1.2 -sSfL "https://raw.githubusercontent.com/ros
     rosdep init --rosdistro "${ROS_DISTRO}" && \
     rosdep update && \
     "${ISAAC_SIM_PYTHON}" -m pip install build --no-input --no-cache-dir setuptools-scm && \
-    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir catkin_pkg lark empy==3.3.4 && \
+    "${ISAAC_SIM_PYTHON}" -m pip install --no-input --no-cache-dir catkin_pkg lark pytest~=8.0 empy==3.3.4 && \
     mkdir -p "${ROS_UNDERLAY_PATH}/src" && \
     curl --proto "=https" --tlsv1.2 -sSfL "https://raw.githubusercontent.com/ros2/ros2/${ROS_DISTRO}/ros2.repos" -o "${ROS_UNDERLAY_PATH}/src/ros2.repos" && \
+    sed -i -e 's|  \([^/]*\)/\([^:]*\):|  \2:|g' "${ROS_UNDERLAY_PATH}/src/ros2.repos" && \
     vcs import "${ROS_UNDERLAY_PATH}/src" < "${ROS_UNDERLAY_PATH}/src/ros2.repos" && \
-    DEBIAN_FRONTEND=noninteractive RTI_NC_LICENSE_ACCEPTED=yes rosdep install --default-yes --ignore-src --rosdistro "${ROS_DISTRO}" --from-paths "${ROS_UNDERLAY_PATH}/src" && \
-    colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DPython3_EXECUTABLE="${ISAAC_SIM_PYTHON}" --build-base "${ROS_UNDERLAY_PATH}/build" --install-base "${ROS_UNDERLAY_PATH}/install" --packages-skip python_orocos_kdl_vendor qt_gui_cpp --packages-skip-by-dep python_orocos_kdl_vendor qt_gui_cpp && \
+    rm -rf $(find "${ROS_UNDERLAY_PATH}/src" -type d -name .git) && \
+    DEBIAN_FRONTEND=noninteractive rosdep install --default-yes --ignore-src --rosdistro "${ROS_DISTRO}" --from-paths "${ROS_UNDERLAY_PATH}/src" --skip-keys "$(rosdep db 2>/dev/null | grep -i "example\|demo\|tutorial" | awk '{print $1}' | tr '\n' ' ')" --skip-keys rti-connext-dds-6.0.1 --skip-keys python3-pybind11 && \
+    colcon build --merge-install --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DPython3_EXECUTABLE="${ISAAC_SIM_PYTHON}" --build-base "${ROS_UNDERLAY_PATH}/build" --install-base "${ROS_UNDERLAY_PATH}/install" --packages-skip ${ROS_PACKAGES_SKIP} --packages-skip-by-dep ${ROS_PACKAGES_SKIP} --packages-skip-regex ".*examples.*" ".*tutorial.*" && \
     echo -e "\n# ROS ${ROS_DISTRO^} (built from source)" >> /entrypoint.bash && \
     echo "source \"${ROS_UNDERLAY_PATH}/install/setup.bash\" --" >> /entrypoint.bash && \
     rm -rf "${ROS_UNDERLAY_PATH}/src/ros2.repos" /var/lib/apt/lists/* /root/.ros/rosdep/sources.cache ./log
 
 ## Install Blender
 ARG BLENDER_PATH="/root/blender"
-ARG BLENDER_VERSION="4.5.2"
+ARG BLENDER_VERSION="4.5.3"
 ARG BLENDER_PYTHON="${BLENDER_PATH}/${BLENDER_VERSION%.*}/python/bin/python3.11"
 # hadolint ignore=SC2016
 RUN echo -e "\n# Blender ${BLENDER_VERSION}" >> /entrypoint.bash && \
