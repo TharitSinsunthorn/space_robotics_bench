@@ -69,6 +69,7 @@ export BLENDER_VERSION="4.5.3"
 export BLENDER_VERSION_SHORT=$(echo $BLENDER_VERSION | sed 's/\.[^.]*$//')
 mkdir -p $HOME/blender
 curl -fsSL "https://download.blender.org/release/Blender$BLENDER_VERSION_SHORT/blender-$BLENDER_VERSION-linux-x64.tar.xz" | tar xJ -C $HOME/blender --strip-components=1
+mkdir -p $HOME/.local/bin
 ln -sf $HOME/blender/blender $HOME/.local/bin/blender
 "$HOME/blender/$BLENDER_VERSION_SHORT/python/bin/python3.11" -m pip install simforge[assets]
 ```
