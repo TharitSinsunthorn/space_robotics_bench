@@ -23,6 +23,7 @@ from srb.core.asset import (
     AssetBaseCfg,
     AssetVariant,
     CombinedMobileManipulator,
+    DeformableObjectCfg,
     Manipulator,
     MobileRobot,
     RigidObjectCfg,
@@ -190,6 +191,7 @@ class BaseEnvCfg:
         self._update_procedural_assets()
         self._update_debug_vis()
         self._maybe_disable_fabric_for_particles()
+        self._ensure_cuda_sim_device_for_deformable_objects()
 
     def _update_memory_allocation(self):
         _pow = math.floor(self.scene.num_envs**0.375) - 1
@@ -204,13 +206,13 @@ class BaseEnvCfg:
             self.malloc_scale * 2 ** min(17 + _pow, 31),
         )
         self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = math.floor(
-            self.malloc_scale * 2 ** min(14 + _pow, 31),
+            self.malloc_scale * 2 ** min(16 + _pow, 31),
         )
         self.sim.physx.gpu_total_aggregate_pairs_capacity = math.floor(
             self.malloc_scale * 2 ** min(12 + _pow, 31),
         )
         self.sim.physx.gpu_collision_stack_size = math.floor(
-            self.malloc_scale * 2 ** min(22 + _pow, 31),
+            self.malloc_scale * 2 ** min(23 + _pow, 31),
         )
         self.sim.physx.gpu_heap_capacity = math.floor(
             self.malloc_scale * 2 ** min(19 + _pow, 31),
@@ -219,7 +221,7 @@ class BaseEnvCfg:
             self.malloc_scale * 2 ** min(16 + _pow, 31),
         )
         self.sim.physx.gpu_max_soft_body_contacts = math.floor(
-            self.malloc_scale * 2 ** min(16 + _pow, 31),
+            self.malloc_scale * 2 ** min(20 + _pow, 31),
         )
         self.sim.physx.gpu_max_particle_contacts = math.floor(
             self.malloc_scale * 2 ** min(22 + _pow, 31),
@@ -851,6 +853,14 @@ class BaseEnvCfg:
             ):
                 self.sim.use_fabric = False
                 return
+
+    def _ensure_cuda_sim_device_for_deformable_objects(self):
+        for asset_cfg in self.scene.__dict__.values():
+            if isinstance(asset_cfg, DeformableObjectCfg):
+                self.sim.device = "cuda"
+                break
+        else:
+            self.sim.device = "cpu"
 
     def _setup_asset_extras(self):
         def _recursive_impl(attr: Any):
