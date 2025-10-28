@@ -216,6 +216,57 @@ class Cubesat(OrbitalRobot):
     )
 
 
+class SatelliteMockup(OrbitalRobot):
+    ## Model
+    asset_cfg: RigidObjectCfg = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/satellite_mockup",
+        spawn=UsdFileCfg(
+            usd_path=SRB_ASSETS_DIR_SRB_ROBOT.joinpath("spacecraft")
+            .joinpath("satellite_mockup.usdz")
+            .as_posix(),
+            activate_contact_sensors=True,
+            collision_props=CollisionPropertiesCfg(),
+            mesh_collision_props=MeshCollisionPropertiesCfg(
+                mesh_approximation="convexDecomposition"
+            ),
+            rigid_props=RigidBodyPropertiesCfg(
+                max_depenetration_velocity=5.0,
+            ),
+            mass_props=MassPropertiesCfg(density=1500.0),
+            semantic_tags=[("class", "spacecraft")],
+        ),
+    )
+
+    ## Actions
+    actions: ActionGroup = BodyAccelerationActionGroup(
+        BodyAccelerationActionCfg(asset_name="robot", scale=0.05)
+    )
+
+    ## Frames
+    frame_base: Frame = Frame(prim_relpath="satellite_mockup")
+    frame_payload_mount: Frame = Frame(
+        prim_relpath="satellite_mockup",
+        offset=Transform(
+            pos=(0.0, 0.0, -0.15),
+            rot=rpy_to_quat(0.0, 180.0, 0.0),
+        ),
+    )
+    frame_manipulator_mount: Frame = Frame(
+        prim_relpath="satellite_mockup",
+        offset=Transform(
+            pos=(0.0, 0.0, 0.15),
+            # rot=rpy_to_quat(0.0, 0.0, 0.0),
+        ),
+    )
+    frame_onboard_camera: Frame = Frame(
+        prim_relpath="satellite_mockup/camera_onboard",
+        offset=Transform(
+            pos=(0.15, 0.0, 0.0),
+            rot=rpy_to_quat(0.0, 90.0, 0.0),
+        ),
+    )
+
+
 class VenusExpress(OrbitalRobot):
     ## Model
     asset_cfg: RigidObjectCfg = RigidObjectCfg(
