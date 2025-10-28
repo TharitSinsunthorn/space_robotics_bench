@@ -33,7 +33,7 @@ class EventCfg(GroundEventCfg):
         params={
             "env_attr_name": "_goal",
             "pos_axes": ("x", "y"),
-            "pos_step_range": (0.005, 0.02),
+            "pos_step_range": (0.005, 0.01),
             "pos_smoothness": 0.99,
             "pos_step_smoothness": 0.8,
             "pos_bounds": {
